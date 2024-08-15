@@ -19,4 +19,5 @@ extern const mp_obj_type_t Presto_type;
 extern mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args);
 extern mp_obj_t Presto_update(mp_obj_t self_in, mp_obj_t graphics_in);
 extern mp_int_t Presto_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags);
+extern mp_obj_t Presto_set_backlight(mp_obj_t self_in, mp_obj_t brightness);
 extern mp_obj_t Presto___del__(mp_obj_t self_in);
