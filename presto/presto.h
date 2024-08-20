@@ -88,4 +88,24 @@
 #define PICO_RP2350_A2_SUPPORTED 1
 #endif
 
+#ifndef CYW43_PIN_WL_HOST_WAKE
+#define CYW43_PIN_WL_HOST_WAKE 24
+#endif
+
+#ifndef CYW43_PIN_WL_REG_ON
+#define CYW43_PIN_WL_REG_ON 23
+#endif
+
+#ifndef CYW43_WL_GPIO_COUNT
+#define CYW43_WL_GPIO_COUNT 0
+#endif
+
+#ifndef CYW43_USES_VSYS_PIN
+#define CYW43_USES_VSYS_PIN 1
+#endif
+
+#ifndef PICO_VSYS_PIN
+#define PICO_VSYS_PIN 29
+#endif
+
 #endif
