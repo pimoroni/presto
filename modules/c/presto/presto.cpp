@@ -159,6 +159,18 @@ extern mp_obj_t Presto_update(mp_obj_t self_in, mp_obj_t graphics_in) {
     return mp_const_none;
 }
 
+mp_obj_t Presto_set_backlight(mp_obj_t self_in, mp_obj_t brightness) {
+    _Presto_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Presto_obj_t);
+
+    float b = mp_obj_get_float(brightness);
+
+    if(b < 0 || b > 1.0f) mp_raise_ValueError("brightness out of range. Expected 0.0 to 1.0");
+
+    self->presto->set_backlight((uint8_t)(b * 255.0f));
+
+    return mp_const_none;
+}
+
 mp_obj_t Presto___del__(mp_obj_t self_in) {
     (void)self_in;
     //_Presto_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Presto_obj_t);
