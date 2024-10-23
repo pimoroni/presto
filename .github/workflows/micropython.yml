@@ -82,14 +82,14 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: gadgetoid/py_decl
-        ref: v0.0.2
+        ref: v0.0.4
         path: py_decl
         
     - name: "dir2uf2: Checkout"
       uses: actions/checkout@v4
       with:
         repository: gadgetoid/dir2uf2
-        ref: v0.0.7
+        ref: v0.0.10
         path: dir2uf2
 
     - name: "MicroPython: Build MPY Cross"
