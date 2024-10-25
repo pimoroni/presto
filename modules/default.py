@@ -1,3 +1,14 @@
+# https://github.com/micropython/micropython-lib/blob/master/micropython/bundles/bundle-networking/manifest.py
+require("bundle-networking")
+require("urllib.urequest")
+require("umqtt.simple")
+
+# SD Card
+require("sdcard")
+
+# Bluetooth
+require("aioble")
+
 # Include the manifest.py from micropython/ports/rp2/boards/manifest.py
 include("$(PORT_DIR)/boards/manifest.py")
 
