@@ -3,7 +3,7 @@ from struct import unpack
 from micropython import const
 
 
-class Section(object):
+class Zone(object):
     # A section of the screen we'll use for sampling.
     # We're using 80 x 80 sections and sampling 49 points within that space
     def __init__(self, x, y):
@@ -69,8 +69,8 @@ class Reactive(object):
 
         # The index for each section matches the index for the Backlight LED
         # Section 0 and LED 0 is in the bottom right corner as you're looking at the screen
-        self.sections = [Section(MAX, MAX), Section(MAX, MID), Section(MAX, MIN), Section(MID, MIN),
-                         Section(MIN, MIN), Section(MIN, MID), Section(MIN, MAX)]
+        self.zones = [Zone(MAX, MAX), Zone(MAX, MID), Zone(MAX, MIN), Zone(MID, MIN),
+                      Zone(MIN, MIN), Zone(MIN, MID), Zone(MIN, MAX)]
 
         # Plasma setup
         self.bl = plasma.WS2812(7, 0, 0, 33)
@@ -78,6 +78,6 @@ class Reactive(object):
 
     def update(self, display):
         # For each section we get the average colour in that area and set the backlight LED to that colour
-        for i, section in enumerate(self.sections):
-            colour = section.return_avg(display)
+        for i, zone in enumerate(self.zones):
+            colour = zone.return_avg(display)
             self.bl.set_rgb(i, colour[0], colour[1], colour[2])
