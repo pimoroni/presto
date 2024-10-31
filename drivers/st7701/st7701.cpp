@@ -205,21 +205,15 @@ void ST7701::init_framebuffer() {
     framebuffer += 0x2000000;
 }
 
-  ST7701::ST7701(uint16_t width, uint16_t height, Rotation rotation, SPIPins control_pins, uint16_t* framebuffer, uint16_t* linebuffer,
+  ST7701::ST7701(uint16_t width, uint16_t height, Rotation rotation, SPIPins control_pins, uint16_t* framebuffer,
       uint d0, uint hsync, uint vsync, uint lcd_de, uint lcd_dot_clk) :
             DisplayDriver(width, height, rotation),
             spi(control_pins.spi),
             spi_cs(control_pins.cs), spi_sck(control_pins.sck), spi_dat(control_pins.mosi), lcd_bl(control_pins.bl),
             d0(d0), hsync(hsync), vsync(vsync), lcd_de(lcd_de), lcd_dot_clk(lcd_dot_clk),
-            framebuffer(framebuffer),
-            line_buffer(linebuffer)
+            framebuffer(framebuffer)
   {
       st7701_inst = this;
-
-      // Allocate line buffers only if none supplied and frame buffer is not in internal RAM.
-      if(!line_buffer && (intptr_t)framebuffer < 0x20000000) {
-        line_buffer = (uint16_t*)malloc(NUM_LINE_BUFFERS * width * sizeof(line_buffer[0]));
-      }
   }
 
   void ST7701::init() {
@@ -323,7 +317,7 @@ void ST7701::init_framebuffer() {
       channel_config_set_dreq(&config, pio_get_dreq(st_pio, parallel_sm, true));
       channel_config_set_bswap(&config, true);
       channel_config_set_chain_to(&config, st_dma2);
-      dma_channel_configure(st_dma, &config, &st_pio->txf[parallel_sm], line_buffer, width >> 1, false);
+      dma_channel_configure(st_dma, &config, &st_pio->txf[parallel_sm], nullptr, width >> 1, false);
 
       config = dma_channel_get_default_config(st_dma2);
       channel_config_set_transfer_data_size(&config, DMA_SIZE_32);
