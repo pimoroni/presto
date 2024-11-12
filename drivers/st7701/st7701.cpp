@@ -221,7 +221,7 @@ void ST7701::init_framebuffer() {
   
       init_framebuffer();
 
-      st_pio = pio2;
+      st_pio = pio1;
       parallel_sm = pio_claim_unused_sm(st_pio, true);
 
       if      (width == 480) parallel_offset = pio_add_program(st_pio, &st7701_parallel_program);
@@ -313,7 +313,6 @@ void ST7701::init_framebuffer() {
 
       dma_channel_config config = dma_channel_get_default_config(st_dma);
       channel_config_set_transfer_data_size(&config, DMA_SIZE_32);
-      channel_config_set_high_priority(&config, true);
       channel_config_set_dreq(&config, pio_get_dreq(st_pio, parallel_sm, true));
       channel_config_set_bswap(&config, true);
       channel_config_set_chain_to(&config, st_dma2);
@@ -323,8 +322,6 @@ void ST7701::init_framebuffer() {
       channel_config_set_transfer_data_size(&config, DMA_SIZE_32);
       channel_config_set_read_increment(&config, false);
       dma_channel_configure(st_dma2, &config, &dma_hw->ch[st_dma].al3_read_addr_trig, &next_line_addr, 1, false);
-
-      hw_set_bits(&bus_ctrl_hw->priority, (BUSCTRL_BUS_PRIORITY_PROC1_BITS | BUSCTRL_BUS_PRIORITY_DMA_R_BITS | BUSCTRL_BUS_PRIORITY_DMA_W_BITS));
 
       printf("Begin SPI setup\n");
 
