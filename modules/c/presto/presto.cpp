@@ -99,7 +99,7 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
     presto_debug("m_new_class(ST7701...\n");
     ST7701 *presto = m_new_class(ST7701, WIDTH, HEIGHT, ROTATE_0,
         SPIPins{spi1, LCD_CS, LCD_CLK, LCD_DAT, PIN_UNUSED, LCD_DC, BACKLIGHT},
-        self->next_fb, nullptr,
+        self->next_fb,
         LCD_D0);
 
     self->presto = presto;
