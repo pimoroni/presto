@@ -3,6 +3,9 @@ require("bundle-networking")
 require("urllib.urequest")
 require("umqtt.simple")
 
+# Handy for dealing with APIs
+require("datetime")
+
 # SD Card
 require("sdcard")
 
