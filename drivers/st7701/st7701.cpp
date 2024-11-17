@@ -171,8 +171,6 @@ void ST7701::start_frame_xfer()
     if (next_framebuffer) {
         framebuffer = next_framebuffer;
         next_framebuffer = nullptr;
-
-        init_framebuffer();
     }
 
     next_line_addr = 0;
@@ -192,19 +190,6 @@ void ST7701::start_frame_xfer()
     __sev();
 }
 
-void ST7701::init_framebuffer() {
-    // If framebuffer not in cache XIP memory, do nothing.
-    if ((intptr_t)framebuffer >= 0x14000000) return;
-
-    // Flush the frame buffer from cache
-    uint8_t* framebuffer_maintenance = (uint8_t*)framebuffer + 0x8000000;
-    for (int i = 3; i < width*height << 1; i += 8)
-        framebuffer_maintenance[i] = 0; // Clean
-
-    // Switch to uncached reads
-    framebuffer += 0x2000000;
-}
-
   ST7701::ST7701(uint16_t width, uint16_t height, Rotation rotation, SPIPins control_pins, uint16_t* framebuffer,
       uint d0, uint hsync, uint vsync, uint lcd_de, uint lcd_dot_clk) :
             DisplayDriver(width, height, rotation),
@@ -219,8 +204,6 @@ void ST7701::init_framebuffer() {
   void ST7701::init() {
       irq_handler_t current = nullptr;
   
-      init_framebuffer();
-
       st_pio = pio1;
       parallel_sm = pio_claim_unused_sm(st_pio, true);
 
@@ -511,23 +494,24 @@ void ST7701::init_framebuffer() {
   }
   
   void ST7701::update(PicoGraphics *graphics) {
-    //uint8_t cmd = reg::RAMWR;
-
-    // TODO: Where's my buffer at? Where's my buffer at?
-    // I left it out back in the PSRAM chip, y'all
-    // And now I cannot find it even though it's 60k tall
-
-    if(graphics->pen_type == PicoGraphics::PEN_RGB565) { // Display buffer is screen native
-      // command(cmd, width * height * sizeof(uint16_t), (const char*)graphics->frame_buffer);
+    if(graphics->pen_type == PicoGraphics::PEN_RGB565 && graphics->layers == 1) { // Display buffer is screen native
+      memcpy(framebuffer, graphics->frame_buffer, width * height * sizeof(uint16_t));
     } else {
-      /*graphics->frame_convert(PicoGraphics::PEN_RGB565, [this](void *data, size_t length) {
+      uint8_t* frame_ptr = (uint8_t*)framebuffer;
+      graphics->frame_convert(PicoGraphics::PEN_RGB565, [this, &frame_ptr](void *data, size_t length) {
         if (length > 0) {
-          write_blocking_dma((const uint8_t*)data, length);
+          memcpy(frame_ptr, data, length);
+          frame_ptr += length;
         }
-        else {
-          dma_channel_wait_for_finish_blocking(st_dma);
-        }
-      });*/
+      });
+    }
+  }
+
+  void ST7701::partial_update(PicoGraphics *graphics, Rect region) {
+    if(graphics->pen_type == PicoGraphics::PEN_RGB565 && graphics->layers == 1) { // Display buffer is screen native
+      for (int y = region.y; y < region.y + region.h; ++y) {
+        memcpy(&framebuffer[y * width + region.x], (uint16_t*)graphics->frame_buffer + y * width + region.x, region.w * sizeof(uint16_t));
+      }
     }
   }
 

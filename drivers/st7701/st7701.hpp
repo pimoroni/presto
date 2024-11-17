@@ -57,6 +57,7 @@ namespace pimoroni {
     void init();
     void cleanup() override;
     void update(PicoGraphics *graphics) override;
+    void partial_update(PicoGraphics *display, Rect region) override;
     void set_backlight(uint8_t brightness) override;
 
     void set_framebuffer(uint16_t* next_fb) {
@@ -78,7 +79,6 @@ namespace pimoroni {
 
     void start_line_xfer();
     void start_frame_xfer();
-    void init_framebuffer();
 
     // Timing status
     uint16_t timing_row = 0;

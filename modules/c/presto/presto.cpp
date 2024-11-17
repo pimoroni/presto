@@ -21,6 +21,7 @@ extern "C" {
 // MicroPython's GC heap will automatically resize, so we should just
 // statically allocate these in C++ to avoid fragmentation.
 __attribute__((section(".uninitialized_data"))) static uint16_t presto_buffer[WIDTH * HEIGHT] = {0};
+__attribute__((section(".psram_data"))) static uint16_t gfx_buffer[WIDTH * HEIGHT] = {0};
 
 void __printf_debug_flush() {
     for(auto i = 0u; i < 10; i++) {
@@ -44,7 +45,6 @@ void presto_debug(const char *fmt, ...) {
 typedef struct _Presto_obj_t {
     mp_obj_base_t base;
     ST7701* presto;
-    uint16_t* next_fb;
     uint16_t* curr_fb;
     uint16_t width;
     uint16_t height;
@@ -74,7 +74,7 @@ void presto_core1_entry() {
     multicore_fifo_push_blocking(0);
 }
 
-#define stack_size 4096u
+#define stack_size 256u
 static uint32_t core1_stack[stack_size] = {0};
 
 mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
@@ -93,23 +93,22 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
     self = mp_obj_malloc_with_finaliser(_Presto_obj_t, &Presto_type);
 
     presto_debug("set fb pointers\n");
-    self->curr_fb = presto_buffer;
-    self->next_fb = presto_buffer;
 
     if (!args[ARG_full_res].u_bool) {
+        self->curr_fb = presto_buffer + (WIDTH * HEIGHT) / 4;
         self->width = WIDTH / 2;
         self->height = HEIGHT / 2;
-        self->next_fb += (WIDTH * HEIGHT) / 4;
     }
     else {
         self->width = WIDTH;
         self->height = HEIGHT;
+        self->curr_fb = gfx_buffer;
     }
 
     presto_debug("m_new_class(ST7701...\n");
     ST7701 *presto = m_new_class(ST7701, self->width, self->height, ROTATE_0,
         SPIPins{spi1, LCD_CS, LCD_CLK, LCD_DAT, PIN_UNUSED, LCD_DC, BACKLIGHT},
-        self->next_fb,
+        presto_buffer,
         LCD_D0);
 
     self->presto = presto;
@@ -160,11 +159,34 @@ extern mp_obj_t Presto_update(mp_obj_t self_in, mp_obj_t graphics_in) {
     _Presto_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Presto_obj_t);
     ModPicoGraphics_obj_t *picographics = MP_OBJ_TO_PTR2(graphics_in, ModPicoGraphics_obj_t);
 
-    self->presto->set_framebuffer(self->next_fb);
-    std::swap(self->next_fb, self->curr_fb);
-    picographics->graphics->set_framebuffer((void *)self->next_fb);
+    self->presto->update(picographics->graphics);
 
-    self->presto->wait_for_vsync();
+    return mp_const_none;
+}
+
+extern mp_obj_t Presto_partial_update(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
+    enum { ARG_self, ARG_graphics, ARG_x, ARG_y, ARG_w, ARG_h };
+    static const mp_arg_t allowed_args[] = {
+        { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_graphics, MP_ARG_REQUIRED | MP_ARG_OBJ },
+        { MP_QSTR_x, MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_y, MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_w, MP_ARG_REQUIRED | MP_ARG_INT },
+        { MP_QSTR_h, MP_ARG_REQUIRED | MP_ARG_INT }
+    };
+
+    // Parse args.
+    mp_arg_val_t args[MP_ARRAY_SIZE(allowed_args)];
+    mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
+
+    _Presto_obj_t *self = MP_OBJ_TO_PTR2(args[ARG_self].u_obj, _Presto_obj_t);
+    ModPicoGraphics_obj_t *picographics = MP_OBJ_TO_PTR2(args[ARG_graphics].u_obj, ModPicoGraphics_obj_t);
+    int x = args[ARG_x].u_int;
+    int y = args[ARG_y].u_int;
+    int w = args[ARG_w].u_int;
+    int h = args[ARG_h].u_int;
+
+    self->presto->partial_update(picographics->graphics, {x, y, w, h});
 
     return mp_const_none;
 }
