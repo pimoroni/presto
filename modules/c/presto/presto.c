@@ -5,12 +5,14 @@
 
 MP_DEFINE_CONST_FUN_OBJ_1(Presto___del___obj, Presto___del__);
 MP_DEFINE_CONST_FUN_OBJ_2(Presto_update_obj, Presto_update);
+MP_DEFINE_CONST_FUN_OBJ_2(Presto_set_backlight_obj, Presto_set_backlight);
 
 /***** Binding of Methods *****/
 
 static const mp_rom_map_elem_t Presto_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR___del__), MP_ROM_PTR(&Presto___del___obj) },
     { MP_ROM_QSTR(MP_QSTR_update), MP_ROM_PTR(&Presto_update_obj) },
+    { MP_ROM_QSTR(MP_QSTR_set_backlight), MP_ROM_PTR(&Presto_set_backlight_obj) },
 
     { MP_ROM_QSTR(MP_QSTR_WIDTH), MP_ROM_INT(WIDTH) },
     { MP_ROM_QSTR(MP_QSTR_HEIGHT), MP_ROM_INT(HEIGHT) },
