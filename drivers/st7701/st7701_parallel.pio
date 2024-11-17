@@ -1,22 +1,8 @@
-; Output 16 bit parallel RGB565 data every clock
+; Output 16 bit parallel, bit reversed, RGB565 data every 4th clock
 ; Wait for irq 4 from the timing SM between each row
 ; Side-set is data enable
 
 .program st7701_parallel
-.side_set 1
-
-  mov pins, null side 0
-  wait 1 irq 4   side 0
-.wrap_target
-  out isr,  32    side 1
-  mov pins, ::isr side 1
-  in null, 16     side 1
-  mov pins, ::isr side 1  
-.wrap
-
-; Output 16 bit parallel RGB565 data every other clock
-
-.program st7701_parallel_double
 .side_set 1
 
 .wrap_target
