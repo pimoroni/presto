@@ -224,13 +224,7 @@ void ST7701::init_framebuffer() {
       st_pio = pio1;
       parallel_sm = pio_claim_unused_sm(st_pio, true);
 
-      if      (width == 480) parallel_offset = pio_add_program(st_pio, &st7701_parallel_program);
-      else if (width == 240) parallel_offset = pio_add_program(st_pio, &st7701_parallel_double_program);
-      else {
-        printf("Unsupported width\n");
-        return;
-      }
-
+      parallel_offset = pio_add_program(st_pio, &st7701_parallel_program);
       if (height == 240) row_shift = 1;
 
       timing_sm = pio_claim_unused_sm(st_pio, true);
@@ -268,9 +262,7 @@ void ST7701::init_framebuffer() {
       pio_sm_set_consecutive_pindirs(st_pio, parallel_sm, d0, 16, true);
       pio_sm_set_consecutive_pindirs(st_pio, parallel_sm, hsync, 4, true);
 
-      pio_sm_config c;
-      if (width == 480) c = st7701_parallel_program_get_default_config(parallel_offset);
-      else              c = st7701_parallel_double_program_get_default_config(parallel_offset);
+      pio_sm_config c = st7701_parallel_program_get_default_config(parallel_offset);
 
       sm_config_set_out_pins(&c, d0, 16);
       sm_config_set_sideset_pins(&c, lcd_de);
@@ -279,18 +271,18 @@ void ST7701::init_framebuffer() {
       sm_config_set_in_shift(&c, false, false, 32);
       
       // Determine clock divider
-      uint32_t max_pio_clk;
-      if ((intptr_t)framebuffer >= 0x14000000 || width <= 240) {
-        // Frame buffer in internal RAM or pixel doubling, go as fast as possible
-        max_pio_clk = 34 * MHZ;
-      }
-      else {
-        // Frame buffer in PSRAM and not pixel doubling, slow down a bit
-        max_pio_clk = 25 * MHZ;
-      }
+      uint32_t max_pio_clk = 34 * MHZ;
       const uint32_t sys_clk_hz = clock_get_hz(clk_sys);
-      const uint32_t clk_div = (sys_clk_hz + max_pio_clk - 1) / max_pio_clk;
-      sm_config_set_clkdiv(&c, clk_div);
+      uint32_t clk_div = (sys_clk_hz + max_pio_clk - 1) / max_pio_clk;
+      if (width == 480) {
+        // Parallel output SM must run at double the rate of the timing SM for full res
+        if (clk_div & 1) clk_div += 1;
+        sm_config_set_clkdiv(&c, clk_div >> 1);
+      }
+      else
+      {
+        sm_config_set_clkdiv(&c, clk_div);
+      }
       
       pio_sm_init(st_pio, parallel_sm, parallel_offset, &c);
       pio_sm_exec(st_pio, parallel_sm, pio_encode_out(pio_y, 32));
