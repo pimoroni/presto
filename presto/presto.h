@@ -120,4 +120,7 @@
 #define PICO_RP2350_A2_SUPPORTED 1
 #endif
 
+// Increase the clock divider to allow additional overclocking headroom
+#define CYW43_PIO_CLOCK_DIV_INT 4
+
 #endif
