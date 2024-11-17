@@ -349,17 +349,11 @@ void ST7701::init_framebuffer() {
     // if a backlight pin is provided then set it up for
     // pwm control
     if(lcd_bl != PIN_UNUSED) {
-      #if 0
       pwm_config cfg = pwm_get_default_config();
-      pwm_set_wrap(pwm_gpio_to_slice_num(lcd_bl), 65535);
+      pwm_config_set_wrap(&cfg, BACKLIGHT_PWM_TOP);
       pwm_init(pwm_gpio_to_slice_num(lcd_bl), &cfg, true);
       gpio_set_function(lcd_bl, GPIO_FUNC_PWM);
       set_backlight(0); // Turn backlight off initially to avoid nasty surprises
-      #else
-      gpio_init(lcd_bl);
-      gpio_set_dir(lcd_bl, GPIO_OUT);
-      gpio_put(lcd_bl, 0);
-      #endif
     }
 
     command(reg::SWRESET);
@@ -430,11 +424,7 @@ void ST7701::init_framebuffer() {
     if(lcd_bl != PIN_UNUSED) {
       //update(); // Send the new buffer to the display to clear any previous content
       sleep_ms(50); // Wait for the update to apply
-      #if 0
       set_backlight(255); // Turn backlight on now surprises have passed
-      #else
-      gpio_put(lcd_bl, 1);
-      #endif
     }
   }
 
@@ -550,10 +540,11 @@ void ST7701::init_framebuffer() {
   }
 
   void ST7701::set_backlight(uint8_t brightness) {
-    // gamma correct the provided 0-255 brightness value onto a
-    // 0-65535 range for the pwm counter
-    float gamma = 2.8;
-    uint16_t value = (uint16_t)(pow((float)(brightness) / 255.0f, gamma) * 65535.0f + 0.5f);
+    // At least on my hardware this gives reasonable control over the possible range of backlight brightness
+    uint16_t value;
+    if (brightness == 0) value = 0;
+    else if (brightness == 255) value = BACKLIGHT_PWM_TOP;
+    else value = 181 + (brightness * brightness) / 85;
     pwm_set_gpio_level(lcd_bl, value);
   }
 
