@@ -13,6 +13,9 @@ set(MICROPY_FROZEN_MANIFEST ${MICROPY_BOARD_DIR}/manifest.py)
 # there needs to be some RAM reserved for the C heap
 set(MICROPY_C_HEAP_SIZE 4096)
 
+# Enable PSRAM
+set(MICROPY_HW_ENABLE_PSRAM ON)
+
 # Links micropy_lib_lwip and sets MICROPY_PY_LWIP = 1
 # Picked up and expanded upon in mpconfigboard.h
 set(MICROPY_PY_LWIP ON)
