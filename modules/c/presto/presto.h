@@ -4,8 +4,8 @@
 /***** Constants *****/
 static const uint BACKLIGHT = 45;
 
-static const int WIDTH = 240;
-static const int HEIGHT = 240;
+static const int WIDTH = 480;
+static const int HEIGHT = 480;
 static const uint LCD_CLK = 26;
 static const uint LCD_CS = 28;
 static const uint LCD_DAT = 27;

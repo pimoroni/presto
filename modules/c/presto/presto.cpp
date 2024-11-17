@@ -20,8 +20,7 @@ extern "C" {
 
 // MicroPython's GC heap will automatically resize, so we should just
 // statically allocate these in C++ to avoid fragmentation.
-__attribute__((section(".uninitialized_data"))) static uint16_t presto_buffer_a[WIDTH * HEIGHT] = {0};
-__attribute__((section(".uninitialized_data"))) static uint16_t presto_buffer_b[WIDTH * HEIGHT] = {0};
+__attribute__((section(".uninitialized_data"))) static uint16_t presto_buffer[WIDTH * HEIGHT] = {0};
 
 void __printf_debug_flush() {
     for(auto i = 0u; i < 10; i++) {
@@ -47,6 +46,8 @@ typedef struct _Presto_obj_t {
     ST7701* presto;
     uint16_t* next_fb;
     uint16_t* curr_fb;
+    uint16_t width;
+    uint16_t height;
 } _Presto_obj_t;
 
 typedef struct _ModPicoGraphics_obj_t {
@@ -79,10 +80,9 @@ static uint32_t core1_stack[stack_size] = {0};
 mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     _Presto_obj_t *self = nullptr;
 
-    enum { ARG_pio, ARG_sm, ARG_pins, ARG_common_pin, ARG_direction, ARG_counts_per_rev, ARG_count_microsteps, ARG_freq_divider };
+    enum { ARG_full_res };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_pio, MP_ARG_INT },
-        { MP_QSTR_sm, MP_ARG_INT }
+        { MP_QSTR_full_res, MP_ARG_BOOL, {.u_bool = false} }
     };
 
     // Parse args.
@@ -93,11 +93,21 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
     self = mp_obj_malloc_with_finaliser(_Presto_obj_t, &Presto_type);
 
     presto_debug("set fb pointers\n");
-    self->curr_fb = presto_buffer_a; //(uint16_t*)0x11000000;
-    self->next_fb = presto_buffer_b; //(uint16_t*)0x11080000;
+    self->curr_fb = presto_buffer;
+    self->next_fb = presto_buffer;
+
+    if (!args[ARG_full_res].u_bool) {
+        self->width = WIDTH / 2;
+        self->height = HEIGHT / 2;
+        self->next_fb += (WIDTH * HEIGHT) / 4;
+    }
+    else {
+        self->width = WIDTH;
+        self->height = HEIGHT;
+    }
 
     presto_debug("m_new_class(ST7701...\n");
-    ST7701 *presto = m_new_class(ST7701, WIDTH, HEIGHT, ROTATE_0,
+    ST7701 *presto = m_new_class(ST7701, self->width, self->height, ROTATE_0,
         SPIPins{spi1, LCD_CS, LCD_CLK, LCD_DAT, PIN_UNUSED, LCD_DC, BACKLIGHT},
         self->next_fb,
         LCD_D0);
@@ -141,7 +151,7 @@ mp_int_t Presto_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_
     _Presto_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Presto_obj_t);
     (void)flags;
     bufinfo->buf = self->curr_fb;
-    bufinfo->len = WIDTH * HEIGHT * 2;
+    bufinfo->len = self->width * self->height * 2;
     bufinfo->typecode = 'B';
     return 0;
 }

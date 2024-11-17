@@ -14,8 +14,10 @@ static const mp_rom_map_elem_t Presto_locals_dict_table[] = {
     { MP_ROM_QSTR(MP_QSTR_update), MP_ROM_PTR(&Presto_update_obj) },
     { MP_ROM_QSTR(MP_QSTR_set_backlight), MP_ROM_PTR(&Presto_set_backlight_obj) },
 
-    { MP_ROM_QSTR(MP_QSTR_WIDTH), MP_ROM_INT(WIDTH) },
-    { MP_ROM_QSTR(MP_QSTR_HEIGHT), MP_ROM_INT(HEIGHT) },
+    { MP_ROM_QSTR(MP_QSTR_WIDTH), MP_ROM_INT(WIDTH/2) },
+    { MP_ROM_QSTR(MP_QSTR_HEIGHT), MP_ROM_INT(HEIGHT/2) },
+    { MP_ROM_QSTR(MP_QSTR_FULL_WIDTH), MP_ROM_INT(WIDTH) },
+    { MP_ROM_QSTR(MP_QSTR_FULL_HEIGHT), MP_ROM_INT(HEIGHT) },
 };
 
 static MP_DEFINE_CONST_DICT(Presto_locals_dict, Presto_locals_dict_table);
