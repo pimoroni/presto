@@ -21,7 +21,6 @@ extern "C" {
 // MicroPython's GC heap will automatically resize, so we should just
 // statically allocate these in C++ to avoid fragmentation.
 __attribute__((section(".uninitialized_data"))) static uint16_t presto_buffer[WIDTH * HEIGHT] = {0};
-__attribute__((section(".psram_data"))) static uint16_t gfx_buffer[WIDTH * HEIGHT] = {0};
 
 void __printf_debug_flush() {
     for(auto i = 0u; i < 10; i++) {
@@ -45,7 +44,6 @@ void presto_debug(const char *fmt, ...) {
 typedef struct _Presto_obj_t {
     mp_obj_base_t base;
     ST7701* presto;
-    uint16_t* curr_fb;
     uint16_t width;
     uint16_t height;
 } _Presto_obj_t;
@@ -95,14 +93,12 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
     presto_debug("set fb pointers\n");
 
     if (!args[ARG_full_res].u_bool) {
-        self->curr_fb = presto_buffer + (WIDTH * HEIGHT) / 4;
         self->width = WIDTH / 2;
         self->height = HEIGHT / 2;
     }
     else {
         self->width = WIDTH;
         self->height = HEIGHT;
-        self->curr_fb = gfx_buffer;
     }
 
     presto_debug("m_new_class(ST7701...\n");
@@ -149,7 +145,7 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
 mp_int_t Presto_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags) {
     _Presto_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Presto_obj_t);
     (void)flags;
-    bufinfo->buf = self->curr_fb;
+    bufinfo->buf = presto_buffer;
     bufinfo->len = self->width * self->height * 2;
     bufinfo->typecode = 'B';
     return 0;
