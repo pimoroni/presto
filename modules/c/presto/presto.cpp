@@ -145,8 +145,17 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
 mp_int_t Presto_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags) {
     _Presto_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Presto_obj_t);
     (void)flags;
-    bufinfo->buf = presto_buffer;
-    bufinfo->len = self->width * self->height * 2;
+    if(self->width == WIDTH / 2) {
+        // Skip the first region, since it's used as the front-buffer
+        bufinfo->buf = presto_buffer + (self->width * self->height);
+        // Return the remaining space, enough for three layers at 16bpp
+        bufinfo->len = self->width * self->height * 2 * 3;
+    } else {
+        // Just return the buffer as-is, this is not really useful for much
+        // other than doing fast writes *directly* to the front buffer
+        bufinfo->buf = presto_buffer;
+        bufinfo->len = self->width * self->height * 2;
+    }
     bufinfo->typecode = 'B';
     return 0;
 }
