@@ -35,7 +35,7 @@ LEDS_RIGHT = [0, 1, 2]
 
 # Setup for the Presto display
 portal = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(portal)[240 * 240 * 2:], layers=2)
+display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(portal), layers=2)
 WIDTH, HEIGHT = display.get_bounds()
 
 BACKGROUND = display.create_pen(1, 1, 1)
@@ -56,7 +56,7 @@ bl.start()
 total_image_count = 0
 
 # Store our current location within the user gallery
-current_image = 1   # First image in our gallery
+current_image = 1
 
 
 # We might not have enough space to load the entire directory list into RAM
