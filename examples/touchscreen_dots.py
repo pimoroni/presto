@@ -6,8 +6,8 @@ import time
 from PrestoLight import Reactive
 
 # Setup for the Presto display
-portal = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(portal))
+presto = Presto()
+display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
 WIDTH, HEIGHT = display.get_bounds()
 
 # Couple of colours for use later
@@ -74,4 +74,4 @@ while True:
 
     # Finally we update the screen with our changes :)
     backlight.update(display)
-    portal.update(display)
+    presto.update(display)

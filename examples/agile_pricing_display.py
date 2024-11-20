@@ -58,8 +58,8 @@ print("Successfully connected to {}. Your Pimoroni Presto IP is: {}".format(WIFI
 ntptime.settime()
 
 # Setup for the Presto display
-portal = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(portal))
+presto = Presto()
+display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
 WIDTH, HEIGHT = display.get_bounds()
 
 # Pico Vector
@@ -88,8 +88,8 @@ display.set_pen(ORANGE)
 display.clear()
 display.set_pen(ORANGE_3)
 display.text("Getting prices...", 10, 90 + 2, WIDTH, 4)
-portal.update(display)
-portal.update(display)
+presto.update(display)
+presto.update(display)
 
 # Keep a record of the last time we updated.
 # We only want to be requesting new information every half an hour.
@@ -170,4 +170,4 @@ while True:
     vector.text(f"{next_price}p", MARGIN, 215)
 
     # Finally we update the screen with our changes :)
-    portal.update(display)
+    presto.update(display)

@@ -34,8 +34,8 @@ LEDS_LEFT = [4, 5, 6]
 LEDS_RIGHT = [0, 1, 2]
 
 # Setup for the Presto display
-portal = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(portal), layers=2)
+presto = Presto()
+display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto), layers=2)
 WIDTH, HEIGHT = display.get_bounds()
 
 BACKGROUND = display.create_pen(1, 1, 1)
@@ -130,7 +130,7 @@ def fizzlefade():
             if lfsr == 1:
                 break
 
-        portal.update(display)
+        presto.update(display)
         if lfsr == 1:
             break
 
@@ -205,7 +205,7 @@ def display_error(text):
         display.clear()
         display.set_pen(WHITE)
         display.text(f"Error: {text}", 10, 10, WIDTH - 10, 1)
-        portal.update(display)
+        presto.update(display)
         time.sleep(1)
 
 
@@ -250,8 +250,8 @@ last_updated = time.time()
 # We're not passing the arg for 'show_next' or 'show_previous' so it'll show whichever image is current
 clear()
 show_image()
-portal.update(display)
-portal.update(display)
+presto.update(display)
+presto.update(display)
 
 while True:
 
@@ -263,7 +263,7 @@ while True:
 
         last_updated = time.time()
         show_image(show_next=True)
-        portal.update(display)
+        presto.update(display)
 
     # if the screen is reporting that there is touch we want to handle that here
     if touch.state:
@@ -273,7 +273,7 @@ while True:
             for i in LEDS_RIGHT:
                 bl.set_rgb(i, 255, 255, 255)
             show_image(show_next=True)
-            portal.update(display)
+            presto.update(display)
             last_updated = time.time()
             for i in LEDS_RIGHT:
                 bl.set_rgb(i, 0, 0, 0)
@@ -283,7 +283,7 @@ while True:
             for i in LEDS_LEFT:
                 bl.set_rgb(i, 255, 255, 255)
             show_image(show_previous=True)
-            portal.update(display)
+            presto.update(display)
             last_updated = time.time()
             for i in LEDS_LEFT:
                 bl.set_rgb(i, 0, 0, 0)

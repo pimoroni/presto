@@ -5,8 +5,8 @@ from picographics import PicoGraphics, DISPLAY_PRESTO
 from presto import Presto
 
 # Setup for the Presto display
-portal = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(portal))
+presto = Presto()
+display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
 WIDTH, HEIGHT = display.get_bounds()
 
 BLACK = display.create_pen(0, 0, 0)
@@ -152,5 +152,5 @@ while 1:
             cubes[i] = Cube(8, 4, randint(10, WIDTH), randint(10, HEIGHT), randrange(4, 9) / 10)
 
     # Finally we update the screen with our changes :)
-    portal.update(display)
+    presto.update(display)
     time.sleep(0.01)

@@ -6,8 +6,8 @@ from picographics import PicoGraphics, DISPLAY_PRESTO
 from presto import Presto
 
 # Setup for the Presto display
-portal = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(portal))
+presto = Presto()
+display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
 WIDTH, HEIGHT = display.get_bounds()
 
 j = jpegdec.JPEG(display)
@@ -43,4 +43,4 @@ while True:
     j.decode(10, 40, jpegdec.JPEG_SCALE_FULL, dither=True)
 
     # Finally we update the screen with our changes :)
-    portal.update(display)
+    presto.update(display)

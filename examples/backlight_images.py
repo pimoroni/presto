@@ -9,8 +9,8 @@ import jpegdec
 from PrestoLight import Reactive
 
 # Setup for the Presto display
-portal = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(portal))
+presto = Presto()
+display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
 WIDTH, HEIGHT = display.get_bounds()
 
 # JPEG
@@ -43,29 +43,6 @@ while True:
 
     backlight.update(display)
 
-    ''''
-    display.set_pen(WHITE)
-
-    MAX = const(160)
-    MID = const(80)
-    MIN = const(0)
-    SIZE = 79
-
-    display.rectangle(MAX, MAX, SIZE, SIZE)
-    display.rectangle(MAX, MID, SIZE, SIZE)
-    display.rectangle(MAX, MIN, SIZE, SIZE)
-    display.rectangle(MID, MIN, SIZE, SIZE)
-    display.rectangle(MIN, MIN, SIZE, SIZE)
-    display.rectangle(MIN, MID, SIZE, SIZE)
-    display.rectangle(MIN, MAX, SIZE, SIZE)
-
-    display.set_pen(BLACK)
-
-    for x in range(0, WIDTH, 5):
-        for y in range(0, HEIGHT, 14):
-            display.pixel(x, y)
-    '''
-
     # Finally we update the screen with our changes :)
-    portal.update(display)
+    presto.update(display)
     time.sleep(1)

@@ -1,5 +1,5 @@
 '''
-This demo does something
+Watch the backlighting react to a ball moving on screen
 '''
 
 from picographics import PicoGraphics, DISPLAY_PRESTO
@@ -9,8 +9,8 @@ import math
 from PrestoLight import Reactive
 
 # Setup for the Presto display
-portal = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(portal))
+presto = Presto()
+display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
 WIDTH, HEIGHT = display.get_bounds()
 
 # Couple of colours for use later
@@ -48,4 +48,4 @@ while True:
     backlight.update(display)
 
     # Finally we update the screen with our changes :)
-    portal.update(display)
+    presto.update(display)

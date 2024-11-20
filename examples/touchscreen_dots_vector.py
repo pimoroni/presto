@@ -6,8 +6,8 @@ import time
 from picovector import PicoVector, ANTIALIAS_FAST, Polygon
 
 # Setup for the Presto display
-portal = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(portal))
+presto = Presto()
+display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
 WIDTH, HEIGHT = display.get_bounds()
 
 # Pico Vector
@@ -77,4 +77,4 @@ while True:
     display.text("Tap the screen!", 45, 110, WIDTH, 2)
 
     # Finally we update the screen with our changes :)
-    portal.update(display)
+    presto.update(display)

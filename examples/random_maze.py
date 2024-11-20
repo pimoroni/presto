@@ -50,8 +50,8 @@ MOVEMENT_SLEEP = 0.1
 DIFFICULT_SCALE = 0.5
 
 # Setup for the Presto display
-portal = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(portal))
+presto = Presto()
+display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
 
 # Variables
 i2c = I2C(**I2C_PINS)                           # The I2C instance to pass to the QwSTPad
@@ -364,7 +364,7 @@ try:
             display.text(f"{text_2_string}", text_2_location[0], text_2_location[1], WIDTH, 2)
 
         # Finally we update the screen with our changes :)
-        portal.update(display)
+        presto.update(display)
 
 # Handle the QwSTPad being disconnected unexpectedly
 except OSError:
