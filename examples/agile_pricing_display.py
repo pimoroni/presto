@@ -11,6 +11,9 @@ import datetime
 from picographics import PicoGraphics, DISPLAY_PRESTO
 from presto import Presto
 from picovector import PicoVector, ANTIALIAS_BEST, Polygon, Transform
+import machine
+
+machine.freq(264000000)
 
 # Check and import the Network SSID and Password from secrets.py
 # import the Spotify API keys from that file too
@@ -21,7 +24,7 @@ try:
     if WIFI_PASSWORD == "":
         raise ValueError("WIFI_PASSWORD in 'secrets.py' is empty!")
 except ImportError:
-    raise ImportError("'secrets.py' is missing from your Plasma 2350 W!")
+    raise ImportError("'secrets.py' is missing from your Pimoroni Presto!")
 except ValueError as e:
     print(e)
 
