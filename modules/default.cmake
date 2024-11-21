@@ -48,6 +48,8 @@ include(modules_py/modules_py)
 
 # C++ Magic Memory
 include(cppmem/micropython)
+target_compile_definitions(usermod INTERFACE
+    CPP_FIXED_HEAP_SIZE=512)
 
 # Disable build-busting C++ exceptions
 include(micropython-disable-exceptions)
