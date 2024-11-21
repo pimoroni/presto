@@ -4,6 +4,9 @@ from ft6236 import FT6236
 from random import randint
 import time
 from picovector import PicoVector, ANTIALIAS_FAST, Polygon
+import machine
+
+machine.freq(264000000)
 
 # Setup for the Presto display
 presto = Presto()
