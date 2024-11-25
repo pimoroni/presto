@@ -150,10 +150,17 @@ def draw():
 
 # Set the background in layer 0
 # This means we don't need to decode the image every frame
-p = pngdec.PNG(display)
+
 display.set_layer(0)
-p.open_file("wordclock_background.png")
-p.decode(0, 0)
+
+try:
+    p = pngdec.PNG(display)
+
+    p.open_file("wordclock_background.png")
+    p.decode(0, 0)
+except OSError:
+    display.set_pen(BLACK)
+    display.clear()
 
 
 while True:
