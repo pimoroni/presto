@@ -121,6 +121,6 @@
 #endif
 
 // Increase the clock divider to allow additional overclocking headroom
-#define CYW43_PIO_CLOCK_DIV_INT 4
+#define CYW43_PIO_CLOCK_DIV_INT 3
 
 #endif
