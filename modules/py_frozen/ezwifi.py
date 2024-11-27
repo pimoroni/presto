@@ -1,5 +1,5 @@
 import network
-import uasyncio
+import asyncio
 from micropython import const
 
 
@@ -69,14 +69,14 @@ class EzWiFi:
             self._log(f"Connecting to {self._ssid} (Attempt {retry + 1})")
             try:
                 self._if.connect(self._ssid, self._password)
-                result = await uasyncio.wait_for(self._wait_for_connection(), timeout)
-                if result:
-                    return
+                if await asyncio.wait_for(self._wait_for_connection(), timeout):
+                    return True
 
-            except uasyncio.TimeoutError:
+            except asyncio.TimeoutError:
                 self._log("Attempt failed...", LogLevel.WARNING)
 
         self._callback("failed")
+        return False
 
     async def _wait_for_connection(self):
         while not self._if.isconnected():
@@ -86,7 +86,7 @@ class EzWiFi:
                 self._log(f"Connection failed with: {self._statuses[status]}", LogLevel.ERROR)
                 self._last_error = status
                 return False
-            await uasyncio.sleep_ms(1000)
+            await asyncio.sleep_ms(1000)
         self._log(f"Connected! IP: {self.ipv4()}")
         self._callback("connected")
         return True
@@ -107,3 +107,7 @@ class EzWiFi:
             return WIFI_SSID, WIFI_PASSWORD
         except ImportError:
             raise ImportError("secrets.py: missing or invalid!")
+
+
+def connect(**kwargs):
+    return asyncio.get_event_loop().run_until_complete(EzWiFi(**kwargs).connect(retries=kwargs.get("retries", 10)))
