@@ -18,13 +18,12 @@ try:
     if WIFI_PASSWORD == "":
         raise ValueError("WIFI_PASSWORD in 'secrets.py' is empty!")
 except ImportError:
-    raise ImportError("'secrets.py' is missing from your Plasma 2350 W!")
+    raise ImportError("'secrets.py' is missing from your Pimoroni Presto!")
 except ValueError as e:
     print(e)
 
 # Length of time between updates in minutes.
 UPDATE_INTERVAL = 15
-display = None
 
 rtc = machine.RTC()
 time_string = None
