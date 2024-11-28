@@ -44,7 +44,7 @@ class FT6236:
             return None
 
         if not self._touch_int.value() or self.state or self.state2:
-            self.handle_touch(self._touch_int)
+            self._handle_touch(self._touch_int)
 
     def _read_touch(self, data):
         e = data[0] >> 6
