@@ -15,16 +15,15 @@ class FT6236:
     STATE_CONTACT = const(0b10)
     STATE_NONE = const(0b11)
 
-    def __init__(self, enable_interrupt=False):
+    def __init__(self, full_res=False, enable_interrupt=False):
         self.debug = False
+        self._scale = 1 if full_res else 2
         self._irq = enable_interrupt
 
-        self.x = 120
-        self.y = 120
+        self.y = self.x = 240 if full_res else 120
         self.state = False
 
-        self.x2 = 120
-        self.y2 = 120
+        self.y2 = self.x2 = 240 if full_res else 120
         self.state2 = False
 
         self.distance = 0
@@ -50,7 +49,7 @@ class FT6236:
         e = data[0] >> 6
         x = ((data[0] & 0x0f) << 8) | data[1]
         y = ((data[2] & 0x0f) << 8) | data[3]
-        return int(x / 2), int(y / 2), e not in (self.STATE_NONE, self.STATE_UP)
+        return int(x / self._scale), int(y / self._scale), e not in (self.STATE_NONE, self.STATE_UP)
 
     def _handle_touch(self, pin):
         self.state = self.state2 = False
