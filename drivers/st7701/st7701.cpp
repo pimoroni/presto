@@ -495,7 +495,37 @@ void ST7701::start_frame_xfer()
   
   void ST7701::update(PicoGraphics *graphics) {
     if(graphics->pen_type == PicoGraphics::PEN_RGB565 && graphics->layers == 1) { // Display buffer is screen native
-      memcpy(framebuffer, graphics->frame_buffer, width * height * sizeof(uint16_t));
+      if (graphics->frame_buffer == framebuffer) {
+        // Nothing to do
+        return;
+      }
+
+      // Take care to copy while not passing the point in the frame buffer
+      // that is currently being scanned out to the screen.  This prevents tearing.
+      uint8_t* src_ptr = (uint8_t*)graphics->frame_buffer;
+      uint8_t* dst_ptr = (uint8_t*)framebuffer;
+      uint8_t* end_ptr = dst_ptr + width * height * sizeof(uint16_t);
+      volatile uintptr_t* next_addr_ptr = (volatile uintptr_t*)&next_line_addr;
+      while (dst_ptr != end_ptr) {
+        int len = end_ptr - dst_ptr;
+        if (next_line_addr == 0) {
+          // In VSYNC, finish the copy
+          memcpy(dst_ptr, src_ptr, len);
+          break;
+        }
+
+        uint8_t* next_addr = (uint8_t*)*next_addr_ptr;
+        next_addr -= width << 1;
+        if (next_addr >= dst_ptr) {
+          len = next_addr - dst_ptr;
+        }
+        if (len > 0) {
+          // Copy up to the current line being scanned out
+          memcpy(dst_ptr, src_ptr, len);
+          dst_ptr += len;
+          src_ptr += len;
+        }
+      }
     } else {
       uint8_t* frame_ptr = (uint8_t*)framebuffer;
       graphics->frame_convert(PicoGraphics::PEN_RGB565, [this, &frame_ptr](void *data, size_t length) {
