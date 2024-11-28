@@ -97,6 +97,9 @@ class EzWiFi:
     def ipv6(self):
         return self._if.ipconfig("addr6")[0][0]
 
+    def isconnected(self):
+        return self._if.isconnected()
+
     def _secrets(self):
         try:
             from secrets import WIFI_SSID, WIFI_PASSWORD
