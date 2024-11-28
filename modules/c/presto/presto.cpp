@@ -54,18 +54,32 @@ typedef struct _ModPicoGraphics_obj_t {
     DisplayDriver *display;
 } ModPicoGraphics_obj_t;
 
+// There can only be one presto display, so have a global pointer
+// so that core1 can access it.  Note it also needs to be in the
+// Micropython object to prevent GC freeing it.
+static ST7701 *presto;
+static bool exit_core1;
 
+void core1_doorbell_irq() {
+    // There is only 1 doorbell, if this event arrives then we quit
+    multicore_doorbell_clear_current_core(0);
+    exit_core1 = true;
+}
 
 void presto_core1_entry() {
-    multicore_fifo_push_blocking(0); // TODO: Remove, debug to signal core has actually started
+    // The multicore lockout uses the FIFO, so we use a doorbell to signal exit
+    multicore_lockout_victim_init();
 
-    ST7701 *presto = (ST7701*)multicore_fifo_pop_blocking();
+    multicore_doorbell_clear_current_core(0);
+    uint32_t irq = multicore_doorbell_irq_num(0);
+    irq_set_exclusive_handler(irq, core1_doorbell_irq);
+    irq_set_enabled(irq, true);
 
     presto->init();
 
     multicore_fifo_push_blocking(0); // Todo handle issues here?*/
 
-    multicore_fifo_pop_blocking(); // Block until exit is sent
+    while (!exit_core1) __wfe(); // Block until exit is sent
 
     presto->cleanup();
 
@@ -102,7 +116,7 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
     }
 
     presto_debug("m_new_class(ST7701...\n");
-    ST7701 *presto = m_new_class(ST7701, self->width, self->height, ROTATE_0,
+    presto = m_new_class(ST7701, self->width, self->height, ROTATE_0,
         SPIPins{spi1, LCD_CS, LCD_CLK, LCD_DAT, PIN_UNUSED, LCD_DC, BACKLIGHT},
         presto_buffer,
         LCD_D0);
@@ -111,29 +125,15 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
 
     presto_debug("launch core1\n");
     multicore_reset_core1();
-    //multicore_launch_core1(presto_core1_entry);
-    // multicore_launch_core1 probably uses malloc for its stack, and will return but apparently not launch core1 on MicroPython
+    exit_core1 = false;
+
+    // Micropython uses all of both scratch memory (and more!) for core0 stack, 
+    // so we must supply our own small stack for core1 here.
     multicore_launch_core1_with_stack(presto_core1_entry, core1_stack, stack_size);
-    presto_debug("waiting for core1...\n");
-    multicore_fifo_pop_blocking();
-    presto_debug("core1 running...\n");
+    presto_debug("launched core1\n");
 
-    /*presto_debug("presto_set_qmi_timing: ");
-    presto_set_qmi_timing();
-    presto_debug("ok\n");
-
-    presto_debug("presto_setup_psram: ");
-    presto_setup_psram(47);
-    presto_debug("ok\n");*/
-
-    presto_debug("signal core1\n");
-    multicore_fifo_push_blocking((uintptr_t)self->presto);
     int res = multicore_fifo_pop_blocking();
     presto_debug("core1 returned\n");
-
-    //presto_debug("presto->init(): ");
-    //presto->init();
-    //presto_debug("ok\n");
 
     if(res != 0) {
         mp_raise_msg(&mp_type_RuntimeError, "Presto: failed to start ST7701 on Core1.");
@@ -212,12 +212,13 @@ mp_obj_t Presto___del__(mp_obj_t self_in) {
     (void)self_in;
     //_Presto_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Presto_obj_t);
     presto_debug("signal core1\n");
-    multicore_fifo_push_blocking(0);
+    multicore_doorbell_set_other_core(0);
     (void)multicore_fifo_pop_blocking();
     presto_debug("core1 returned\n");
 
-    //self->presto->cleanup();
-    //m_del_class(ST7701, self->presto);
+    m_del_class(ST7701, presto);
+    presto = nullptr;
+    
     return mp_const_none;
 }
 
