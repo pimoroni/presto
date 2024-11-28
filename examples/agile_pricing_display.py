@@ -3,59 +3,26 @@ A demo for the Pimoroni Presto.
 Shows the current, next and last energy price for Octopus Energys Agile Price tarrif
 '''
 
-import network
-import time
-import requests
-import ntptime
+import asyncio
 import datetime
-from picographics import PicoGraphics, DISPLAY_PRESTO
-from presto import Presto
-from picovector import PicoVector, ANTIALIAS_BEST, Polygon, Transform
+import time
+
 import machine
+import ntptime
+import requests
+from ezwifi import EzWiFi
+from picographics import DISPLAY_PRESTO, PicoGraphics
+from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
+from presto import Presto
 
 machine.freq(264000000)
-
-# Check and import the Network SSID and Password from secrets.py
-# import the Spotify API keys from that file too
-try:
-    from secrets import WIFI_SSID, WIFI_PASSWORD
-    if WIFI_SSID == "":
-        raise ValueError("WIFI_SSID in 'secrets.py' is empty!")
-    if WIFI_PASSWORD == "":
-        raise ValueError("WIFI_PASSWORD in 'secrets.py' is empty!")
-except ImportError:
-    raise ImportError("'secrets.py' is missing from your Pimoroni Presto!")
-except ValueError as e:
-    print(e)
 
 # Constants
 API_URL = 'https://api.octopus.energy/v1/products/AGILE-FLEX-22-11-25/electricity-tariffs/E-1R-AGILE-FLEX-22-11-25-C/standard-unit-rates/'
 
-wlan = network.WLAN(network.STA_IF)
-
-
-def network_connect():
-    # Connect to the network specified in secrets.py
-    wlan.active(True)
-    wlan.connect(WIFI_SSID, WIFI_PASSWORD)
-    attempts = 0
-    while wlan.isconnected() is False:
-        print("Attempting connection to {}".format(WIFI_SSID))
-        time.sleep(1)
-        attempts += 1
-        if attempts > 10:
-            raise OSError('Unable to connect to wireless network. Check your WIFI_SSID and WIFI_PASSWORD and try again.')
-
-
-# Start connection to the network
-network_connect()
-
-# Store the local IP address
-ip_addr = wlan.ipconfig('addr4')[0]
-
-# Let the user know the connection has been successful
-# and display the current IP address of the Pimoroni Presto
-print("Successfully connected to {}. Your Pimoroni Presto IP is: {}".format(WIFI_SSID, ip_addr))
+# WiFi setup
+wifi = EzWiFi(verbose=True)
+connected = asyncio.get_event_loop().run_until_complete(wifi.connect(retries=2))
 
 # Set the correct time using the NTP service.
 ntptime.settime()

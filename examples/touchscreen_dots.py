@@ -1,9 +1,10 @@
-from picographics import PicoGraphics, DISPLAY_PRESTO
-from presto import Presto
-from ft6236 import FT6236
-from random import randint
 import time
+from random import randint
+
+from picographics import DISPLAY_PRESTO, PicoGraphics
+from presto import Presto
 from PrestoLight import Reactive
+from touch import FT6236
 
 # Setup for the Presto display
 presto = Presto()

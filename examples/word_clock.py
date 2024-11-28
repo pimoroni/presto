@@ -1,26 +1,14 @@
+import asyncio
 import time
 
 import machine
-import network
 import ntptime
 import pngdec
+from ezwifi import EzWiFi
 from picographics import DISPLAY_PRESTO, PicoGraphics
 from presto import Presto
 
 machine.freq(264000000)
-
-# Check and import the Network SSID and Password from secrets.py
-# import the Spotify API keys from that file too
-try:
-    from secrets import WIFI_PASSWORD, WIFI_SSID
-    if WIFI_SSID == "":
-        raise ValueError("WIFI_SSID in 'secrets.py' is empty!")
-    if WIFI_PASSWORD == "":
-        raise ValueError("WIFI_PASSWORD in 'secrets.py' is empty!")
-except ImportError:
-    raise ImportError("'secrets.py' is missing from your Pimoroni Presto!")
-except ValueError as e:
-    print(e)
 
 # Length of time between updates in minutes.
 UPDATE_INTERVAL = 15
@@ -30,31 +18,9 @@ time_string = None
 words = ["it", "d", "is", "m", "about", "lv", "half", "c", "quarter", "b", "to", "past", "n", "one",
          "two", "three", "four", "five", "six", "eleven", "ten", "d", "nin", "eight", "seven", "rm", "twelve", "rtywtqdj", "O'Clock", "grd", "nhelloprestoa"]
 
-wlan = network.WLAN(network.STA_IF)
-
-
-def network_connect():
-    # Connect to the network specified in secrets.py
-    wlan.active(True)
-    wlan.connect(WIFI_SSID, WIFI_PASSWORD)
-    attempts = 0
-    while wlan.isconnected() is False:
-        print("Attempting connection to {}".format(WIFI_SSID))
-        time.sleep(1)
-        attempts += 1
-        if attempts > 10:
-            raise OSError('Unable to connect to wireless network. Check your WIFI_SSID and WIFI_PASSWORD and try again.')
-
-
-# Start connection to the network
-network_connect()
-
-# Store the local IP address
-ip_addr = wlan.ipconfig('addr4')[0]
-
-# Let the user know the connection has been successful
-# and display the current IP address of the Pimoroni Presto
-print("Successfully connected to {}. Your Pimoroni Presto IP is: {}".format(WIFI_SSID, ip_addr))
+# WiFi setup
+wifi = EzWiFi(verbose=True)
+connected = asyncio.get_event_loop().run_until_complete(wifi.connect(retries=2))
 
 # Set the correct time using the NTP service.
 ntptime.settime()

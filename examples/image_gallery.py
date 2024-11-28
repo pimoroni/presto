@@ -14,9 +14,9 @@ import machine
 import plasma
 import sdcard
 import uos
-from ft6236 import FT6236
 from picographics import DISPLAY_PRESTO, PicoGraphics
 from presto import Presto
+from touch import FT6236
 
 machine.freq(264000000)
 

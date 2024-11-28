@@ -1,13 +1,14 @@
+import asyncio
 import time
 
 import machine
-import network
 import plasma
 import requests
-from ft6236 import FT6236
+from ezwifi import EzWiFi
 from picographics import DISPLAY_PRESTO, PicoGraphics
 from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
 from presto import Presto
+from touch import FT6236
 
 BULB_OUTLINE = [(130.44, 0.0),
                 (150.36, 1.51),
@@ -105,17 +106,9 @@ INTERVAL = 60
 
 machine.freq(264000000)
 
-# Check and import the SSID and Password from secrets.py
-try:
-    from secrets import WIFI_PASSWORD, WIFI_SSID
-    if WIFI_SSID == "":
-        raise ValueError("WIFI_SSID in 'secrets.py' is empty!")
-    if WIFI_PASSWORD == "":
-        raise ValueError("WIFI_PASSWORD in 'secrets.py' is empty!")
-except ImportError:
-    raise ImportError("'secrets.py' is missing from your Plasma 2350 W!")
-except ValueError as e:
-    print(e)
+# WiFi setup
+wifi = EzWiFi(verbose=True)
+connected = asyncio.get_event_loop().run_until_complete(wifi.connect(retries=2))
 
 # Setup for the Presto display
 presto = Presto()
@@ -133,21 +126,6 @@ vector.set_antialiasing(ANTIALIAS_BEST)
 WHITE = display.create_pen(255, 255, 255)
 BLACK = display.create_pen(0, 0, 0)
 GRAY = display.create_pen(75, 75, 75)
-
-wlan = network.WLAN(network.STA_IF)
-
-
-def connect():
-    # Connect to the network specified in secrets.py
-    wlan.active(True)
-    wlan.connect(WIFI_SSID, WIFI_PASSWORD)
-    while wlan.isconnected() is False:
-        print("Attempting connection to {}".format(WIFI_SSID))
-        time.sleep(1)
-
-
-# Start connection to the network
-connect()
 
 # WS2812 / NeoPixel™ LEDs used for the backlight
 bl = plasma.WS2812(7, 0, 0, 33)
@@ -235,11 +213,10 @@ while True:
     # Poll the touch so we can see if anything changed since the last time
     touch.poll()
 
-    if wlan.isconnected():
+    if connected:
         # If the user is touching the screen we'll do the following
         if touch.state:
             bulb_on = not bulb_on
-            print(f"Bulb is {bulb_on}")
             # Wait for the user to stop touching the screen
             while touch.state:
                 touch.poll()
@@ -271,6 +248,6 @@ while True:
             draw_bulb((50, 50, 50))
 
     else:
-        print("Lost connection to network {}".format(WIFI_SSID))
+        print("Lost connection to network")
 
     presto.update(display)

@@ -1,10 +1,11 @@
-from picographics import PicoGraphics, DISPLAY_PRESTO
-from presto import Presto
-from ft6236 import FT6236
-from random import randint
 import time
-from picovector import PicoVector, ANTIALIAS_FAST, Polygon
+from random import randint
+
 import machine
+from picographics import DISPLAY_PRESTO, PicoGraphics
+from picovector import ANTIALIAS_FAST, PicoVector, Polygon
+from presto import Presto
+from touch import FT6236
 
 machine.freq(264000000)
 
