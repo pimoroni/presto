@@ -15,14 +15,6 @@ class EzWiFi:
     def __init__(self, **kwargs):
         get = kwargs.get
 
-        self._ssid = get("ssid")
-        self._password = get("password", "")
-
-        if not self._ssid and not self._password:
-            self._ssid, self._password = self._secrets()
-        elif self._password and not self._ssid:
-            raise ValueError("ssid required!")
-
         self._last_error = None
 
         self._verbose = get("verbose", False)
@@ -68,11 +60,16 @@ class EzWiFi:
             return self._last_error, self._statuses[self._last_error]
         return None, None
 
-    async def connect(self, timeout=60, retries=10):
+    async def connect(self, ssid=None, password=None, timeout=60, retries=10):
+        if not ssid and not password:
+            ssid, password = self._secrets()
+        elif password and not ssid:
+            raise ValueError("ssid required!")
+
         for retry in range(retries):
-            self._log(f"Connecting to {self._ssid} (Attempt {retry + 1})")
+            self._log(f"Connecting to {ssid} (Attempt {retry + 1})")
             try:
-                self._if.connect(self._ssid, self._password)
+                self._if.connect(ssid, password)
                 if await asyncio.wait_for(self._wait_for_connection(), timeout):
                     return True
 
