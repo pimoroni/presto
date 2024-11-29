@@ -50,12 +50,16 @@ class EzWiFi:
     def _log(self, text, level=LogLevel.INFO):
         self._callback(LogLevel.text[level], text) or (self._verbose and print(text))
 
-    def on(self, handler_name):
+    def on(self, handler_name, handler=None):
         if handler_name not in self._events.keys():
             raise ValueError(f"Invalid event: \"{handler_name}\"")
 
         def _on(handler):
             self._events[handler_name] = handler
+
+        if handler is not None:
+            _on(handler)
+            return True
 
         return _on
 

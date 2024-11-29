@@ -36,7 +36,7 @@ MP_DEFINE_CONST_OBJ_TYPE(
 
 /***** Globals Table *****/
 static const mp_map_elem_t presto_globals_table[] = {
-    { MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR_presto) },
+    { MP_OBJ_NEW_QSTR(MP_QSTR___name__), MP_OBJ_NEW_QSTR(MP_QSTR__presto) },
     { MP_OBJ_NEW_QSTR(MP_QSTR_Presto), (mp_obj_t)&Presto_type },
 };
 

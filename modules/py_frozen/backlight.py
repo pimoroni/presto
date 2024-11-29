@@ -39,6 +39,12 @@ class Reactive(object):
         self.bl = plasma.WS2812(7, 0, 0, 33)
         self.bl.start()
 
+    def clear(self):
+        self.bl.clear()
+
+    def set_rgb(self, i, r, g, b):
+        self.bl.set_rgb(i, r, g, b)
+
     @micropython.native
     def update(self):
         mv = self.mv
