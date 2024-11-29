@@ -49,4 +49,4 @@ const mp_obj_module_t presto_user_cmodule = {
     .globals = (mp_obj_dict_t*)&mp_module_presto_globals,
 };
 
-MP_REGISTER_MODULE(MP_QSTR_presto, presto_user_cmodule);
+MP_REGISTER_MODULE(MP_QSTR__presto, presto_user_cmodule);
