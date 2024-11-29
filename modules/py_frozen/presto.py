@@ -44,8 +44,8 @@ class Presto():
     async def async_connect(self):
         await self.wifi.connect()
 
-    def connect(self):
-        return asyncio.get_event_loop().run_until_complete(self.wifi.connect())
+    def connect(self, ssid=None, password=None):
+        return asyncio.get_event_loop().run_until_complete(self.wifi.connect(ssid, password))
 
     def update(self):
         self.presto.update(self.display)
