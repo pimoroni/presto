@@ -23,7 +23,7 @@ class Presto():
         # Display Driver & PicoGraphics
         self.presto = _presto.Presto(full_res=full_res)
         self.buffer = None if (full_res and not direct_to_fb) else memoryview(self.presto)
-        self.display = PicoGraphics(DISPLAY_PRESTO_FULL_RES if full_res else DISPLAY_PRESTO, buffer=self.buffer)
+        self.display = PicoGraphics(DISPLAY_PRESTO_FULL_RES if full_res else DISPLAY_PRESTO, buffer=self.buffer, layers=1 if full_res else 2)
         self.width, self.height = self.display.get_bounds()
 
         # Reactive Backlight
