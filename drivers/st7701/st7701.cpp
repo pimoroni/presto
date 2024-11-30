@@ -494,7 +494,7 @@ void ST7701::start_frame_xfer()
   }
   
   void ST7701::update(PicoGraphics *graphics) {
-    if(graphics->pen_type == PicoGraphics::PEN_RGB565 && graphics->layers == 1) { // Display buffer is screen native
+    if(graphics->pen_type == PicoGraphics::PEN_RGB565) { // Display buffer is screen native
       if (graphics->frame_buffer == framebuffer) {
         // Nothing to do
         return;
@@ -502,28 +502,38 @@ void ST7701::start_frame_xfer()
 
       // Take care to copy while not passing the point in the frame buffer
       // that is currently being scanned out to the screen.  This prevents tearing.
-      uint8_t* src_ptr = (uint8_t*)graphics->frame_buffer;
-      uint8_t* dst_ptr = (uint8_t*)framebuffer;
-      uint8_t* end_ptr = dst_ptr + width * height * sizeof(uint16_t);
+      uint16_t* src_ptr = (uint16_t*)graphics->frame_buffer;
+      uint16_t* src_ptr2 = (uint16_t*)graphics->frame_buffer + width * height;
+      uint16_t* dst_ptr = framebuffer;
+      uint16_t* end_ptr = dst_ptr + width * height;
       volatile uintptr_t* next_addr_ptr = (volatile uintptr_t*)&next_line_addr;
+
       while (dst_ptr != end_ptr) {
-        int len = end_ptr - dst_ptr;
-        if (next_line_addr == 0) {
-          // In VSYNC, finish the copy
-          memcpy(dst_ptr, src_ptr, len);
-          break;
+        uint16_t* next_addr = (uint16_t*)*next_addr_ptr;
+        if (!next_addr || next_addr == framebuffer) {
+          next_addr = framebuffer + width * height;
         }
 
-        uint8_t* next_addr = (uint8_t*)*next_addr_ptr;
-        next_addr -= width << 1;
-        if (next_addr >= dst_ptr) {
-          len = next_addr - dst_ptr;
+        next_addr -= width;
+        if (next_addr < dst_ptr) {
+          // Ahead of the scanout, race the beam.
+          next_addr = end_ptr;
         }
-        if (len > 0) {
-          // Copy up to the current line being scanned out
-          memcpy(dst_ptr, src_ptr, len);
-          dst_ptr += len;
-          src_ptr += len;
+        if (dst_ptr < next_addr) {
+          if (graphics->layers == 1) {
+            // Copy up to the current line being scanned out
+            int len = next_addr - dst_ptr;
+            memcpy(dst_ptr, src_ptr, len * sizeof(uint16_t));
+            dst_ptr += len;
+            src_ptr += len;
+          } else {
+            // Assume 2 layers
+            while (dst_ptr < next_addr) {
+              *dst_ptr++ = *src_ptr2 ? *src_ptr2 : *src_ptr;
+              ++src_ptr2;
+              ++src_ptr;
+            }
+          }
         }
       }
     } else {
