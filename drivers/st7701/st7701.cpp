@@ -564,7 +564,7 @@ void ST7701::start_frame_xfer()
     pwm_set_gpio_level(lcd_bl, value);
   }
 
-  void ST7701::wait_for_vsync() {
+  void __no_inline_not_in_flash_func(ST7701::wait_for_vsync()) {
     waiting_for_vsync = true;
     while (waiting_for_vsync) __wfe();
   }
