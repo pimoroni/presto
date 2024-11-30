@@ -1,6 +1,7 @@
 #include "st7701.hpp"
 #include "libraries/pico_graphics/pico_graphics.hpp"
 #include "micropython/modules/util.hpp"
+#include "ws2812.hpp"
 #include <cstdio>
 #include <cfloat>
 
@@ -11,7 +12,7 @@
 
 
 using namespace pimoroni;
-
+using namespace plasma;
 
 extern "C" {
 #include "presto.h"
@@ -40,12 +41,22 @@ void presto_debug(const char *fmt, ...) {
     (void)ret;
 }
 
+typedef struct _Presto_led_values_t {
+    uint32_t r, g, b;
+} _Presto_led_values_t;
+
 /***** Variables Struct *****/
 typedef struct _Presto_obj_t {
     mp_obj_base_t base;
     ST7701* presto;
     uint16_t width;
     uint16_t height;
+    volatile bool exit_core1;
+
+    // Automatic ambient backlight control
+    volatile bool run_leds;
+    WS2812* ws2812;
+    _Presto_led_values_t led_values[7];
 } _Presto_obj_t;
 
 typedef struct _ModPicoGraphics_obj_t {
@@ -57,36 +68,71 @@ typedef struct _ModPicoGraphics_obj_t {
 // There can only be one presto display, so have a global pointer
 // so that core1 can access it.  Note it also needs to be in the
 // Micropython object to prevent GC freeing it.
-static ST7701 *presto;
-static bool exit_core1;
+static _Presto_obj_t *presto_obj;
 
-void core1_doorbell_irq() {
-    // There is only 1 doorbell, if this event arrives then we quit
-    multicore_doorbell_clear_current_core(0);
-    exit_core1 = true;
+#define NUM_LEDS 7
+#define SAMPLE_RANGE 45
+static void update_backlight_leds() {
+    const Point led_sample_locations[NUM_LEDS] = {
+        { presto_obj->width - SAMPLE_RANGE - 1, presto_obj->height - SAMPLE_RANGE - 1 },
+        { presto_obj->width - SAMPLE_RANGE - 1, (presto_obj->height - SAMPLE_RANGE)/2 },
+        { presto_obj->width - SAMPLE_RANGE - 1, 0 },
+        { (presto_obj->width - SAMPLE_RANGE)/2, 0 },
+        { 0, 0 },
+        { 0, (presto_obj->height - SAMPLE_RANGE)/2 },
+        { 0, presto_obj->height - SAMPLE_RANGE - 1 }
+    };
+
+    for (int i = 0; i < NUM_LEDS; ++i) {
+        uint32_t r = presto_obj->led_values[i].r;
+        uint32_t g = presto_obj->led_values[i].g;
+        uint32_t b = presto_obj->led_values[i].b;
+        for (int y = 0; y < SAMPLE_RANGE; ++y) {
+            uint16_t* ptr = &presto_buffer[(led_sample_locations[i].y + y) * presto_obj->width + led_sample_locations[i].x];
+            for (int x = 0; x < SAMPLE_RANGE; ++x) {
+                uint16_t sample = __builtin_bswap16(*ptr++);
+                r += (sample >> 8) & 0xF8;
+                g += (sample >> 3) & 0xFC;
+                b += (sample << 3) & 0xF8;
+            }
+        }
+        presto_obj->ws2812->set_rgb(i, r >> 13, g >> 13, b >> 13);
+        presto_obj->led_values[i].r = (r * 3) >> 2;
+        presto_obj->led_values[i].g = (g * 3) >> 2;
+        presto_obj->led_values[i].b = (b * 3) >> 2;
+    }
+
+    presto_obj->ws2812->update();
 }
 
 void presto_core1_entry() {
-    // The multicore lockout uses the FIFO, so we use a doorbell to signal exit
+    // The multicore lockout uses the FIFO, so we use just use sev and volatile flags to signal this core
     multicore_lockout_victim_init();
 
-    multicore_doorbell_clear_current_core(0);
-    uint32_t irq = multicore_doorbell_irq_num(0);
-    irq_set_exclusive_handler(irq, core1_doorbell_irq);
-    irq_set_enabled(irq, true);
-
-    presto->init();
+    presto_obj->presto->init();
 
     multicore_fifo_push_blocking(0); // Todo handle issues here?*/
 
-    while (!exit_core1) __wfe(); // Block until exit is sent
+    // Presto is now running the display using interrupts on this core.
+    // We can also drive the backlight if requested.
+    while (!presto_obj->exit_core1) {
+        while (!presto_obj->exit_core1 && !presto_obj->run_leds) __wfe(); // Block until we are woken up
 
-    presto->cleanup();
+        absolute_time_t next_tick = get_absolute_time();
+        while (!presto_obj->exit_core1 && presto_obj->run_leds) {
+            update_backlight_leds();
+            next_tick = delayed_by_us(next_tick, 1000000 / 60);  // 60FPS
+            sleep_until(next_tick);
+        }
+        multicore_fifo_push_blocking(1);
+    }
+
+    presto_obj->presto->cleanup();
 
     multicore_fifo_push_blocking(0);
 }
 
-#define stack_size 256u
+#define stack_size 512u
 static uint32_t core1_stack[stack_size] = {0};
 
 mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
@@ -103,6 +149,7 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
 
     presto_debug("malloc self\n");
     self = mp_obj_malloc_with_finaliser(_Presto_obj_t, &Presto_type);
+    presto_obj = self;
 
     presto_debug("set fb pointers\n");
 
@@ -116,16 +163,15 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
     }
 
     presto_debug("m_new_class(ST7701...\n");
-    presto = m_new_class(ST7701, self->width, self->height, ROTATE_0,
+    self->presto = m_new_class(ST7701, self->width, self->height, ROTATE_0,
         SPIPins{spi1, LCD_CS, LCD_CLK, LCD_DAT, PIN_UNUSED, LCD_DC, BACKLIGHT},
         presto_buffer,
         LCD_D0);
 
-    self->presto = presto;
-
     presto_debug("launch core1\n");
     multicore_reset_core1();
-    exit_core1 = false;
+    presto_obj->exit_core1 = false;
+    presto_obj->run_leds = false;
 
     // Micropython uses all of both scratch memory (and more!) for core0 stack, 
     // so we must supply our own small stack for core1 here.
@@ -208,16 +254,63 @@ mp_obj_t Presto_set_backlight(mp_obj_t self_in, mp_obj_t brightness) {
     return mp_const_none;
 }
 
+static void cleanup_leds() {
+    void* buffer = presto_obj->ws2812->buffer;
+    presto_obj->ws2812->stop();
+    presto_obj->ws2812->clear();
+    sleep_ms(1);
+    presto_obj->ws2812->update(true);
+    sleep_ms(1);
+    m_del_class(WS2812, presto_obj->ws2812);
+    m_del(WS2812::RGB, buffer, NUM_LEDS);
+    presto_obj->ws2812 = nullptr;
+}
+
+mp_obj_t Presto_auto_ambient_leds(mp_obj_t self_in, mp_obj_t enable) {
+    _Presto_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Presto_obj_t);
+
+    bool run_leds = mp_obj_is_true(enable);
+
+    if (run_leds != self->run_leds) {
+        if (run_leds) {
+            WS2812::RGB* buffer = m_new(WS2812::RGB, NUM_LEDS);
+            self->ws2812 = m_new_class(WS2812, NUM_LEDS, pio0, 3, LED_DAT, WS2812::DEFAULT_SERIAL_FREQ, false, WS2812::COLOR_ORDER::GRB, buffer);
+            memset(self->led_values, 0, sizeof(self->led_values));
+            self->run_leds = true;
+            __compiler_memory_barrier();
+            __sev();
+        }
+        else {
+            presto_debug("Stopping LEDs\n");
+            self->run_leds = false;
+            (void)multicore_fifo_pop_blocking();
+            cleanup_leds();
+        }
+    }
+
+    return mp_const_none;
+}
+
 mp_obj_t Presto___del__(mp_obj_t self_in) {
     (void)self_in;
     //_Presto_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Presto_obj_t);
     presto_debug("signal core1\n");
-    multicore_doorbell_set_other_core(0);
-    (void)multicore_fifo_pop_blocking();
+    presto_obj->exit_core1 = true;
+    __sev();
+    while (true) {
+        int fifo_code = multicore_fifo_pop_blocking();
+        if (fifo_code == 1 && presto_obj->run_leds) {
+            cleanup_leds();
+        } else {
+            break;
+        }
+    }
+
     presto_debug("core1 returned\n");
 
-    m_del_class(ST7701, presto);
-    presto = nullptr;
+    m_del_class(ST7701, presto_obj->presto);
+    presto_obj->presto = nullptr;
+    presto_obj = nullptr;
     
     return mp_const_none;
 }
