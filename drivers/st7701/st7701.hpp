@@ -18,10 +18,6 @@ namespace pimoroni {
   class ST7701 : public DisplayDriver {
     spi_inst_t *spi = PIMORONI_SPI_DEFAULT_INSTANCE;
 
-  public:
-    // Must be a power of 2
-    static constexpr int NUM_LINE_BUFFERS = 4;
-
     //--------------------------------------------------
     // Variables
     //--------------------------------------------------

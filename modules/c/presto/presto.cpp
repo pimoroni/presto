@@ -72,7 +72,7 @@ static _Presto_obj_t *presto_obj;
 
 #define NUM_LEDS 7
 #define SAMPLE_RANGE 45
-static void update_backlight_leds() {
+static void __no_inline_not_in_flash_func(update_backlight_leds)() {
     const Point led_sample_locations[NUM_LEDS] = {
         { presto_obj->width - SAMPLE_RANGE - 1, presto_obj->height - SAMPLE_RANGE - 1 },
         { presto_obj->width - SAMPLE_RANGE - 1, (presto_obj->height - SAMPLE_RANGE)/2 },
@@ -83,26 +83,44 @@ static void update_backlight_leds() {
         { 0, presto_obj->height - SAMPLE_RANGE - 1 }
     };
 
-    for (int i = 0; i < NUM_LEDS; ++i) {
-        uint32_t r = presto_obj->led_values[i].r;
-        uint32_t g = presto_obj->led_values[i].g;
-        uint32_t b = presto_obj->led_values[i].b;
-        for (int y = 0; y < SAMPLE_RANGE; ++y) {
-            uint16_t* ptr = &presto_buffer[(led_sample_locations[i].y + y) * presto_obj->width + led_sample_locations[i].x];
-            for (int x = 0; x < SAMPLE_RANGE; ++x) {
-                uint16_t sample = __builtin_bswap16(*ptr++);
-                r += (sample >> 8) & 0xF8;
-                g += (sample >> 3) & 0xFC;
-                b += (sample << 3) & 0xF8;
+    while (!presto_obj->exit_core1 && presto_obj->run_leds) {
+        for (int i = 0; i < NUM_LEDS; ++i) {
+            uint32_t r = presto_obj->led_values[i].r;
+            uint32_t g = presto_obj->led_values[i].g;
+            uint32_t b = presto_obj->led_values[i].b;
+            for (int y = 0; y < SAMPLE_RANGE; ++y) {
+                uint16_t* ptr = &presto_buffer[(led_sample_locations[i].y + y) * presto_obj->width + led_sample_locations[i].x];
+                for (int x = 0; x < SAMPLE_RANGE; ++x) {
+                    uint16_t sample = __builtin_bswap16(*ptr++);
+                    r += (sample >> 8) & 0xF8;
+                    g += (sample >> 3) & 0xFC;
+                    b += (sample << 3) & 0xF8;
+                }
             }
+            presto_obj->led_values[i].r = r;
+            presto_obj->led_values[i].g = g;
+            presto_obj->led_values[i].b = b;
         }
-        presto_obj->ws2812->set_rgb(i, r >> 13, g >> 13, b >> 13);
-        presto_obj->led_values[i].r = (r * 3) >> 2;
-        presto_obj->led_values[i].g = (g * 3) >> 2;
-        presto_obj->led_values[i].b = (b * 3) >> 2;
-    }
 
-    presto_obj->ws2812->update();
+        presto_obj->presto->wait_for_vsync();
+
+        if (presto_obj->exit_core1 || !presto_obj->run_leds) return;
+
+        for (int i = 0; i < NUM_LEDS; ++i) {
+            const uint32_t r = presto_obj->led_values[i].r;
+            const uint32_t g = presto_obj->led_values[i].g;
+            const uint32_t b = presto_obj->led_values[i].b;            
+            presto_obj->ws2812->set_rgb(i, r >> 13, g >> 13, b >> 13);
+            presto_obj->led_values[i].r = (r * 3) >> 2;
+            presto_obj->led_values[i].g = (g * 3) >> 2;
+            presto_obj->led_values[i].b = (b * 3) >> 2;
+        }
+        presto_obj->ws2812->update();
+    }
+}
+
+void __no_inline_not_in_flash_func(presto_core1_wait)(void) {
+    while (!presto_obj->exit_core1 && !presto_obj->run_leds) __wfe(); // Block until we are woken up
 }
 
 void presto_core1_entry() {
@@ -116,13 +134,10 @@ void presto_core1_entry() {
     // Presto is now running the display using interrupts on this core.
     // We can also drive the backlight if requested.
     while (!presto_obj->exit_core1) {
-        while (!presto_obj->exit_core1 && !presto_obj->run_leds) __wfe(); // Block until we are woken up
+        presto_core1_wait();
 
-        absolute_time_t next_tick = get_absolute_time();
-        while (!presto_obj->exit_core1 && presto_obj->run_leds) {
+        if (!presto_obj->exit_core1 && presto_obj->run_leds) {
             update_backlight_leds();
-            next_tick = delayed_by_us(next_tick, 1000000 / 60);  // 60FPS
-            sleep_until(next_tick);
         }
         multicore_fifo_push_blocking(1);
     }
