@@ -416,9 +416,11 @@ void ST7701::start_frame_xfer()
 
     next_line_addr = 0;
     if(dma_channel_is_claimed(st_dma)) {
-      while (dma_channel_is_busy(st_dma))
-        ;
-      dma_channel_abort(st_dma);
+      do {
+        next_line_addr = 0;
+        dma_channel_abort(st_dma);
+        sleep_us(10);
+      } while (dma_channel_is_busy(st_dma));
       dma_channel_unclaim(st_dma);
     }
     if(dma_channel_is_claimed(st_dma2)) {

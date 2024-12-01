@@ -104,7 +104,7 @@ static void __no_inline_not_in_flash_func(update_backlight_leds)() {
 
         presto_obj->presto->wait_for_vsync();
 
-        if (presto_obj->exit_core1 || !presto_obj->run_leds) return;
+        if (presto_obj->exit_core1 || !presto_obj->run_leds) break;
 
         for (int i = 0; i < NUM_LEDS; ++i) {
             const uint32_t r = presto_obj->led_values[i].r;
@@ -117,6 +117,8 @@ static void __no_inline_not_in_flash_func(update_backlight_leds)() {
         }
         presto_obj->ws2812->update();
     }
+
+    multicore_fifo_push_blocking(1);
 }
 
 void __no_inline_not_in_flash_func(presto_core1_wait)(void) {
@@ -139,7 +141,6 @@ void presto_core1_entry() {
         if (!presto_obj->exit_core1 && presto_obj->run_leds) {
             update_backlight_leds();
         }
-        multicore_fifo_push_blocking(1);
     }
 
     presto_obj->presto->cleanup();
@@ -312,14 +313,14 @@ mp_obj_t Presto___del__(mp_obj_t self_in) {
     presto_debug("signal core1\n");
     presto_obj->exit_core1 = true;
     __sev();
-    while (true) {
-        int fifo_code = multicore_fifo_pop_blocking();
-        if (fifo_code == 1 && presto_obj->run_leds) {
+
+    int fifo_code;
+    do {
+        fifo_code = multicore_fifo_pop_blocking();
+        if (fifo_code == 1) {
             cleanup_leds();
-        } else {
-            break;
         }
-    }
+    } while (fifo_code != 0);
 
     presto_debug("core1 returned\n");
 
