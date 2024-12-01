@@ -71,16 +71,21 @@ typedef struct _ModPicoGraphics_obj_t {
 static _Presto_obj_t *presto_obj;
 
 #define NUM_LEDS 7
-#define SAMPLE_RANGE 45
+
+// These must be tweaked together
+#define SAMPLE_RANGE 64
+#define LOG2_OF_SAMPLE_RANGE_SQUARED 12
+
+#define SAMPLE_SHIFT (LOG2_OF_SAMPLE_RANGE_SQUARED + 2)
 static void __no_inline_not_in_flash_func(update_backlight_leds)() {
     const Point led_sample_locations[NUM_LEDS] = {
-        { presto_obj->width - SAMPLE_RANGE - 1, presto_obj->height - SAMPLE_RANGE - 1 },
-        { presto_obj->width - SAMPLE_RANGE - 1, (presto_obj->height - SAMPLE_RANGE)/2 },
-        { presto_obj->width - SAMPLE_RANGE - 1, 0 },
+        { presto_obj->width - SAMPLE_RANGE, presto_obj->height - SAMPLE_RANGE },
+        { presto_obj->width - SAMPLE_RANGE, (presto_obj->height - SAMPLE_RANGE)/2 },
+        { presto_obj->width - SAMPLE_RANGE, 0 },
         { (presto_obj->width - SAMPLE_RANGE)/2, 0 },
         { 0, 0 },
         { 0, (presto_obj->height - SAMPLE_RANGE)/2 },
-        { 0, presto_obj->height - SAMPLE_RANGE - 1 }
+        { 0, presto_obj->height - SAMPLE_RANGE }
     };
 
     while (!presto_obj->exit_core1 && presto_obj->run_leds) {
@@ -106,11 +111,14 @@ static void __no_inline_not_in_flash_func(update_backlight_leds)() {
 
         if (presto_obj->exit_core1 || !presto_obj->run_leds) break;
 
+        // Note this section calls into code that executes from flash
+        // It's important this is done during vsync to avoid artifacts,
+        // hence the wait for vsync above.
         for (int i = 0; i < NUM_LEDS; ++i) {
             const uint32_t r = presto_obj->led_values[i].r;
             const uint32_t g = presto_obj->led_values[i].g;
             const uint32_t b = presto_obj->led_values[i].b;            
-            presto_obj->ws2812->set_rgb(i, r >> 13, g >> 13, b >> 13);
+            presto_obj->ws2812->set_rgb(i, r >> SAMPLE_SHIFT, g >> SAMPLE_SHIFT, b >> SAMPLE_SHIFT);
             presto_obj->led_values[i].r = (r * 3) >> 2;
             presto_obj->led_values[i].g = (g * 3) >> 2;
             presto_obj->led_values[i].b = (b * 3) >> 2;
