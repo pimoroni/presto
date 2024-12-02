@@ -2,8 +2,13 @@ import time
 
 import plasma
 import requests
+from machine import Pin
 from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
 from presto import Presto
+
+user_button = Pin(46, Pin.IN)
+
+dark_mode = False
 
 BULB_OUTLINE = [(130.44, 0.0),
                 (150.36, 1.51),
@@ -201,6 +206,10 @@ while True:
 
     touch.poll()
 
+    if user_button.value() == 0:
+        dark_mode = not dark_mode
+        time.sleep(0.2)
+
     if wifi:
         # If the user is touching the screen we'll do the following
         if touch.state:
@@ -214,7 +223,11 @@ while True:
                 colour = get_cheerlight()
                 last_updated = time.time()
 
-            display.set_pen(WHITE)
+            if dark_mode:
+                display.set_pen(BLACK)
+            else:
+                display.set_pen(WHITE)
+
             display.clear()
 
             draw_bulb(colour)
