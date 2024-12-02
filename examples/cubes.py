@@ -1,12 +1,12 @@
-import time
 import math
+import time
 from random import randint, randrange
-from picographics import PicoGraphics, DISPLAY_PRESTO
+
 from presto import Presto
 
 # Setup for the Presto display
 presto = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
+display = presto.display
 WIDTH, HEIGHT = display.get_bounds()
 
 BLACK = display.create_pen(0, 0, 0)
@@ -152,5 +152,5 @@ while 1:
             cubes[i] = Cube(8, 4, randint(10, WIDTH), randint(10, HEIGHT), randrange(4, 9) / 10)
 
     # Finally we update the screen with our changes :)
-    presto.update(display)
+    presto.update()
     time.sleep(0.01)

@@ -2,15 +2,13 @@
 Watch the backlighting react to a ball moving on screen
 '''
 
-from picographics import PicoGraphics, DISPLAY_PRESTO
-from presto import Presto
-import time
 import math
-from PrestoLight import Reactive
+import time
 
-# Setup for the Presto display
-presto = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
+from presto import Presto
+
+presto = Presto(reactive_backlight=True)
+display = presto.display
 WIDTH, HEIGHT = display.get_bounds()
 
 # Couple of colours for use later
@@ -25,8 +23,6 @@ BLACK = display.create_pen(0, 0, 0)
 
 # Set our initial pen colour
 pen = display.create_pen_hsv(1.0, 1.0, 1.0)
-
-backlight = Reactive()
 
 while True:
 
@@ -45,7 +41,5 @@ while True:
 
     display.circle(WIDTH // 2 + int(math.cos(rad) * 100), HEIGHT // 2 + int(math.sin(rad) * 100), 80)
 
-    backlight.update(display)
-
     # Finally we update the screen with our changes :)
-    presto.update(display)
+    presto.update()

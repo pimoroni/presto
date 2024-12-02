@@ -1,14 +1,14 @@
-import asyncio
 import time
 
 import machine
 import ntptime
 import pngdec
-from ezwifi import EzWiFi
-from picographics import DISPLAY_PRESTO, PicoGraphics
 from presto import Presto
 
-machine.freq(264000000)
+# Setup for the Presto display
+presto = Presto()
+display = presto.display
+WIDTH, HEIGHT = display.get_bounds()
 
 # Length of time between updates in minutes.
 UPDATE_INTERVAL = 15
@@ -19,16 +19,10 @@ words = ["it", "d", "is", "m", "about", "lv", "half", "c", "quarter", "b", "to",
          "two", "three", "four", "five", "six", "eleven", "ten", "d", "nin", "eight", "seven", "rm", "twelve", "rtywtqdj", "O'Clock", "grd", "nhelloprestoa"]
 
 # WiFi setup
-wifi = EzWiFi(verbose=True)
-connected = asyncio.get_event_loop().run_until_complete(wifi.connect(retries=2))
+wifi = presto.connect()
 
 # Set the correct time using the NTP service.
 ntptime.settime()
-
-# Setup for the Presto display
-presto = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto), layers=2)
-WIDTH, HEIGHT = display.get_bounds()
 
 BLACK = display.create_pen(0, 0, 0)
 WHITE = display.create_pen(200, 200, 200)
@@ -76,8 +70,6 @@ def draw():
     global time_string
     display.set_font("bitmap8")
 
-    WIDTH, HEIGHT = display.get_bounds()
-
     display.set_layer(1)
 
     # Clear the screen
@@ -110,7 +102,7 @@ def draw():
             display.text(letter.upper(), x, y, WIDTH, scale=scale, spacing=spacing)
             x += letter_space
 
-    presto.update(display)
+    presto.update()
 
 
 # Set the background in layer 0

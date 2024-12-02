@@ -2,12 +2,11 @@ import sdcard
 import machine
 import uos
 import jpegdec
-from picographics import PicoGraphics, DISPLAY_PRESTO
 from presto import Presto
 
 # Setup for the Presto display
 presto = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
+display = presto.display
 WIDTH, HEIGHT = display.get_bounds()
 
 j = jpegdec.JPEG(display)
@@ -43,4 +42,4 @@ while True:
     j.decode(10, 40, jpegdec.JPEG_SCALE_FULL, dither=True)
 
     # Finally we update the screen with our changes :)
-    presto.update(display)
+    presto.update()

@@ -1,17 +1,12 @@
 import time
 from random import randint
 
-import machine
-from picographics import DISPLAY_PRESTO, PicoGraphics
 from picovector import ANTIALIAS_FAST, PicoVector, Polygon
 from presto import Presto
-from touch import FT6236
-
-machine.freq(264000000)
 
 # Setup for the Presto display
-presto = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
+presto = Presto(reactive_backlight=True)
+display = presto.display
 WIDTH, HEIGHT = display.get_bounds()
 
 # Pico Vector
@@ -31,7 +26,7 @@ BLACK = display.create_pen(0, 0, 0)
 COLOURS = [BLUE, RED, ORANGE, GREEN, PINK, PURPLE]
 
 # We'll need this for the touch element of the screen
-touch = FT6236()
+touch = presto.touch
 
 
 class DOT(object):
@@ -81,4 +76,4 @@ while True:
     display.text("Tap the screen!", 45, 110, WIDTH, 2)
 
     # Finally we update the screen with our changes :)
-    presto.update(display)
+    presto.update()

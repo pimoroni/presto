@@ -1,14 +1,9 @@
-import asyncio
 import time
 
-import machine
 import plasma
 import requests
-from ezwifi import EzWiFi
-from picographics import DISPLAY_PRESTO, PicoGraphics
 from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
 from presto import Presto
-from touch import FT6236
 
 BULB_OUTLINE = [(130.44, 0.0),
                 (150.36, 1.51),
@@ -104,19 +99,13 @@ BULB_INNER = [(130.44, 6.81),
 # How long we'll wait between updates
 INTERVAL = 60
 
-machine.freq(264000000)
-
-# WiFi setup
-wifi = EzWiFi(verbose=True)
-connected = asyncio.get_event_loop().run_until_complete(wifi.connect(retries=2))
-
 # Setup for the Presto display
 presto = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
+display = presto.display
 WIDTH, HEIGHT = display.get_bounds()
+wifi = presto.connect()
 
-# We'll need this for the touch element of the screen
-touch = FT6236()
+touch = presto.touch
 
 # Pico Vector
 vector = PicoVector(display)
@@ -210,10 +199,9 @@ colour = get_cheerlight()
 
 while True:
 
-    # Poll the touch so we can see if anything changed since the last time
     touch.poll()
 
-    if connected:
+    if wifi:
         # If the user is touching the screen we'll do the following
         if touch.state:
             bulb_on = not bulb_on
@@ -250,4 +238,4 @@ while True:
     else:
         print("Lost connection to network")
 
-    presto.update(display)
+    presto.update()

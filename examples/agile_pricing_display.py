@@ -3,34 +3,26 @@ A demo for the Pimoroni Presto.
 Shows the current, next and last energy price for Octopus Energys Agile Price tarrif
 '''
 
-import asyncio
 import datetime
 import time
 
-import machine
 import ntptime
 import requests
-from ezwifi import EzWiFi
-from picographics import DISPLAY_PRESTO, PicoGraphics
 from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
 from presto import Presto
-
-machine.freq(264000000)
 
 # Constants
 API_URL = 'https://api.octopus.energy/v1/products/AGILE-FLEX-22-11-25/electricity-tariffs/E-1R-AGILE-FLEX-22-11-25-C/standard-unit-rates/'
 
-# WiFi setup
-wifi = EzWiFi(verbose=True)
-connected = asyncio.get_event_loop().run_until_complete(wifi.connect(retries=2))
+# Setup for the Presto display
+
+presto = Presto(reactive_backlight=True)
+display = presto.display
+WIDTH, HEIGHT = display.get_bounds()
+presto.connect()
 
 # Set the correct time using the NTP service.
 ntptime.settime()
-
-# Setup for the Presto display
-presto = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
-WIDTH, HEIGHT = display.get_bounds()
 
 # Pico Vector
 vector = PicoVector(display)
@@ -42,7 +34,6 @@ vector.set_font_letter_spacing(100)
 vector.set_font_word_spacing(100)
 vector.set_transform(t)
 
-
 # Couple of colours for use later
 ORANGE = display.create_pen(255, 99, 71)
 ORANGE_2 = display.create_pen(255, 99 + 50, 71 + 50)
@@ -53,13 +44,12 @@ BLACK = display.create_pen(0, 0, 0)
 
 MARGIN = 15
 
-# Clear the screen and use blue as the background colour
+# Clear the screen and use orange as the background colour
 display.set_pen(ORANGE)
 display.clear()
 display.set_pen(ORANGE_3)
 display.text("Getting prices...", 10, 90 + 2, WIDTH, 4)
-presto.update(display)
-presto.update(display)
+presto.update()
 
 # Keep a record of the last time we updated.
 # We only want to be requesting new information every half an hour.
@@ -140,4 +130,4 @@ while True:
     vector.text(f"{next_price}p", MARGIN, 215)
 
     # Finally we update the screen with our changes :)
-    presto.update(display)
+    presto.update()

@@ -4,7 +4,6 @@ import time
 from collections import namedtuple
 
 from machine import I2C
-from picographics import PicoGraphics, DISPLAY_PRESTO, RGB_to_RGB565
 from presto import Presto
 
 from qwstpad import ADDRESSES, QwSTPad
@@ -22,20 +21,27 @@ Controls:
 * + = Continue (once the current level is complete)
 """
 
+# Setup for the Presto display
+presto = Presto(reactive_backlight=True)
+display = presto.display
+
+# Get the width and height from the display
+WIDTH, HEIGHT = display.get_bounds()
+
 # General Constants
 I2C_PINS = {"id": 0, "sda": 40, "scl": 41}    # The I2C pins the QwSTPad is connected to
 I2C_ADDRESS = ADDRESSES[0]                  # The I2C address of the connected QwSTPad
 BRIGHTNESS = 1.0                            # The brightness of the LCD backlight (from 0.0 to 1.0)
 
 # Colour Constants (RGB565)
-WHITE = RGB_to_RGB565(255, 255, 255)
-BLACK = RGB_to_RGB565(0, 0, 0)
-RED = RGB_to_RGB565(255, 0, 0)
-GREEN = RGB_to_RGB565(0, 255, 0)
-PLAYER = RGB_to_RGB565(227, 231, 110)
-WALL = RGB_to_RGB565(127, 125, 244)
-BACKGROUND = RGB_to_RGB565(60, 57, 169)
-PATH = RGB_to_RGB565((227 + 60) // 2, (231 + 57) // 2, (110 + 169) // 2)
+WHITE = display.create_pen(255, 255, 255)
+BLACK = display.create_pen(0, 0, 0)
+RED = display.create_pen(255, 0, 0)
+GREEN = display.create_pen(0, 255, 0)
+PLAYER = display.create_pen(227, 231, 110)
+WALL = display.create_pen(127, 125, 244)
+BACKGROUND = display.create_pen(60, 57, 169)
+PATH = display.create_pen((227 + 60) // 2, (231 + 57) // 2, (110 + 169) // 2)
 
 # Gameplay Constants
 Position = namedtuple("Position", ("x", "y"))
@@ -49,17 +55,10 @@ TEXT_SHADOW = 2
 MOVEMENT_SLEEP = 0.1
 DIFFICULT_SCALE = 0.5
 
-# Setup for the Presto display
-presto = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
-
 # Variables
 i2c = I2C(**I2C_PINS)                           # The I2C instance to pass to the QwSTPad
 complete = False                                # Has the game been completed?
 level = 0                                       # The current "level" the player is on (affects difficulty)
-
-# Get the width and height from the display
-WIDTH, HEIGHT = display.get_bounds()
 
 
 # Classes
@@ -364,7 +363,7 @@ try:
             display.text(f"{text_2_string}", text_2_location[0], text_2_location[1], WIDTH, 2)
 
         # Finally we update the screen with our changes :)
-        presto.update(display)
+        presto.update()
 
 # Handle the QwSTPad being disconnected unexpectedly
 except OSError:

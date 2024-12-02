@@ -14,11 +14,7 @@ import machine
 import plasma
 import sdcard
 import uos
-from picographics import DISPLAY_PRESTO, PicoGraphics
 from presto import Presto
-from touch import FT6236
-
-machine.freq(264000000)
 
 # The total number of LEDs to set, the Presto has 7
 NUM_LEDS = 7
@@ -35,7 +31,7 @@ LEDS_RIGHT = [0, 1, 2]
 
 # Setup for the Presto display
 presto = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto), layers=2)
+display = presto.display
 WIDTH, HEIGHT = display.get_bounds()
 
 BACKGROUND = display.create_pen(1, 1, 1)
@@ -43,7 +39,7 @@ WHITE = display.create_pen(255, 255, 255)
 BLACK = display.create_pen(0, 0, 0)
 
 # We'll need this for the touch element of the screen
-touch = FT6236()
+touch = presto.touch
 
 # JPEG Dec
 j = jpegdec.JPEG(display)
@@ -130,7 +126,7 @@ def fizzlefade():
             if lfsr == 1:
                 break
 
-        presto.update(display)
+        presto.update()
         if lfsr == 1:
             break
 
@@ -250,8 +246,7 @@ last_updated = time.time()
 # We're not passing the arg for 'show_next' or 'show_previous' so it'll show whichever image is current
 clear()
 show_image()
-presto.update(display)
-presto.update(display)
+presto.update()
 
 while True:
 
@@ -263,7 +258,7 @@ while True:
 
         last_updated = time.time()
         show_image(show_next=True)
-        presto.update(display)
+        presto.update()
 
     # if the screen is reporting that there is touch we want to handle that here
     if touch.state:
@@ -273,20 +268,22 @@ while True:
             for i in LEDS_RIGHT:
                 bl.set_rgb(i, 255, 255, 255)
             show_image(show_next=True)
-            presto.update(display)
+            presto.update()
             last_updated = time.time()
             for i in LEDS_RIGHT:
                 bl.set_rgb(i, 0, 0, 0)
+            time.sleep(0.01)
 
         # Left half of the screen moves to the previous image
         elif touch.x < WIDTH // 2:
             for i in LEDS_LEFT:
                 bl.set_rgb(i, 255, 255, 255)
             show_image(show_previous=True)
-            presto.update(display)
+            presto.update()
             last_updated = time.time()
             for i in LEDS_LEFT:
                 bl.set_rgb(i, 0, 0, 0)
+            time.sleep(0.01)
 
         # Wait here until the user stops touching the screen
         while touch.state:

@@ -1,10 +1,10 @@
 import random
-from picographics import PicoGraphics, DISPLAY_PRESTO
+
 from presto import Presto
 
 # Setup for the Presto display
 presto = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
+display = presto.display
 WIDTH, HEIGHT = display.get_bounds()
 
 # We're creating 170 balls with their own individual colour and 1 BG colour
@@ -63,4 +63,4 @@ while True:
         display.circle(int(ball.x), int(ball.y), int(ball.r))
 
     # Finally we update the screen with our changes :)
-    presto.update(display)
+    presto.update()

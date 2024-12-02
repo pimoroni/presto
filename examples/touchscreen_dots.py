@@ -1,14 +1,10 @@
 import time
 from random import randint
-
-from picographics import DISPLAY_PRESTO, PicoGraphics
 from presto import Presto
-from PrestoLight import Reactive
-from touch import FT6236
 
 # Setup for the Presto display
-presto = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
+presto = Presto(reactive_backlight=True)
+display = presto.display
 WIDTH, HEIGHT = display.get_bounds()
 
 # Couple of colours for use later
@@ -24,9 +20,7 @@ BLACK = display.create_pen(0, 0, 0)
 COLOURS = [BLUE, RED, ORANGE, GREEN, PINK, PURPLE]
 
 # We'll need this for the touch element of the screen
-touch = FT6236()
-
-backlight = Reactive()
+touch = presto.touch
 
 
 class DOT(object):
@@ -74,5 +68,4 @@ while True:
     display.text("Tap the screen!", 45, 110, WIDTH, 2)
 
     # Finally we update the screen with our changes :)
-    backlight.update(display)
-    presto.update(display)
+    presto.update()

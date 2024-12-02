@@ -2,7 +2,6 @@ import math
 from collections import namedtuple
 
 from machine import I2C
-from picographics import DISPLAY_PRESTO, PicoGraphics, RGB_to_RGB565
 from presto import Presto
 from qwstpad import ADDRESSES, QwSTPad
 
@@ -19,20 +18,25 @@ Controls:
 * A = Fire
 """
 
+# Setup for the Presto display
+presto = Presto()
+display = presto.display
+WIDTH, HEIGHT = display.get_bounds()
+
 # General Constants
 I2C_PINS = {"id": 0, "sda": 40, "scl": 41}    # The I2C pins the QwSTPad is connected to
 BRIGHTNESS = 1.0                              # The brightness of the LCD backlight (from 0.0 to 1.0)
 
 # Colour Constants (RGB565)
-WHITE = RGB_to_RGB565(255, 255, 255)
-BLACK = RGB_to_RGB565(0, 0, 0)
-CYAN = RGB_to_RGB565(0, 255, 255)
-MAGENTA = RGB_to_RGB565(255, 0, 255)
-YELLOW = RGB_to_RGB565(255, 255, 0)
-GREEN = RGB_to_RGB565(0, 255, 0)
-RED = RGB_to_RGB565(255, 0, 0)
-BLUE = RGB_to_RGB565(0, 0, 255)
-GREY = RGB_to_RGB565(115, 115, 115)
+WHITE = display.create_pen(255, 255, 255)
+BLACK = display.create_pen(0, 0, 0)
+CYAN = display.create_pen(0, 255, 255)
+MAGENTA = display.create_pen(255, 0, 255)
+YELLOW = display.create_pen(255, 255, 0)
+GREEN = display.create_pen(0, 255, 0)
+RED = display.create_pen(255, 0, 0)
+BLUE = display.create_pen(0, 0, 255)
+GREY = display.create_pen(115, 115, 115)
 
 # Gameplay Constants
 PlayerDef = namedtuple("PlayerDef", ("x", "y", "colour"))
@@ -50,17 +54,9 @@ GRID_SPACING = 20
 SCORE_TARGET = 1000
 TEXT_SHADOW = 2
 
-# Setup for the Presto display
-presto = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
-WIDTH, HEIGHT = display.get_bounds()
-
 i2c = I2C(**I2C_PINS)                           # The I2C instance to pass to all QwSTPads
 players = []                                    # The list that will store the player objects
 complete = False                                # Has the game been completed?
-
-# Get the width and height from the display
-WIDTH, HEIGHT = display.get_bounds()
 
 
 # Classes
@@ -246,7 +242,7 @@ try:
             display.text("Game Complete!", 10, 105, WIDTH, 3)
 
         # Update the screen
-        presto.update(display)
+        presto.update()
 
 # Turn off the LEDs of any connected QwSTPads
 finally:
