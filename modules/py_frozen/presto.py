@@ -12,7 +12,7 @@ Touch = namedtuple("touch", ("x", "y", "touched"))
 
 
 class Presto():
-    def __init__(self, full_res=False, reactive_backlight=False, direct_to_fb=False, layers=None):
+    def __init__(self, full_res=False, ambient_light=False, direct_to_fb=False, layers=None):
         # WiFi - *must* happen before Presto bringup
         # Note: Forces WiFi details to be in secrets.py
         self.wifi = EzWiFi()
@@ -28,7 +28,7 @@ class Presto():
         self.display = PicoGraphics(DISPLAY_PRESTO_FULL_RES if full_res else DISPLAY_PRESTO, buffer=self.buffer, layers=layers)
         self.width, self.height = self.display.get_bounds()
 
-        if reactive_backlight:
+        if ambient_light:
             self.presto.auto_ambient_leds(True)
 
     @property
