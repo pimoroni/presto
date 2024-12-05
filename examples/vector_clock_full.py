@@ -3,20 +3,21 @@ import presto
 import time
 import gc
 
-from picographics import PicoGraphics, DISPLAY_PRESTO_FULL_RES
-from picovector import PicoVector, Polygon, RegularPolygon, Rectangle, ANTIALIAS_X4, ANTIALIAS_X16
+from picovector import PicoVector, Polygon, Transform, ANTIALIAS_X16
 
-machine.freq(264000000)
 
 presto = presto.Presto(full_res=True)
 
-display = PicoGraphics(DISPLAY_PRESTO_FULL_RES)
+display = presto.display
 
 vector = PicoVector(display)
-vector.set_antialiasing(ANTIALIAS_X4)
+t = Transform()
+vector.set_transform(t)
+vector.set_antialiasing(ANTIALIAS_X16)
 
 RED = display.create_pen(200, 0, 0)
 BLACK = display.create_pen(0, 0, 0)
+DARKGREY = display.create_pen(100, 100, 100)
 GREY = display.create_pen(200, 200, 200)
 WHITE = display.create_pen(255, 255, 255)
 
@@ -29,24 +30,41 @@ WHITE = display.create_pen(14, 60, 76)
 """
 
 WIDTH, HEIGHT = display.get_bounds()
+MIDDLE = (int(WIDTH / 2), int(HEIGHT / 2))
 
-hub = RegularPolygon(int(WIDTH / 2), int(HEIGHT / 2), 24, 5)
+hub = Polygon()
+hub.circle(int(WIDTH / 2), int(HEIGHT / 2), 5)
 
-face = RegularPolygon(int(WIDTH / 2), int(HEIGHT / 2), 48, int(HEIGHT / 2))
+face = Polygon()
+face.circle(int(WIDTH / 2), int(HEIGHT / 2), int(HEIGHT / 2))
+
+tick_mark = Polygon()
+tick_mark.rectangle(int(WIDTH / 2) - 3, 10, 6, int(HEIGHT / 48))
+
+hour_mark = Polygon()
+hour_mark.rectangle(int(WIDTH / 2) - 5, 10, 10, int(HEIGHT / 10))
+
+minute_hand_length = int(HEIGHT / 2) - int(HEIGHT / 24)
+minute_hand = Polygon()
+minute_hand.path((-5, -minute_hand_length), (-10, int(HEIGHT / 16)), (10, int(HEIGHT / 16)), (5, -minute_hand_length))
+
+hour_hand_length = int(HEIGHT / 2) - int(HEIGHT / 8)
+hour_hand = Polygon()
+hour_hand.path((-5, -hour_hand_length), (-10, int(HEIGHT / 16)), (10, int(HEIGHT / 16)), (5, -hour_hand_length))
+
+second_hand_length = int(HEIGHT / 2) - int(HEIGHT / 8)
+second_hand = Polygon()
+second_hand.path((-2, -second_hand_length), (-2, int(HEIGHT / 8)), (2, int(HEIGHT / 8)), (2, -second_hand_length))
 
 print(time.localtime())
 
 last_second = None
 
-def fade_in():
-    for j in range(101):
-        presto.set_backlight(j*0.01)
-        time.sleep_us(700)
-        
-def fade_out():
-    for j in range(101):
-        presto.set_backlight(1 - j*0.01)
-        time.sleep_us(700)
+display.set_pen(BLACK)
+display.clear()
+display.set_pen(WHITE)
+vector.draw(face)
+
 
 while True:
     t_start = time.ticks_ms()
@@ -58,80 +76,83 @@ while True:
 
     last_second = second
 
-    fade_out()
+    t.reset()
 
-    display.set_pen(0)
-    display.clear()
-
-    display.set_pen(BLACK)
-    display.circle(int(WIDTH / 2), int(HEIGHT / 2), int(HEIGHT / 2))
     display.set_pen(WHITE)
     display.circle(int(WIDTH / 2), int(HEIGHT / 2), int(HEIGHT / 2) - 4)
 
     display.set_pen(GREY)
 
     for a in range(60):
-        tick_mark = Rectangle(int(WIDTH / 2) - 3, 10, 6, int(HEIGHT / 48))
-        vector.rotate(tick_mark, 360 / 60.0 * a, int(WIDTH / 2), int(HEIGHT / 2))
-        vector.translate(tick_mark, 0, 2)
+        t.rotate(360 / 60.0 * a, MIDDLE)
+        t.translate(0, 2)
         vector.draw(tick_mark)
+        t.reset()
 
     for a in range(12):
-        hour_mark = Rectangle(int(WIDTH / 2) - 5, 10, 10, int(HEIGHT / 10))
-        vector.rotate(hour_mark, 360 / 12.0 * a, int(WIDTH / 2), int(HEIGHT / 2))
-        vector.translate(hour_mark, 0, 2)
+        t.rotate(360 / 12.0 * a, MIDDLE)
+        t.translate(0, 2)
         vector.draw(hour_mark)
-
-    angle_second = second * 6
-    second_hand_length = int(HEIGHT / 2) - int(HEIGHT / 8)
-    second_hand = Polygon((-2, -second_hand_length), (-2, int(HEIGHT / 8)), (2, int(HEIGHT / 8)), (2, -second_hand_length))
-    vector.rotate(second_hand, angle_second, 0, 0)
-    vector.translate(second_hand, int(WIDTH / 2), int(HEIGHT / 2) + 5)
-
-    angle_minute = minute * 6
-    angle_minute += second / 10.0
-    minute_hand_length = int(HEIGHT / 2) - int(HEIGHT / 24)
-    minute_hand = Polygon((-5, -minute_hand_length), (-10, int(HEIGHT / 16)), (10, int(HEIGHT / 16)), (5, -minute_hand_length))
-    vector.rotate(minute_hand, angle_minute, 0, 0)
-    vector.translate(minute_hand, int(WIDTH / 2), int(HEIGHT / 2) + 5)
-
-    angle_hour = (hour % 12) * 30
-    angle_hour += minute / 2
-    hour_hand_length = int(HEIGHT / 2) - int(HEIGHT / 8)
-    hour_hand = Polygon((-5, -hour_hand_length), (-10, int(HEIGHT / 16)), (10, int(HEIGHT / 16)), (5, -hour_hand_length))
-    vector.rotate(hour_hand, angle_hour, 0, 0)
-    vector.translate(hour_hand, int(WIDTH / 2), int(HEIGHT / 2) + 5)
+        t.reset()
 
     display.set_pen(GREY)
 
+    x, y = MIDDLE
+    y += 5
+
+    angle_minute = minute * 6
+    angle_minute += second / 10.0
+    t.rotate(angle_minute, MIDDLE)
+    t.translate(x, y)
     vector.draw(minute_hand)
+    t.reset()
+
+    angle_hour = (hour % 12) * 30
+    angle_hour += minute / 2
+    t.rotate(angle_hour, MIDDLE)
+    t.translate(x, y)
     vector.draw(hour_hand)
+    t.reset()
+
+    angle_second = second * 6
+    t.rotate(angle_second, MIDDLE)
+    t.translate(x, y)
     vector.draw(second_hand)
+    t.reset()
 
     display.set_pen(BLACK)
 
     for a in range(60):
-        tick_mark = Rectangle(int(WIDTH / 2) - 3, 10, 6, int(HEIGHT / 48))
-        vector.rotate(tick_mark, 360 / 60.0 * a, int(WIDTH / 2), int(HEIGHT / 2))
+        t.rotate(360 / 60.0 * a, MIDDLE)
         vector.draw(tick_mark)
+        t.reset()
 
     for a in range(12):
-        hour_mark = Rectangle(int(WIDTH / 2) - 5, 10, 10, int(HEIGHT / 10))
-        vector.rotate(hour_mark, 360 / 12.0 * a, int(WIDTH / 2), int(HEIGHT / 2))
+        t.rotate(360 / 12.0 * a, MIDDLE)
         vector.draw(hour_mark)
+        t.reset()
 
-    vector.translate(minute_hand, 0, -5)
-    vector.translate(hour_hand, 0, -5)
+    x, y = MIDDLE
+
+    t.rotate(angle_minute, MIDDLE)
+    t.translate(x, y)
     vector.draw(minute_hand)
+    t.reset()
+
+    t.rotate(angle_hour, MIDDLE)
+    t.translate(x, y)
     vector.draw(hour_hand)
+    t.reset()
 
     display.set_pen(RED)
-    vector.translate(second_hand, 0, -5)
+    t.rotate(angle_second, MIDDLE)
+    t.translate(x, y)
     vector.draw(second_hand)
+
+    t.reset()
     vector.draw(hub)
 
-    presto.update(display)
-    fade_in()
+    presto.update()
     gc.collect()
 
     t_end = time.ticks_ms()
