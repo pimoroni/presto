@@ -1,7 +1,7 @@
 from presto import Presto
 
 # Setup for the Presto display
-presto = Presto(reactive_backlight=True)
+presto = Presto(ambient_light=True)
 display = presto.display
 WIDTH, HEIGHT = display.get_bounds()
 

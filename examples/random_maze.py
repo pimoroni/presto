@@ -22,7 +22,7 @@ Controls:
 """
 
 # Setup for the Presto display
-presto = Presto(reactive_backlight=True)
+presto = Presto(ambient_light=True)
 display = presto.display
 
 # Get the width and height from the display

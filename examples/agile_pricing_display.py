@@ -16,7 +16,7 @@ API_URL = 'https://api.octopus.energy/v1/products/AGILE-FLEX-22-11-25/electricit
 
 # Setup for the Presto display
 
-presto = Presto(reactive_backlight=True)
+presto = Presto(ambient_light=True)
 display = presto.display
 WIDTH, HEIGHT = display.get_bounds()
 presto.connect()
