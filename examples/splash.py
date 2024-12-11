@@ -1,4 +1,4 @@
-from picovector import ANTIALIAS_FAST, PicoVector, Polygon, Transform
+from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
 from presto import Presto
 
 presto = Presto(ambient_light=True)
@@ -23,7 +23,7 @@ pen = display.create_pen_hsv(1.0, 1.0, 1.0)
 
 # Pico Vector
 vector = PicoVector(display)
-vector.set_antialiasing(ANTIALIAS_FAST)
+vector.set_antialiasing(ANTIALIAS_BEST)
 
 t = Transform()
 t2 = Transform()
@@ -53,7 +53,7 @@ while True:
     display.clear()
 
     vector.set_transform(t)
-    t.rotate(5, (CX, CY))
+    t.rotate(1, (CX, CY))
 
     display.set_pen(PINK)
     vector.draw(circle_inner_4)
