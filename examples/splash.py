@@ -26,38 +26,34 @@ vector = PicoVector(display)
 vector.set_antialiasing(ANTIALIAS_FAST)
 
 t = Transform()
+t2 = Transform()
 vector.set_transform(t)
 
 circle_inner_1 = Polygon()
 circle_inner_2 = Polygon()
 circle_inner_3 = Polygon()
 circle_inner_4 = Polygon()
-circle_inner_1.circle(0, 0, 110)
-circle_inner_2.circle(WIDTH, 0, 110)
-circle_inner_3.circle(WIDTH, HEIGHT, 110)
-circle_inner_4.circle(0, HEIGHT, 110)
 
-circle_outline_1 = Polygon()
-circle_outline_2 = Polygon()
-circle_outline_3 = Polygon()
-circle_outline_4 = Polygon()
-circle_outline_1.circle(0, 0, 112, 10)
-circle_outline_2.circle(WIDTH, 0, 112, 5)
-circle_outline_3.circle(WIDTH, HEIGHT, 112, 5)
-circle_outline_4.circle(0, HEIGHT, 112, 5)
+off = 20
+
+circle_inner_1.circle(0 - off, 0 - off, 110)
+circle_inner_2.circle(WIDTH + off, 0 - off, 110)
+circle_inner_3.circle(WIDTH + off, HEIGHT + off, 110)
+circle_inner_4.circle(0 - off, HEIGHT + off, 110)
+
+vector.set_font("cherry-hq.af", 54)
+vector.set_font_letter_spacing(100)
+vector.set_font_word_spacing(100)
+vector.set_transform(t)
 
 
 while True:
-    display.set_pen(WHITE)
-    display.clear()
-
-    t.rotate(1, (CX, CY))
 
     display.set_pen(BLACK)
-    vector.draw(circle_outline_4)
-    vector.draw(circle_outline_3)
-    vector.draw(circle_outline_2)
-    vector.draw(circle_outline_1)
+    display.clear()
+
+    vector.set_transform(t)
+    t.rotate(5, (CX, CY))
 
     display.set_pen(PINK)
     vector.draw(circle_inner_4)
@@ -71,7 +67,9 @@ while True:
     display.set_pen(PURPLE)
     vector.draw(circle_inner_1)
 
-    display.set_pen(BLACK)
-    display.text("Hey, Presto!", CX - 55, CY - 10, WIDTH, 2)
+    vector.set_transform(t2)
+    display.set_pen(WHITE)
+    vector.set_font_size(32)
+    vector.text("Hey Presto!", CX - 64, CY)
 
     presto.update()
