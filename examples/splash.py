@@ -1,5 +1,7 @@
-from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
+from picovector import ANTIALIAS_FAST, PicoVector, Polygon, Transform
 from presto import Presto
+import time
+import math
 
 presto = Presto(ambient_light=True)
 display = presto.display
@@ -23,7 +25,7 @@ pen = display.create_pen_hsv(1.0, 1.0, 1.0)
 
 # Pico Vector
 vector = PicoVector(display)
-vector.set_antialiasing(ANTIALIAS_BEST)
+vector.set_antialiasing(ANTIALIAS_FAST)
 
 t = Transform()
 t2 = Transform()
@@ -34,20 +36,23 @@ circle_inner_2 = Polygon()
 circle_inner_3 = Polygon()
 circle_inner_4 = Polygon()
 
-off = 20
+offset = 20
 
-circle_inner_1.circle(0 - off, 0 - off, 110)
-circle_inner_2.circle(WIDTH + off, 0 - off, 110)
-circle_inner_3.circle(WIDTH + off, HEIGHT + off, 110)
-circle_inner_4.circle(0 - off, HEIGHT + off, 110)
+circle_inner_1.circle(0 - offset, 0 - offset, 110)
+circle_inner_2.circle(WIDTH + offset, 0 - offset, 110)
+circle_inner_3.circle(WIDTH + offset, HEIGHT + offset, 110)
+circle_inner_4.circle(0 - offset, HEIGHT + offset, 110)
 
 vector.set_font("cherry-hq.af", 54)
 vector.set_font_letter_spacing(100)
 vector.set_font_word_spacing(100)
 vector.set_transform(t)
 
-
 while True:
+
+    tick = time.ticks_ms() / 100.0
+    sin = math.sin(tick)
+    text_y = (CY - 40) + int(sin * 4)
 
     display.set_pen(BLACK)
     display.clear()
@@ -70,6 +75,13 @@ while True:
     vector.set_transform(t2)
     display.set_pen(WHITE)
     vector.set_font_size(32)
-    vector.text("Hey Presto!", CX - 64, CY)
+    vector.text("Hey Presto!", CX - 64, text_y)
+
+    vector.set_font_size(18)
+    vector.text("Welcome to the Presto Beta! :)", CX - 95, CY - 20)
+
+    vector.set_font_size(15)
+    vector.text("This unit is pre-loaded with MicroPython", CX - 105, CY + 10)
+    vector.text("Plug in and play!", CX - 41, CY + 25)
 
     presto.update()
