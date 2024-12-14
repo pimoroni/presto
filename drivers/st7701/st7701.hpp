@@ -61,6 +61,7 @@ namespace pimoroni {
     void set_backlight(uint8_t brightness) override;
 
     void set_palette_colour(uint8_t entry, RGB888 colour);
+    void set_palette_colour(uint8_t entry, const RGB& colour);
 
     void set_framebuffer(uint16_t* next_fb) {
       next_framebuffer = next_fb;
