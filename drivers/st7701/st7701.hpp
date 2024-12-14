@@ -63,6 +63,10 @@ namespace pimoroni {
     void set_palette_colour(uint8_t entry, RGB888 colour);
     void set_palette_colour(uint8_t entry, const RGB& colour);
 
+    // The format is an 18-bit value: RGB566, followed by the final bit of red.
+    // It is MSB aligned, i.e. the top bit of red is in the MSB.
+    uint32_t get_encoded_palette_entry(uint8_t entry) const { return palette[entry]; }
+
     void set_framebuffer(uint16_t* next_fb) {
       next_framebuffer = next_fb;
     }
