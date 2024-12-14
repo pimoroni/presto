@@ -16,3 +16,18 @@ loop:
   jmp x-- loop  side 1
   mov pins, null side 1
 .wrap
+
+.program st7701_parallel_18bpp
+.side_set 1
+
+.wrap_target
+  mov x, y      side 0  ; y needs to be set to (width/2)-1 at init time
+  wait 1 irq 4  side 0  ; wait for the irq from the timing SM
+loop:
+  out isr, 32 side 1     
+  mov pins, ::isr side 1 [1]
+  out isr, 32 side 1     [1]
+  mov pins, ::isr side 1 [1]
+  jmp x-- loop  side 1
+  mov pins, null side 1
+.wrap
