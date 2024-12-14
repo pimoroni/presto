@@ -570,7 +570,7 @@ void ST7701::start_frame_xfer()
   }
   
   void ST7701::update(PicoGraphics *graphics) {
-    if(graphics->pen_type == PicoGraphics::PEN_RGB565) { // Display buffer is screen native
+    if(graphics->pen_type == PicoGraphics::PEN_RGB565 && !palette) { // Display buffer is screen native
       if (graphics->frame_buffer == framebuffer) {
         // Nothing to do
         return;
@@ -612,6 +612,14 @@ void ST7701::start_frame_xfer()
           }
         }
       }
+    } else if (graphics->pen_type == PicoGraphics::PEN_P8 && palette) {
+      wait_for_vsync();
+      PicoGraphics_PenP8* pen8 = static_cast<PicoGraphics_PenP8*>(graphics);
+      RGB* palette = pen8->get_palette();
+      for (int i = 0; i < 256; ++i) {
+        set_palette_colour(i, palette[i]);
+      }
+      memcpy(framebuffer, graphics->frame_buffer, width * height);
     } else {
       uint8_t* frame_ptr = (uint8_t*)framebuffer;
       graphics->frame_convert(PicoGraphics::PEN_RGB565, [this, &frame_ptr](void *data, size_t length) {
@@ -649,6 +657,19 @@ void ST7701::start_frame_xfer()
       ((colour << 11) & 0x07E00000) |  // G
       ((colour << 13) & 0x001F8000) |  // B
       ((colour >> 4)  & 0x00004000);   // Low bit of R
+
+    palette[entry] = encoded_colour;
+  }
+
+  void ST7701::set_palette_colour(uint8_t entry, const RGB& colour) {
+    if (!palette) return;
+
+    // Note bit reversal is done by PIO.
+    uint32_t encoded_colour = 
+      ((colour.r << 24) & 0xF8000000) |  // R
+      ((colour.g << 19) & 0x07E00000) |  // G
+      ((colour.b << 13) & 0x001F8000) |  // B
+      ((colour.r << 12) & 0x00004000);   // Low bit of R
 
     palette[entry] = encoded_colour;
   }
