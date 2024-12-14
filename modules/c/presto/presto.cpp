@@ -21,7 +21,8 @@ extern "C" {
 
 // MicroPython's GC heap will automatically resize, so we should just
 // statically allocate these in C++ to avoid fragmentation.
-__attribute__((section(".uninitialized_data"))) static uint16_t presto_buffer[WIDTH * HEIGHT] = {0};
+__attribute__((section(".uninitialized_data"))) static uint16_t presto_buffer[WIDTH * HEIGHT];
+__attribute__((section(".uninitialized_data"), aligned(1024))) static uint32_t presto_palette[256];
 
 void __printf_debug_flush() {
     for(auto i = 0u; i < 10; i++) {
@@ -162,9 +163,10 @@ static uint32_t core1_stack[stack_size] = {0};
 mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     _Presto_obj_t *self = nullptr;
 
-    enum { ARG_full_res };
+    enum { ARG_full_res, ARG_palette };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_full_res, MP_ARG_BOOL, {.u_bool = false} }
+        { MP_QSTR_full_res, MP_ARG_BOOL, {.u_bool = false} },
+        { MP_QSTR_palette, MP_ARG_BOOL, {.u_bool = false} },
     };
 
     // Parse args.
@@ -186,10 +188,12 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
         self->height = HEIGHT;
     }
 
+    const bool use_palette = args[ARG_palette].u_bool;
+
     presto_debug("m_new_class(ST7701...\n");
     self->presto = m_new_class(ST7701, self->width, self->height, ROTATE_0,
         SPIPins{spi1, LCD_CS, LCD_CLK, LCD_DAT, PIN_UNUSED, LCD_DC, BACKLIGHT},
-        presto_buffer,
+        presto_buffer, use_palette ? presto_palette : nullptr,
         LCD_D0);
 
     presto_debug("launch core1\n");
@@ -207,6 +211,16 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
 
     if(res != 0) {
         mp_raise_msg(&mp_type_RuntimeError, "Presto: failed to start ST7701 on Core1.");
+    }
+
+    if (use_palette) {
+        // Temporarily set up some palette colours for testing - needs a pen.
+        for (int i = 0; i < 64; ++i) {
+            self->presto->set_palette_colour(i, RGB(i<<2, i<<2, i<<2).to_rgb888());
+        }
+        for (int i = 0; i < 192; ++i) {
+            self->presto->set_palette_colour(i+64, RGB::from_hsv(i / 192.0, 1, 1).to_rgb888());
+        }
     }
 
     return MP_OBJ_FROM_PTR(self);
