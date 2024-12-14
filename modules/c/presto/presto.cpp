@@ -95,13 +95,28 @@ static void __no_inline_not_in_flash_func(update_backlight_leds)() {
             uint32_t r = presto_obj->led_values[i].r;
             uint32_t g = presto_obj->led_values[i].g;
             uint32_t b = presto_obj->led_values[i].b;
-            for (int y = 0; y < SAMPLE_RANGE; ++y) {
-                uint16_t* ptr = &presto_buffer[(led_sample_locations[i].y + y) * presto_obj->width + led_sample_locations[i].x];
-                for (int x = 0; x < SAMPLE_RANGE; ++x) {
-                    uint16_t sample = __builtin_bswap16(*ptr++);
-                    r += (sample >> 8) & 0xF8;
-                    g += (sample >> 3) & 0xFC;
-                    b += (sample << 3) & 0xF8;
+
+            if (presto_obj->using_palette) {
+                for (int y = 0; y < SAMPLE_RANGE; ++y) {
+                    uint8_t* ptr = (uint8_t*)presto_buffer;
+                    ptr += (led_sample_locations[i].y + y) * presto_obj->width + led_sample_locations[i].x;
+                    for (int x = 0; x < SAMPLE_RANGE; ++x) {
+                        uint16_t sample = presto_obj->presto->get_encoded_palette_entry(*ptr++) >> 16;
+                        r += (sample >> 8) & 0xF8;
+                        g += (sample >> 3) & 0xFC;
+                        b += (sample << 3) & 0xF8;
+                    }
+                }
+            }
+            else {
+                for (int y = 0; y < SAMPLE_RANGE; ++y) {
+                    uint16_t* ptr = &presto_buffer[(led_sample_locations[i].y + y) * presto_obj->width + led_sample_locations[i].x];
+                    for (int x = 0; x < SAMPLE_RANGE; ++x) {
+                        uint16_t sample = __builtin_bswap16(*ptr++);
+                        r += (sample >> 8) & 0xF8;
+                        g += (sample >> 3) & 0xFC;
+                        b += (sample << 3) & 0xF8;
+                    }
                 }
             }
             presto_obj->led_values[i].r = r;
