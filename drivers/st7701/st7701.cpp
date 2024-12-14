@@ -615,7 +615,26 @@ void ST7701::start_frame_xfer()
       for (int i = 0; i < 256; ++i) {
         set_palette_colour(i, palette[i]);
       }
-      memcpy(framebuffer, graphics->frame_buffer, width * height);
+      if (graphics->layers == 1) {
+        memcpy(framebuffer, graphics->frame_buffer, width * height);
+      }
+      else {
+        uint8_t* dst = (uint8_t*)framebuffer;
+        const uint8_t* end = dst + width * height;
+        uint8_t* src = (uint8_t*)graphics->frame_buffer;
+        const size_t layer_offset = width * height;
+        const int top_layer_idx = graphics->layers - 1;
+
+        while (dst != end) {
+          uint8_t colour = 0;
+          for (int layer = top_layer_idx; layer >= 0; --layer) {
+            colour = *(src + layer * layer_offset);
+            if (colour) break;
+          }
+          *dst++ = colour;
+          ++src;
+        }
+      }
     } else {
       uint8_t* frame_ptr = (uint8_t*)framebuffer;
       graphics->frame_convert(PicoGraphics::PEN_RGB565, [this, &frame_ptr](void *data, size_t length) {
@@ -628,9 +647,15 @@ void ST7701::start_frame_xfer()
   }
 
   void ST7701::partial_update(PicoGraphics *graphics, Rect region) {
-    if(graphics->pen_type == PicoGraphics::PEN_RGB565 && graphics->layers == 1) { // Display buffer is screen native
+    if (graphics->pen_type == PicoGraphics::PEN_RGB565 && !palette && graphics->layers == 1) { // Display buffer is screen native
       for (int y = region.y; y < region.y + region.h; ++y) {
         memcpy(&framebuffer[y * width + region.x], (uint16_t*)graphics->frame_buffer + y * width + region.x, region.w * sizeof(uint16_t));
+      }
+    }
+    else if (graphics->pen_type == PicoGraphics::PEN_P8 && palette && graphics->layers == 1) {
+      uint8_t* fb8 = (uint8_t*)framebuffer;
+      for (int y = region.y; y < region.y + region.h; ++y) {
+        memcpy(&fb8[y * width + region.x], (uint8_t*)graphics->frame_buffer + y * width + region.x, region.w * sizeof(uint8_t));
       }
     }
   }
