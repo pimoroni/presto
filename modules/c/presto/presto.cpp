@@ -52,6 +52,7 @@ typedef struct _Presto_obj_t {
     ST7701* presto;
     uint16_t width;
     uint16_t height;
+    bool using_palette;
     volatile bool exit_core1;
 
     // Automatic ambient backlight control
@@ -188,12 +189,12 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
         self->height = HEIGHT;
     }
 
-    const bool use_palette = args[ARG_palette].u_bool;
+    self->using_palette = args[ARG_palette].u_bool;
 
     presto_debug("m_new_class(ST7701...\n");
     self->presto = m_new_class(ST7701, self->width, self->height, ROTATE_0,
         SPIPins{spi1, LCD_CS, LCD_CLK, LCD_DAT, PIN_UNUSED, LCD_DC, BACKLIGHT},
-        presto_buffer, use_palette ? presto_palette : nullptr,
+        presto_buffer, self->using_palette ? presto_palette : nullptr,
         LCD_D0);
 
     presto_debug("launch core1\n");
@@ -213,16 +214,6 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
         mp_raise_msg(&mp_type_RuntimeError, "Presto: failed to start ST7701 on Core1.");
     }
 
-    if (use_palette) {
-        // Temporarily set up some palette colours for testing - needs a pen.
-        for (int i = 0; i < 64; ++i) {
-            self->presto->set_palette_colour(i, RGB(i<<2, i<<2, i<<2).to_rgb888());
-        }
-        for (int i = 0; i < 192; ++i) {
-            self->presto->set_palette_colour(i+64, RGB::from_hsv(i / 192.0, 1, 1).to_rgb888());
-        }
-    }
-
     return MP_OBJ_FROM_PTR(self);
 }
 
@@ -234,6 +225,10 @@ mp_int_t Presto_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_
         bufinfo->buf = presto_buffer + (self->width * self->height);
         // Return the remaining space, enough for three layers at 16bpp
         bufinfo->len = self->width * self->height * 2 * 3;
+    } else if (self->using_palette) {
+        // Full res palette mode, there is enough space for a single layer
+        bufinfo->buf = (uint8_t*)presto_buffer + (self->width * self->height);
+        bufinfo->len = self->width * self->height;
     } else {
         // Just return the buffer as-is, this is not really useful for much
         // other than doing fast writes *directly* to the front buffer

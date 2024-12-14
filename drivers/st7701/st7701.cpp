@@ -284,9 +284,9 @@ void ST7701::start_frame_xfer()
       uint32_t max_pio_clk = 34 * MHZ;
       const uint32_t sys_clk_hz = clock_get_hz(clk_sys);
       uint32_t clk_div = (sys_clk_hz + max_pio_clk - 1) / max_pio_clk;
-      if (palette) {
-        // Minimum clock divisor of 6 to ensure there is time for the palette decode
-        if (clk_div < 6) clk_div = 6;
+      if (palette && width == 480) {
+        // Minimum clock divisor of 8 to ensure there is time for the palette decode
+        if (clk_div < 8) clk_div = 8;
       }
       
       if (width == 480) {
