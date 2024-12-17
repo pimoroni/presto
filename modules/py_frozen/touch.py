@@ -1,6 +1,26 @@
-from micropython import const
-from machine import I2C, Pin
 import math
+
+from machine import I2C, Pin
+from micropython import const
+
+
+class Button:
+    buttons = []
+
+    def __init__(self, x, y, w, h):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = h
+        self.pressed = False
+        Button.buttons.append(self)
+
+    def is_pressed(self):
+        return self.pressed
+
+    @property
+    def bounds(self):
+        return self.x, self.y, self.w, self.h
 
 
 class FT6236:
@@ -74,3 +94,10 @@ class FT6236:
 
         if self.debug:
             print(self.x, self.y, self.x2, self.y2, self.distance, self.angle, self.state, self.state2)
+
+        for button in Button.buttons:
+            if self.state:
+                if self.x >= button.x and self.x <= button.x + button.w and self.y >= button.y and self.y <= button.y + button.h:
+                    button.pressed = True
+            else:
+                button.pressed = False
