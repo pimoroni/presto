@@ -16,7 +16,7 @@ UPDATE_INTERVAL = 15
 rtc = machine.RTC()
 time_string = None
 words = ["it", "d", "is", "m", "about", "lv", "half", "c", "quarter", "b", "to", "past", "n", "one",
-         "two", "three", "four", "five", "six", "eleven", "ten", "d", "nin", "eight", "seven", "rm", "twelve", "rtywtqdj", "O'Clock", "grd", "nhelloprestoa"]
+         "two", "three", "four", "five", "six", "eleven", "ten", "d", "qdh", "eight", "seven", "rm", "twelve", "nine", "p", "ncsnheypresto", "O'Clock", "agrdsp"]
 
 # WiFi setup
 wifi = presto.connect()
