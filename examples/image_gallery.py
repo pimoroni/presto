@@ -201,7 +201,7 @@ def display_error(text):
         display.clear()
         display.set_pen(WHITE)
         display.text(f"Error: {text}", 10, 10, WIDTH - 10, 1)
-        presto.update(display)
+        presto.update()
         time.sleep(1)
 
 
