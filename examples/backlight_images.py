@@ -18,21 +18,22 @@ presto = Presto(ambient_light=True)
 display = presto.display
 WIDTH, HEIGHT = display.get_bounds()
 
-# JPEG
+# Setup JPEG decoder
 j = jpegdec.JPEG(display)
 
 flip = True
 
 while True:
 
+    # Select opposite image to what's currently shown
     if flip:
         j.open_file(IMAGE_1)
-        j.decode(0, 0, jpegdec.JPEG_SCALE_FULL, dither=True)
-        flip = not flip
+
     else:
         j.open_file(IMAGE_2)
-        j.decode(0, 0, jpegdec.JPEG_SCALE_FULL, dither=True)
-        flip = not flip
+
+    j.decode(0, 0, jpegdec.JPEG_SCALE_FULL, dither=True)
+    flip = not flip
 
     # Finally we update the screen with our changes :)
     presto.update()
