@@ -9,6 +9,14 @@ from presto import Presto
 presto = Presto()
 display = presto.display
 WIDTH, HEIGHT = display.get_bounds()
+BLACK = display.create_pen(0, 0, 0)
+WHITE = display.create_pen(200, 200, 200)
+GRAY = display.create_pen(30, 30, 30)
+
+# Clear the screen before the network call is made
+display.set_pen(BLACK)
+display.clear()
+presto.update()
 
 # Length of time between updates in minutes.
 UPDATE_INTERVAL = 15
@@ -23,11 +31,6 @@ wifi = presto.connect()
 
 # Set the correct time using the NTP service.
 ntptime.settime()
-
-BLACK = display.create_pen(0, 0, 0)
-WHITE = display.create_pen(200, 200, 200)
-GRAY = display.create_pen(30, 30, 30)
-
 
 def approx_time(hours, minutes):
     nums = {0: "twelve", 1: "one", 2: "two",
