@@ -6,6 +6,9 @@ Touch and hold the screen to reset the high/low values.
 You will need the osansb.af font saved to your Presto alongside this script.
 """
 
+import gc
+import time
+
 from presto import Presto
 from pimoroni_i2c import PimoroniI2C
 import breakout_scd41
@@ -26,7 +29,7 @@ vector.set_font_line_height(110)
 vector.set_transform(t)
 
 BLACK = display.create_pen(0, 0, 0)
-WHITE = display.create_pen(255, 255, 255)
+WHITE = display.create_pen(216, 216, 200)
 RED = display.create_pen(127, 0, 0)
 GREEN = display.create_pen(0, 127, 0)
 
@@ -65,21 +68,22 @@ PADDING = 5
 LINE_THICKNESS = 3  # thickness of indicator and graph lines
 
 
-def graph_polygon(top, bottom, min, max, readings, y_offset=0):
+def graph_polygon(top, bottom, graph_min, graph_max, readings, y_offset=0):
     # function to generate a filled graph polygon and scale it to the available space
     points = []
+    reading_width = (WIDTH - 1) / max((len(readings) - 1), 1)
     for r in range(len(readings)):
-        x = round(r * (WIDTH / len(readings)))
-        y = round(bottom + ((readings[r] - min) * (top - bottom) / (max - min)))
+        x = round(r * reading_width)
+        y = round(bottom + ((readings[r] - graph_min) * (top - bottom) / (graph_max - graph_min)))
         points.append((x, y))
-    points.append((x, round(bottom)))
+    points.append((WIDTH - 1, round(bottom)))
     points.append((0, round(bottom)))
     if y_offset != 0:
         for r in range(len(readings)):
-            x = round(r * (WIDTH / len(readings)))
-            y = round(bottom + ((readings[r] - min) * (top - bottom) / (max - min)) + y_offset)
+            x = round(r * reading_width)
+            y = round(bottom + ((readings[r] - graph_min) * (top - bottom) / (graph_max - graph_min)) + y_offset)
             points.append((x, y))
-        points.append((x, round(bottom)))
+        points.append((WIDTH - 1, round(bottom)))
         points.append((0, round(bottom)))    
     poly = Polygon()
     poly.path(*points)
@@ -166,23 +170,25 @@ while True:
         display.clear()
 
         # draw the graphs and text
+        # draw the CO2 graph
+        display.set_pen(display.create_pen_hsv(co2_hue / 360, 1.0, 1.0))
+        co2_graph = graph_polygon(CO2_GRAPH_TOP, CO2_GRAPH_BOTTOM, CO2_MIN, CO2_MAX, co2_readings)
+        vector.draw(co2_graph)
         # draw the CO2 indicator lines
         display.set_pen(RED)
         vector.draw(line_polygon(CO2_GRAPH_TOP, CO2_GRAPH_BOTTOM, CO2_MIN, CO2_MAX, BAD_CO2_LEVEL))
         display.set_pen(GREEN)
         vector.draw(line_polygon(CO2_GRAPH_TOP, CO2_GRAPH_BOTTOM, CO2_MIN, CO2_MAX, OK_CO2_LEVEL))
-        # draw the CO2 graph
-        display.set_pen(display.create_pen_hsv(co2_hue / 360, 1.0, 1.0))
-        co2_graph = graph_polygon(CO2_GRAPH_TOP, CO2_GRAPH_BOTTOM, CO2_MIN, CO2_MAX, co2_readings)
-        vector.draw(co2_graph)
         # draw the CO2 text
-        vector.set_font_size(80)
-        vector.text("CO2", PADDING, -30)
-        vector.text(f"{co2:.0f}ppm", WIDTH // 2, -30)
+        vector.set_font_size(40)
+        display.set_pen(WHITE)
+        vector.text(f"CO2: {co2:.0f}ppm", PADDING, 25)
         display.set_pen(BLACK)
         vector.set_font_size(30)
-        vector.text(f"Low {lowest_co2:.0f}ppm", PADDING, round(TEMPERATURE_GRAPH_TOP) - 52)
-        vector.text(f"High {highest_co2:.0f}ppm", PADDING, round(TEMPERATURE_GRAPH_TOP) - 14)
+        vector.text(f"Low {lowest_co2:.0f}ppm", PADDING, round(TEMPERATURE_GRAPH_TOP) - 12)
+        high_text = f"High {highest_co2:.0f}ppm"
+        text_width = int(vector.measure_text(high_text)[2])
+        vector.text(high_text, WIDTH - PADDING - text_width, round(TEMPERATURE_GRAPH_TOP) - 12)
 
         # draw the humidity graph
         # here we're using the 'hue' value to affect the saturation (so light blue to dark blue)
@@ -193,7 +199,7 @@ while True:
         #display.set_pen(WHITE)
         humidity_text = f"{humidity:.0f}% Humidity"
         text_width = int(vector.measure_text(humidity_text)[2])
-        vector.text(humidity_text, WIDTH - PADDING - text_width, int(HUMIDITY_GRAPH_BOTTOM) - 15)
+        vector.text(humidity_text, WIDTH - PADDING - text_width, int(HUMIDITY_GRAPH_BOTTOM) - 13)
 
         # draw the temperature graph
         display.set_pen(display.create_pen_hsv(temperature_hue / 360, 1.0, 1.0))
@@ -201,6 +207,9 @@ while True:
         temperature_graph = graph_polygon(TEMPERATURE_GRAPH_TOP, TEMPERATURE_GRAPH_BOTTOM, TEMPERATURE_MIN, TEMPERATURE_MAX, temperature_readings, LINE_THICKNESS)
         vector.draw(temperature_graph)
         #display.set_pen(WHITE)
-        vector.text(f"Temp: {temperature:.0f}°C", PADDING, int(TEMPERATURE_GRAPH_BOTTOM) - 15)
+        vector.text(f"Temp: {temperature:.0f}°C", PADDING, int(TEMPERATURE_GRAPH_BOTTOM) - 13)
 
         presto.update()
+    
+    gc.collect()
+    time.sleep(0.5)
