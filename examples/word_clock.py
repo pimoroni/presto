@@ -37,7 +37,7 @@ def approx_time(hours, minutes):
 
     if hours == 12:
         hours = 0
-    if minutes > 0 and minutes < 8:
+    if minutes >= 0 and minutes < 8:
         return "it is about " + nums[hours] + " O'Clock"
     elif minutes >= 8 and minutes < 23:
         return "it is about quarter past " + nums[hours]
