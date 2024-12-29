@@ -83,7 +83,7 @@ namespace pimoroni {
 #define TIMING_V_DISPLAY (DISPLAY_HEIGHT + TIMING_V_BACK)
 #define TIMING_V_FRONT   (5 + TIMING_V_DISPLAY)
 #define TIMING_H_FRONT   4
-#define TIMING_H_PULSE   25
+#define TIMING_H_PULSE   16
 #define TIMING_H_BACK    30
 #define TIMING_H_DISPLAY 480
 
@@ -342,11 +342,12 @@ void ST7701::start_frame_xfer()
       // TODO: Figure out what's actually display specific
       command(reg::MADCTL, 1, "\x00");  // Normal scan direction and RGB pixels
       command(reg::LNESET, 2, "\x3b\x00");   // (59 + 1) * 8 = 480 lines
-      command(reg::PORCTRL, 2, "\x0d\x05");  // 13 VBP, 5 VFP
-      command(reg::INVSET, 2, "\x32\x05");
+      command(reg::PORCTRL, 2, "\x0c\x01");  // Display porch settings: 12 VBP, 1 VFP
+      command(reg::INVSET, 2, "\x32\x01");
       command(reg::COLCTRL, 1, "\x08");      // LED polarity reversed
       command(reg::PVGAMCTRL, 16, "\x00\x11\x18\x0e\x11\x06\x07\x08\x07\x22\x04\x12\x0f\xaa\x31\x18");
       command(reg::NVGAMCTRL, 16, "\x00\x11\x19\x0e\x12\x07\x08\x08\x08\x22\x04\x11\x11\xa9\x32\x18");
+      command(reg::RGBCTRL, 3, "\x80\x2e\x0d");  // HV mode, H and V back porch + sync
     }
 
     // Command 2 BK1 - Voltages and power and stuff
