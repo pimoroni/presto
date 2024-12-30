@@ -49,8 +49,8 @@ except OSError:
 
 # Define some pen colors
 BLACK = display.create_pen(0, 0, 0)
-WHITE = display.create_pen(255, 255, 255)
-GRAY  = display.create_pen(120, 120, 120)
+WHITE = display.create_pen(200, 200, 200)
+GRAY  = display.create_pen(30, 30, 30)
 
 def approx_time(hours, minutes):
     """
