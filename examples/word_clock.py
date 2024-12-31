@@ -28,12 +28,16 @@ WIDTH, HEIGHT = display.get_bounds()
 rtc = machine.RTC()
 time_string = None
 
-# List of all "words" in your background layout.
+# List of all "words" in the background layout, by line.
 words = [
-    "it", "d", "is", "m", "about", "lv", "half", "c", "quarter", "b",
-    "to", "past", "n", "one", "two", "three", "four", "five", "six",
-    "eleven", "ten", "d", "qdh", "eight", "seven", "rm", "twelve",
-    "nine", "p", "ncsnheypresto", "O'Clock", "agrdsp"
+    "it", "d", "is", "m", "about", "lv", 
+    "half", "c", "quarter", "b",
+    "to", "past", "n", "one", "two",
+    "three", "four", "five", 
+    "six", "eleven", "ten", "d",
+    "qdh", "eight", "seven", 
+    "rm", "twelve", "nine", "p", 
+    "ncsnheypresto", "O'Clock", "agrdsp"
 ]
 
 # Connect to Wi-Fi (if your Presto is the wireless variant).
