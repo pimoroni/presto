@@ -12,6 +12,7 @@ WIDTH, HEIGHT = display.get_bounds()
 
 # Length of time between updates in minutes.
 UPDATE_INTERVAL = 15
+OFFSET = 0
 
 rtc = machine.RTC()
 time_string = None
@@ -57,8 +58,12 @@ def update():
     except OSError:
         print("Unable to contact NTP server")
 
-    current_t = rtc.datetime()
-    time_string = approx_time(current_t[4] - 12 if current_t[4] > 12 else current_t[4], current_t[5])
+    epoch_secs = ntptime.time()
+    if OFFSET:
+        epoch_secs = epoch_secs + OFFSET*3600
+
+    (year, month, day, hours, minutes, seconds, weekday, yearday) = time.localtime(epoch_secs)
+    time_string = approx_time(hours - 12 if hours > 12 else hours, minutes)
 
     # Splits the string into an array of words for displaying later
     time_string = time_string.split()
