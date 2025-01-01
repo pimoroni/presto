@@ -77,7 +77,6 @@ namespace pimoroni {
     CND2BKxSEL = 0xFF,
   };
 
-#define DISPLAY_HEIGHT   480
 #define TIMING_V_PULSE   8
 #define TIMING_V_BACK    (5 + TIMING_V_PULSE)
 #define TIMING_V_DISPLAY (DISPLAY_HEIGHT + TIMING_V_BACK)
