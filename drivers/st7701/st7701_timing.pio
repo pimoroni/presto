@@ -15,6 +15,6 @@
   out x, 14           side 1    ; Loop count
 sync_loop:
   nop                 side 0
-  jmp x--, sync_loop  side 1
+  jmp x--, sync_loop  side 1 
   out exec, 16        side 0
 .wrap
