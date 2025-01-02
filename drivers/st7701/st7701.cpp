@@ -343,7 +343,7 @@ void ST7701::start_frame_xfer()
       command(reg::MADCTL, 1, "\x00");  // Normal scan direction and RGB pixels
       command(reg::LNESET, 2, "\x3b\x00");   // (59 + 1) * 8 = 480 lines
       command(reg::PORCTRL, 2, "\x0c\x01");  // Display porch settings: 12 VBP, 1 VFP
-      command(reg::INVSET, 2, "\x32\x01");
+      command(reg::INVSET, 2, "\x31\x01");
       command(reg::COLCTRL, 1, "\x08");      // LED polarity reversed
       command(reg::PVGAMCTRL, 16, "\x00\x11\x18\x0e\x11\x06\x07\x08\x07\x22\x04\x12\x0f\xaa\x31\x18");
       command(reg::NVGAMCTRL, 16, "\x00\x11\x19\x0e\x12\x07\x08\x08\x08\x22\x04\x11\x11\xa9\x32\x18");
@@ -379,10 +379,13 @@ void ST7701::start_frame_xfer()
     command(0xEC, 2, "\x3c\x00");
     command(0xED, 16, "\xab\x89\x76\x54\x02\xff\xff\xff\xff\xff\xff\x20\x45\x67\x98\xba");
     command(0x36, 1, "\x00");
-    // End Forbidden Knowledge
 
     // Command 2 BK3
     command(reg::CND2BKxSEL, 5, "\x77\x01\x00\x00\x13");
+    command(0xE5, 1, "\xe4");
+    // End Forbidden Knowledge
+
+    command(reg::CND2BKxSEL, 5, "\x77\x01\x00\x00\x00");
     //command(reg::COLMOD, 1, "\x77");  // 24 bits per pixel...
     command(reg::COLMOD, 1, "\x66");    // 18 bits per pixel...
     //command(reg::COLMOD, 1, "\x55");  // 16 bits per pixel...
