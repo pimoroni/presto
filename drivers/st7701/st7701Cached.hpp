@@ -3,13 +3,31 @@
 #include "st7701.hpp"
 
 namespace pimoroni {
+    #define TIMINGS_COUNT (481*10)
+    typedef struct 
+    {
+      uint8_t  type;
+      uint64_t time;
+    } Timing;
 
   class ST7701Cached : public ST7701 {
+
 
   private:
     uint16_t* backbuffer = nullptr;
     uint16_t* next_backbuffer = nullptr;
     uint16_t  cachelines = 0;
+
+    Timing timings[TIMINGS_COUNT];
+    uint32_t nextTiming = 0;
+
+    void AddTiming(uint8_t type)
+    {
+      timings[nextTiming] = {type, time_us_64()};
+      nextTiming++;
+      if(nextTiming == TIMINGS_COUNT)
+        nextTiming = 0;
+    }
 
   public:
     // Parallel init
@@ -27,6 +45,7 @@ namespace pimoroni {
   private:
     void start_line_xfer() override;
     void start_frame_xfer() override;
+
   };
 
 }

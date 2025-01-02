@@ -30,11 +30,8 @@ namespace pimoroni {
     uint spi_sck;
     uint spi_dat;
     uint lcd_bl;
-    uint parallel_sm;
     uint timing_sm;
-    uint parallel_offset;
     uint timing_offset;
-    uint st_dma;
     uint st_dma2;
 
     uint d0 = 1; // First pin of 18-bit parallel interface
@@ -68,15 +65,18 @@ namespace pimoroni {
     void handle_end_of_line();
 
   protected:
-    virtual void start_line_xfer();
-    virtual void start_frame_xfer();
-
     PIO st_pio;
     int display_row = 0;
     uint16_t* next_line_addr;
     uint16_t* framebuffer;
     uint16_t* next_framebuffer = nullptr;
     int row_shift = 0;
+
+    uint st_dma;
+    uint parallel_sm;
+    uint parallel_offset;
+
+    volatile bool waiting_for_vsync = false;
 
 
   private:
@@ -86,10 +86,12 @@ namespace pimoroni {
     void write_blocking_parallel(const uint8_t *src, size_t len);
     void command(uint8_t command, size_t len = 0, const char *data = NULL);
 
+    virtual void start_line_xfer();
+    virtual void start_frame_xfer();
+
     // Timing status
     uint16_t timing_row = 0;
     uint16_t timing_phase = 0;
-    volatile bool waiting_for_vsync = false;
 
     int fill_row = 0;
   };
