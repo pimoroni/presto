@@ -29,40 +29,80 @@ namespace pimoroni {
 
   void ST7701Cached::start_line_xfer() 
   {
-    AddTiming(1);
 
     hw_clear_bits(&st_pio->irq, 0x1);
 
-    uint16_t *pSrc;
-    uint16_t *pDst;
-    
+    volatile uint16_t *pSrc;
+    volatile uint16_t *pDst;
+    volatile static uint8_t uEnd = 40;
+
     ++display_row;
 
-    if (display_row > DISPLAY_HEIGHT) 
+    // PIO displaying display_row
+    // we copy to display_row+1
+
+    if (display_row >= DISPLAY_HEIGHT) // 480 and 481
     {
-      // TODO properly
       next_line_addr = 0;
+      AddTiming(1);
     }
     else 
     {
       next_line_addr = &framebuffer[width * ((display_row%cachelines) >> row_shift)];
+      int update_line;
 
-      // simple test render next line
-      if(display_row < DISPLAY_HEIGHT)
-      {
-        pSrc = &backbuffer[width * ((display_row + OFFSET) >> row_shift)];
-        pDst = &framebuffer[width * (((display_row + OFFSET) % cachelines) >> row_shift)];;
-        memcpy(pDst, pSrc, width*2);
-        //memset(pDst, display_row, width * 4);
+      if(display_row < DISPLAY_HEIGHT-2){
+        update_line = display_row + 1;
       }
-      else
-      {
-        // first line
-        pSrc = backbuffer;
-        pDst = &framebuffer[width * (((display_row + OFFSET) % cachelines) >> row_shift)];;
-        memcpy(pDst, pSrc, width*2);
-        //memset(pDst, 0x44, width * 2);
+      else {
+        update_line = (display_row -(DISPLAY_HEIGHT - 2));
       }
+
+      next_next_line_addr = &framebuffer[width * ((update_line % cachelines) >> row_shift)];
+      AddTiming(1);
+
+      memset(next_next_line_addr, 0x00, width*2);
+      if(display_row < DISPLAY_HEIGHT-3) // 1 - 476 = 475 rows!!!!
+      {
+        memset(next_next_line_addr, 0x22, display_row); 
+      }
+      else if(display_row < DISPLAY_HEIGHT-2) // last row 477
+      {
+        memset(next_next_line_addr, 0xff, 960);
+      }
+      else if(display_row < DISPLAY_HEIGHT-1) // 478
+      {
+        memset(next_next_line_addr, 0xff, 200); // line 1
+      }
+      else if(display_row < DISPLAY_HEIGHT) // 479
+      {
+        memset(next_next_line_addr, 0xff, 400); // line 2
+      }
+      else if(display_row < DISPLAY_HEIGHT+1) // 480
+      {
+        memset(next_next_line_addr, 0xff, 400); // not seen
+      }
+      else if(display_row < DISPLAY_HEIGHT+2) // 481
+      {
+        memset(next_next_line_addr, 0xff, 960); // not seend
+      }
+
+      // // simple test render next line
+      // if(display_row < DISPLAY_HEIGHT)
+      // {
+      //   pSrc = &backbuffer[width * ((display_row + OFFSET) >> row_shift)];
+      //   pDst = &framebuffer[width * (((display_row + OFFSET) % cachelines) >> row_shift)];;
+      //   memcpy((void *)pDst, (void *)pSrc, width*2);
+      //   //memset(pDst, display_row, width * 4);
+      // }
+      // else
+      // {
+      //   // first line
+      //   pSrc = backbuffer;
+      //   pDst = &framebuffer[width * (((display_row + OFFSET) % cachelines) >> row_shift)];;
+      //   memcpy((void *)pDst, (void *)pSrc, width*2);
+      //   //memset(pDst, 0x44, width * 2);
+      // }
 
       // else if(display_row < DISPLAY_HEIGHT)
       // {
@@ -90,6 +130,7 @@ namespace pimoroni {
 
   void ST7701Cached::start_frame_xfer()
   {
+    display_row = 0;
     AddTiming(0);
 
     hw_clear_bits(&st_pio->irq, 0x2);

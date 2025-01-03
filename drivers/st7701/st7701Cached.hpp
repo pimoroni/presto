@@ -7,7 +7,11 @@ namespace pimoroni {
     typedef struct 
     {
       uint8_t  type;
+      uint16_t *daddr;
+      uint16_t *uaddr;
       uint64_t time;
+      uint16_t interval;
+      uint16_t line;
     } Timing;
 
   class ST7701Cached : public ST7701 {
@@ -23,7 +27,13 @@ namespace pimoroni {
 
     void AddTiming(uint8_t type)
     {
-      timings[nextTiming] = {type, time_us_64()};
+      uint64_t interval;
+      if(nextTiming == 0)
+        interval = time_us_64() - timings[TIMINGS_COUNT-1].time;
+      else
+        interval = time_us_64() - timings[nextTiming-1].time;
+
+      timings[nextTiming] = {type, next_line_addr, next_next_line_addr, time_us_64(), interval, (uint16_t)display_row};
       nextTiming++;
       if(nextTiming == TIMINGS_COUNT)
         nextTiming = 0;
@@ -46,6 +56,7 @@ namespace pimoroni {
     void start_line_xfer() override;
     void start_frame_xfer() override;
 
+    uint16_t *next_next_line_addr;
   };
 
 }
