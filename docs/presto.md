@@ -82,6 +82,7 @@ NUM_LEDS = 7
 LED_PIN = 33
 
 lights = plasma.WS2812(NUM_LEDS, 0, 0, LED_PIN)
+lights.start()
 
 lights.set_hsv(0, 0.5, 1.0, 1.0)
 lights.set_rgb(1, 255, 255, 0)
