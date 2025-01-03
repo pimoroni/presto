@@ -23,13 +23,8 @@ namespace pimoroni {
   {
   }
 
-  // TODO: avoid that 4 line hack for start of frame and do properly
-  // work out exactly what is going on here is it start of line or end of line?
-#define OFFSET 0
-
   void ST7701Cached::start_line_xfer() 
   {
-
     hw_clear_bits(&st_pio->irq, 0x1);
 
     volatile uint16_t *pSrc;
@@ -38,100 +33,43 @@ namespace pimoroni {
 
     ++display_row;
 
-    // PIO displaying display_row
-    // we copy to display_row+1
+    // PIO displaying display_row from cache
+    // We copy update_row into cache
 
-    if (display_row >= DISPLAY_HEIGHT) // 480 and 481
-    {
+    if (display_row > DISPLAY_HEIGHT) {
       next_line_addr = 0;
       AddTiming(1);
     }
-    else 
-    {
+    else {
       next_line_addr = &framebuffer[width * ((display_row%cachelines) >> row_shift)];
-      int update_line;
 
-      if(display_row < DISPLAY_HEIGHT-2){
-        update_line = display_row + 1;
-      }
-      else {
-        update_line = (display_row -(DISPLAY_HEIGHT - 2));
-      }
+      int update_row = (display_row + 1) % DISPLAY_HEIGHT;
+      int cache_line  = update_row % cachelines;
+      next_next_line_addr = &framebuffer[width * (cache_line >> row_shift)];
 
-      next_next_line_addr = &framebuffer[width * ((update_line % cachelines) >> row_shift)];
       AddTiming(1);
 
-      memset(next_next_line_addr, 0x00, width*2);
-      if(display_row < DISPLAY_HEIGHT-3) // 1 - 476 = 475 rows!!!!
-      {
-        memset(next_next_line_addr, 0x22, display_row); 
-      }
-      else if(display_row < DISPLAY_HEIGHT-2) // last row 477
-      {
-        memset(next_next_line_addr, 0xff, 960);
-      }
-      else if(display_row < DISPLAY_HEIGHT-1) // 478
-      {
-        memset(next_next_line_addr, 0xff, 200); // line 1
-      }
-      else if(display_row < DISPLAY_HEIGHT) // 479
-      {
-        memset(next_next_line_addr, 0xff, 400); // line 2
-      }
-      else if(display_row < DISPLAY_HEIGHT+1) // 480
-      {
-        memset(next_next_line_addr, 0xff, 400); // not seen
-      }
-      else if(display_row < DISPLAY_HEIGHT+2) // 481
-      {
-        memset(next_next_line_addr, 0xff, 960); // not seend
-      }
+      pSrc = &backbuffer[width * (update_row >> row_shift)];
+      memcpy(next_next_line_addr, (void *) pSrc, width * 2);
 
-      // // simple test render next line
-      // if(display_row < DISPLAY_HEIGHT)
-      // {
-      //   pSrc = &backbuffer[width * ((display_row + OFFSET) >> row_shift)];
-      //   pDst = &framebuffer[width * (((display_row + OFFSET) % cachelines) >> row_shift)];;
-      //   memcpy((void *)pDst, (void *)pSrc, width*2);
-      //   //memset(pDst, display_row, width * 4);
-      // }
-      // else
-      // {
-      //   // first line
-      //   pSrc = backbuffer;
-      //   pDst = &framebuffer[width * (((display_row + OFFSET) % cachelines) >> row_shift)];;
-      //   memcpy((void *)pDst, (void *)pSrc, width*2);
-      //   //memset(pDst, 0x44, width * 2);
-      // }
-
-      // else if(display_row < DISPLAY_HEIGHT)
-      // {
-      //   // line 0
-      //   pDst = &framebuffer[width * (((display_row + OFFSET) % cachelines) >> row_shift)];;
-      //   memset(pDst, 0x44, width * 2);
-      // }
-      // else
-      // {
-      //   // ??
-      //   pDst = &framebuffer[width * (((display_row + OFFSET) % cachelines) >> row_shift)];;
-      //   memset(pDst, 0x22, width * 2);
-      // }
-
-      // else
-      // {
-      //   // // TODO properly
-      //   pSrc = backbuffer;
-      //   pDst = framebuffer;
-      //   memcpy(pDst, pSrc, width);
-      //   // //memset(pDst, 0xff, width * 4);
-      // }
+#if DIRECT_TEST
+      if(update_row == 0) {
+        memset(next_next_line_addr+50, 0xff, 100);
+      }
+      else if(update_row == 479) {
+        memset(next_next_line_addr+50, 0xff, 100);
+      }
+      else 
+      {
+        memset(next_next_line_addr+50, 0x22, 100);
+      }
+#endif
     }
   }
 
   void ST7701Cached::start_frame_xfer()
   {
     display_row = 0;
-    AddTiming(0);
 
     hw_clear_bits(&st_pio->irq, 0x2);
 
@@ -156,6 +94,7 @@ namespace pimoroni {
     pio_sm_set_enabled(st_pio, parallel_sm, true);
     display_row = 0;
     next_line_addr = framebuffer;
+    AddTiming(0);
 
     //memcpy(framebuffer, backbuffer, width * 2);
     dma_channel_set_read_addr(st_dma, framebuffer, true);  

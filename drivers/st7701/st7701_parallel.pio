@@ -6,8 +6,8 @@
 .side_set 1
 
 .wrap_target
-  mov x, y      side 1  ; y needs to be set to (width/2)-1 at init time
-  wait 1 irq 4  side 1  ; wait for the irq from the timing SM
+  mov x, y      side 0  ; y needs to be set to (width/2)-1 at init time
+  wait 1 irq 4  side 0  ; wait for the irq from the timing SM
 loop:
   out isr, 32 side 1     
   mov pins, ::isr side 1 [1]
