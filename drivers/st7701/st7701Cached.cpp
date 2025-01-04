@@ -19,8 +19,10 @@ namespace pimoroni {
   : ST7701(width, height, rotation, control_pins, nullptr, d0, hsync, vsync, lcd_de, lcd_dot_clk),
     backbuffer(backbuffer)
   {
-    cachelines = 3;
-    framebuffer = (uint16_t *)malloc(width * 2 * cachelines);
+    // the cache needs to be 6 lines for height 240 and 3 lines for height 480
+    // memory usage stays the same.
+    cachelines = (height == 480) ? 3 : 6;
+    framebuffer = (uint16_t *)malloc(DISPLAY_HEIGHT * 2 * cachelines);
   }
 
   void ST7701Cached::update(PicoGraphics *graphics) 
