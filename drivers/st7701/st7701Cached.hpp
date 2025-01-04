@@ -45,6 +45,9 @@ namespace pimoroni {
                  uint16_t cache_lines, uint16_t* framecache, uint16_t* backbuffer,
                  uint d0=1, uint hsync=19, uint vsync=20, uint lcd_de = 21, uint lcd_dot_clk = 22);
 
+    ST7701Cached(uint16_t width, uint16_t height, Rotation rotation, SPIPins control_pins, uint16_t* backbuffer,
+                 uint d0=1, uint hsync=19, uint vsync=20, uint lcd_de = 21, uint lcd_dot_clk = 22);
+
     void update(PicoGraphics *graphics) override;
     void partial_update(PicoGraphics *display, Rect region) override;
 

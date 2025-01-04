@@ -11,9 +11,17 @@ namespace pimoroni {
     cachelines(cachelines),
     backbuffer(backbuffer)
   {
-
   }
 
+
+  ST7701Cached::ST7701Cached(uint16_t width, uint16_t height, Rotation rotation, SPIPins control_pins, uint16_t* backbuffer,
+                            uint d0, uint hsync, uint vsync, uint lcd_de, uint lcd_dot_clk)
+  : ST7701(width, height, rotation, control_pins, nullptr, d0, hsync, vsync, lcd_de, lcd_dot_clk),
+    backbuffer(backbuffer)
+  {
+    cachelines = 3;
+    framebuffer = (uint16_t *)malloc(width * 2 * cachelines);
+  }
 
   void ST7701Cached::update(PicoGraphics *graphics) 
   {
