@@ -48,7 +48,6 @@ namespace pimoroni {
 
     if (display_row > DISPLAY_HEIGHT) {
       next_line_addr = 0;
-      AddTiming(1);
     }
     else {
       next_line_addr = &framebuffer[width * ((display_row%cachelines) >> row_shift)];
@@ -57,23 +56,8 @@ namespace pimoroni {
       int cache_line  = update_row % cachelines;
       next_next_line_addr = &framebuffer[width * (cache_line >> row_shift)];
 
-      AddTiming(1);
-
       pSrc = &backbuffer[width * (update_row >> row_shift)];
       memcpy(next_next_line_addr, (void *) pSrc, width * 2);
-
-#if DIRECT_TEST
-      if(update_row == 0) {
-        memset(next_next_line_addr+50, 0xff, 100);
-      }
-      else if(update_row == 479) {
-        memset(next_next_line_addr+50, 0xff, 100);
-      }
-      else 
-      {
-        memset(next_next_line_addr+50, 0x22, 100);
-      }
-#endif
     }
   }
 
@@ -104,9 +88,7 @@ namespace pimoroni {
     pio_sm_set_enabled(st_pio, parallel_sm, true);
     display_row = 0;
     next_line_addr = framebuffer;
-    AddTiming(0);
 
-    //memcpy(framebuffer, backbuffer, width * 2);
     dma_channel_set_read_addr(st_dma, framebuffer, true);  
     waiting_for_vsync = false;
     __sev();
