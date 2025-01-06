@@ -12,7 +12,15 @@ from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
 from presto import Presto
 
 # Constants
-API_URL = 'https://api.octopus.energy/v1/products/AGILE-FLEX-22-11-25/electricity-tariffs/E-1R-AGILE-FLEX-22-11-25-C/standard-unit-rates/'
+# API_URL = 'https://api.octopus.energy/v1/products/AGILE-24-10-01/electricity-tariffs/E-1R-AGILE-24-10-01-C/standard-unit-rates/'
+API_URL = None  # Will try to guess the rates
+
+# Find your region code: https://en.wikipedia.org/wiki/Meter_Point_Administration_Number#Distributor_ID
+# This is required for automatic API endpoint detection
+REGION_CODE = "_E"
+
+# Print out API endpoints for debugging
+DEBUG = True
 
 # Setup for the Presto display
 
@@ -56,8 +64,26 @@ presto.update()
 last_updated = time.time()
 
 
-def get_prices():
+def get_api_endpoint():
+    # Get the latest valid API endpoint for prices
+    # First look up the right product in the products list
+    request = requests.get("https://api.octopus.energy/v1/products/")
+    json = request.json()
+    product = [result for result in json["results"] if result["display_name"].startswith("Agile") and result["direction"] == "IMPORT" and result["brand"] == "OCTOPUS_ENERGY"][0]
+    product_api_endpoint = [link["href"] for link in product["links"] if link["rel"] == "self"][0]
 
+    # Now get the API endpoint URL by region code
+    request = requests.get(product_api_endpoint)
+    json = request.json()
+    links = json["single_register_electricity_tariffs"][REGION_CODE]["direct_debit_monthly"]["links"]
+    prices_api_endpoint = [link for link in links if link["rel"] == "standard_unit_rates"][0]["href"]
+
+    if DEBUG:
+        print(f"Got API endpoint: {prices_api_endpoint}")
+    return prices_api_endpoint
+
+
+def get_prices():
     try:
         # We only need the the first 6 elements covering the date and time
         t = time.localtime()[0:5]
@@ -75,6 +101,9 @@ def get_prices():
         request = requests.get(f"{API_URL}{request_string}")
         json = request.json()
 
+        if DEBUG:
+            print(f"Prices endpoint: {API_URL}{request_string}")
+
         # Finally we return our 3 values
         return json['results'][0]['value_inc_vat'], json['results'][1]['value_inc_vat'], json['results'][2]['value_inc_vat']
 
@@ -82,6 +111,10 @@ def get_prices():
     except ValueError:
         return 0, 0, 0
 
+
+# Get the correct API endpoint on start up, if it has not been specified already
+if API_URL is None:
+    API_URL = get_api_endpoint()
 
 # Get the prices on start up, after this we'll only check again at the top of the hour.
 next_price, current_price, last_price = get_prices()
