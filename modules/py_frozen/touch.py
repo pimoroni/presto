@@ -99,6 +99,8 @@ class FT6236:
             if self.state:
                 if self.x >= button.x and self.x <= button.x + button.w and self.y >= button.y and self.y <= button.y + button.h:
                     button.pressed = True
+                elif self.x2 >= button.x and self.x2 <= button.x + button.w and self.y2 >= button.y and self.y2 <= button.y + button.h:
+                    button.pressed = True
                 else:
                     button.pressed = False
             else:
