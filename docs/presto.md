@@ -40,6 +40,15 @@ can either:
 
 ### Touch
 
+Presto ostensibly supports two simultaneous touches, but there are some caveats.
+
+Touches that line up horizontally - such as a two finger vertical scroll - will
+not be correctly registered. This is a known issue with the touch feature and
+not a problem with your board!
+
+Touches one above the other - two separate horizontal sliders, or maybe a friendly
+game of pong? - should register fine!
+
 To access touch information you can use:
 
 * `presto.touch_a` - (Property) a three tuple of X, Y and state (True for touched)
