@@ -1,0 +1,12 @@
+; Program for decoding a 256 colour palette.  Takes an 8-bit index, and creates
+; the memory address of the palette entry.
+;
+; Thanks to DmitryGR for the idea, and implementation this is based on.
+
+.program st7701_palette
+
+.wrap_target
+  out y, 8
+  in y, 8
+  in x, 22
+.wrap

@@ -1,3 +1,10 @@
+// ST7701 driver for Pimoroni Presto 480x480 18bpp display
+//
+// This implementation is mainly due to Michael Bell and Phil Howard (Gadgetoid).
+//
+// Big thanks to Dmitry GR for the inspiration and demo implementation of the 8bpp
+// palette mode, upon which the same functionality here was based.
+
 #include "st7701.hpp"
 
 #include <cstdlib>
@@ -10,6 +17,7 @@
 #ifndef NO_QSTR
 #include "st7701_parallel.pio.h"
 #include "st7701_timing.pio.h"
+#include "st7701_palette.pio.h"
 #endif
 
 namespace pimoroni {
@@ -161,6 +169,7 @@ void __no_inline_not_in_flash_func(ST7701::start_line_xfer())
 
     ++display_row;
     if (display_row == DISPLAY_HEIGHT) next_line_addr = 0;
+    else if (palette) next_line_addr = &framebuffer[(width >> 1) * (display_row >> row_shift)];
     else next_line_addr = &framebuffer[width * (display_row >> row_shift)];
 }
 
@@ -190,13 +199,14 @@ void ST7701::start_frame_xfer()
     __sev();
 }
 
-  ST7701::ST7701(uint16_t width, uint16_t height, Rotation rotation, SPIPins control_pins, uint16_t* framebuffer,
+  ST7701::ST7701(uint16_t width, uint16_t height, Rotation rotation, SPIPins control_pins, uint16_t* framebuffer, uint32_t* palette,
       uint d0, uint hsync, uint vsync, uint lcd_de, uint lcd_dot_clk) :
             DisplayDriver(width, height, rotation),
             spi(control_pins.spi),
             spi_cs(control_pins.cs), spi_sck(control_pins.sck), spi_dat(control_pins.mosi), lcd_bl(control_pins.bl),
             d0(d0), hsync(hsync), vsync(vsync), lcd_de(lcd_de), lcd_dot_clk(lcd_dot_clk),
-            framebuffer(framebuffer)
+            framebuffer(framebuffer),
+            palette(palette)
   {
       st7701_inst = this;
   }
@@ -207,11 +217,22 @@ void ST7701::start_frame_xfer()
       st_pio = pio1;
       parallel_sm = pio_claim_unused_sm(st_pio, true);
 
-      parallel_offset = pio_add_program(st_pio, &st7701_parallel_program);
-      if (height == 240) row_shift = 1;
-
       timing_sm = pio_claim_unused_sm(st_pio, true);
       timing_offset = pio_add_program(st_pio, &st7701_timing_program);
+
+
+      if (palette) {
+        parallel_offset = pio_add_program(st_pio, &st7701_parallel_18bpp_program);
+
+        palette_sm = pio_claim_unused_sm(st_pio, true);
+        palette_offset = pio_add_program(st_pio, &st7701_palette_program);
+      }
+      else {
+        parallel_offset = pio_add_program(st_pio, &st7701_parallel_program);
+      }
+
+      row_shift = 0;
+      if (height == 240) row_shift = 1;
 
       spi_init(spi, SPI_BAUD);
       gpio_set_function(spi_cs, GPIO_FUNC_SIO);
@@ -233,21 +254,27 @@ void ST7701::start_frame_xfer()
       pio_gpio_init(st_pio, lcd_de);
       pio_gpio_init(st_pio, lcd_dot_clk);
 
-      for(auto i = 0u; i < 16; i++) {
+      const uint num_data_pins = palette ? 18 : 16;
+
+      for(auto i = 0u; i < num_data_pins; i++) {
         pio_gpio_init(st_pio, d0 + i);
       }
-      for(auto i = 16u; i < 18; i++) {
-        gpio_init(d0 + i);
-        gpio_set_dir(d0 + i, GPIO_OUT);
-        gpio_put(d0 + i, false);
+
+      if (!palette) {
+        for(auto i = 16u; i < 18; i++) {
+          gpio_init(d0 + i);
+          gpio_set_dir(d0 + i, GPIO_OUT);
+          gpio_put(d0 + i, false);
+        }
       }
 
-      pio_sm_set_consecutive_pindirs(st_pio, parallel_sm, d0, 16, true);
+      pio_sm_set_consecutive_pindirs(st_pio, parallel_sm, d0, num_data_pins, true);
       pio_sm_set_consecutive_pindirs(st_pio, parallel_sm, hsync, 4, true);
+      
+      pio_sm_config c = palette ? st7701_parallel_18bpp_program_get_default_config(parallel_offset) :
+          st7701_parallel_program_get_default_config(parallel_offset);
 
-      pio_sm_config c = st7701_parallel_program_get_default_config(parallel_offset);
-
-      sm_config_set_out_pins(&c, d0, 16);
+      sm_config_set_out_pins(&c, d0, num_data_pins);
       sm_config_set_sideset_pins(&c, lcd_de);
       sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
       sm_config_set_out_shift(&c, true, true, 32);
@@ -257,6 +284,11 @@ void ST7701::start_frame_xfer()
       uint32_t max_pio_clk = 34 * MHZ;
       const uint32_t sys_clk_hz = clock_get_hz(clk_sys);
       uint32_t clk_div = (sys_clk_hz + max_pio_clk - 1) / max_pio_clk;
+      if (palette && width == 480) {
+        // Minimum clock divisor of 8 to ensure there is time for the palette decode
+        if (clk_div < 8) clk_div = 8;
+      }
+      
       if (width == 480) {
         // Parallel output SM must run at double the rate of the timing SM for full res
         if (clk_div & 1) clk_div += 1;
@@ -266,7 +298,7 @@ void ST7701::start_frame_xfer()
       {
         sm_config_set_clkdiv(&c, clk_div);
       }
-      
+
       pio_sm_init(st_pio, parallel_sm, parallel_offset, &c);
       pio_sm_exec(st_pio, parallel_sm, pio_encode_out(pio_y, 32));
       pio_sm_put(st_pio, parallel_sm, (width >> 1) - 1);
@@ -283,20 +315,63 @@ void ST7701::start_frame_xfer()
       pio_sm_init(st_pio, timing_sm, timing_offset, &c);
       pio_sm_set_enabled(st_pio, timing_sm, true);
 
+      if (palette) {
+        c = st7701_palette_program_get_default_config(palette_offset);
+        sm_config_set_out_shift(&c, false, true, 32);
+        sm_config_set_in_shift(&c, true, true, 30);
+
+        pio_sm_init(st_pio, palette_sm, palette_offset, &c);
+        pio_sm_exec(st_pio, palette_sm, pio_encode_out(pio_x, 32));
+        pio_sm_put(st_pio, palette_sm, ((uintptr_t)palette) >> 10);
+        pio_sm_set_enabled(st_pio, palette_sm, true);
+      }
+
       st_dma = dma_claim_unused_channel(true);
       st_dma2 = dma_claim_unused_channel(true);
 
-      dma_channel_config config = dma_channel_get_default_config(st_dma);
-      channel_config_set_transfer_data_size(&config, DMA_SIZE_32);
-      channel_config_set_dreq(&config, pio_get_dreq(st_pio, parallel_sm, true));
-      channel_config_set_bswap(&config, true);
-      channel_config_set_chain_to(&config, st_dma2);
-      dma_channel_configure(st_dma, &config, &st_pio->txf[parallel_sm], nullptr, width >> 1, false);
+      if (!palette) {
+        // Regular RGB565 framebuffer
+        dma_channel_config config = dma_channel_get_default_config(st_dma);
+        channel_config_set_transfer_data_size(&config, DMA_SIZE_32);
+        channel_config_set_dreq(&config, pio_get_dreq(st_pio, parallel_sm, true));
+        channel_config_set_bswap(&config, true);
+        channel_config_set_chain_to(&config, st_dma2);
+        dma_channel_configure(st_dma, &config, &st_pio->txf[parallel_sm], nullptr, width >> 1, false);
 
-      config = dma_channel_get_default_config(st_dma2);
-      channel_config_set_transfer_data_size(&config, DMA_SIZE_32);
-      channel_config_set_read_increment(&config, false);
-      dma_channel_configure(st_dma2, &config, &dma_hw->ch[st_dma].al3_read_addr_trig, &next_line_addr, 1, false);
+        config = dma_channel_get_default_config(st_dma2);
+        channel_config_set_transfer_data_size(&config, DMA_SIZE_32);
+        channel_config_set_read_increment(&config, false);
+        dma_channel_configure(st_dma2, &config, &dma_hw->ch[st_dma].al3_read_addr_trig, &next_line_addr, 1, false);
+      }
+      else {
+        st_dma3 = dma_claim_unused_channel(true);
+        st_dma4 = dma_claim_unused_channel(true);
+
+        dma_channel_config config = dma_channel_get_default_config(st_dma);
+        channel_config_set_transfer_data_size(&config, DMA_SIZE_32);
+        channel_config_set_dreq(&config, pio_get_dreq(st_pio, palette_sm, true));
+        channel_config_set_bswap(&config, true);
+        channel_config_set_chain_to(&config, st_dma2);
+        dma_channel_configure(st_dma, &config, &st_pio->txf[palette_sm], nullptr, width >> 2, false);
+
+        config = dma_channel_get_default_config(st_dma2);
+        channel_config_set_transfer_data_size(&config, DMA_SIZE_32);
+        channel_config_set_read_increment(&config, false);
+        dma_channel_configure(st_dma2, &config, &dma_hw->ch[st_dma].al3_read_addr_trig, &next_line_addr, 1, false);
+
+        config = dma_channel_get_default_config(st_dma3);
+        channel_config_set_transfer_data_size(&config, DMA_SIZE_32);
+        channel_config_set_dreq(&config, pio_get_dreq(st_pio, parallel_sm, true));
+        channel_config_set_read_increment(&config, false);
+        channel_config_set_chain_to(&config, st_dma4);
+        dma_channel_configure(st_dma3, &config, &st_pio->txf[parallel_sm], nullptr, 1, false);
+
+        config = dma_channel_get_default_config(st_dma4);
+        channel_config_set_transfer_data_size(&config, DMA_SIZE_32);
+        channel_config_set_dreq(&config, pio_get_dreq(st_pio, palette_sm, false));
+        channel_config_set_read_increment(&config, false);
+        dma_channel_configure(st_dma4, &config, &dma_hw->ch[st_dma3].al3_read_addr_trig, &st_pio->rxf[palette_sm], 1, true);
+      }
 
       printf("Begin SPI setup\n");
 
@@ -430,6 +505,12 @@ void ST7701::start_frame_xfer()
     if(dma_channel_is_claimed(st_dma2)) {
       dma_channel_unclaim(st_dma2);
     }
+    if(dma_channel_is_claimed(st_dma3)) {
+      dma_channel_unclaim(st_dma3);
+    }
+    if(dma_channel_is_claimed(st_dma4)) {
+      dma_channel_unclaim(st_dma4);
+    }
 
     if(pio_sm_is_claimed(st_pio, parallel_sm)) {
       pio_sm_set_enabled(st_pio, parallel_sm, false);
@@ -441,6 +522,12 @@ void ST7701::start_frame_xfer()
       pio_sm_set_enabled(st_pio, timing_sm, false);
       pio_sm_clear_fifos(st_pio, timing_sm);
       pio_sm_unclaim(st_pio, timing_sm);
+    }
+
+    if(pio_sm_is_claimed(st_pio, palette_sm)) {
+      pio_sm_set_enabled(st_pio, palette_sm, false);
+      pio_sm_clear_fifos(st_pio, palette_sm);
+      pio_sm_unclaim(st_pio, palette_sm);
     }
 
     pio_clear_instruction_memory(st_pio);
@@ -459,23 +546,6 @@ void ST7701::start_frame_xfer()
     }
 
     command(reg::MADCTL, 1, (char *)&madctl);
-  }
-
-  void ST7701::write_blocking_dma(const uint8_t *src, size_t len) {
-    while (dma_channel_is_busy(st_dma))
-      ;
-    dma_channel_set_trans_count(st_dma, len, false);
-    dma_channel_set_read_addr(st_dma, src, true);
-  }
-
-  void ST7701::write_blocking_parallel(const uint8_t *src, size_t len) {
-    write_blocking_dma(src, len);
-    dma_channel_wait_for_finish_blocking(st_dma);
-
-    // This may cause a race between PIO and the
-    // subsequent chipselect deassert for the last pixel
-    while(!pio_sm_is_tx_fifo_empty(st_pio, parallel_sm))
-      ;
   }
 
   void ST7701::command(uint8_t command, size_t len, const char *data) {
@@ -500,7 +570,7 @@ void ST7701::start_frame_xfer()
   }
   
   void ST7701::update(PicoGraphics *graphics) {
-    if(graphics->pen_type == PicoGraphics::PEN_RGB565) { // Display buffer is screen native
+    if(graphics->pen_type == PicoGraphics::PEN_RGB565 && !palette) { // Display buffer is screen native
       if (graphics->frame_buffer == framebuffer) {
         // Nothing to do
         return;
@@ -542,6 +612,33 @@ void ST7701::start_frame_xfer()
           }
         }
       }
+    } else if (graphics->pen_type == PicoGraphics::PEN_P8 && palette) {
+      wait_for_vsync();
+      PicoGraphics_PenP8* pen8 = static_cast<PicoGraphics_PenP8*>(graphics);
+      RGB* palette = pen8->get_palette();
+      for (int i = 0; i < 256; ++i) {
+        set_palette_colour(i, palette[i]);
+      }
+      if (graphics->layers == 1) {
+        memcpy(framebuffer, graphics->frame_buffer, width * height);
+      }
+      else {
+        uint8_t* dst = (uint8_t*)framebuffer;
+        const uint8_t* end = dst + width * height;
+        uint8_t* src = (uint8_t*)graphics->frame_buffer;
+        const size_t layer_offset = width * height;
+        const int top_layer_idx = graphics->layers - 1;
+
+        while (dst != end) {
+          uint8_t colour = 0;
+          for (int layer = top_layer_idx; layer >= 0; --layer) {
+            colour = *(src + layer * layer_offset);
+            if (colour) break;
+          }
+          *dst++ = colour;
+          ++src;
+        }
+      }
     } else {
       uint8_t* frame_ptr = (uint8_t*)framebuffer;
       graphics->frame_convert(PicoGraphics::PEN_RGB565, [this, &frame_ptr](void *data, size_t length) {
@@ -554,9 +651,15 @@ void ST7701::start_frame_xfer()
   }
 
   void ST7701::partial_update(PicoGraphics *graphics, Rect region) {
-    if(graphics->pen_type == PicoGraphics::PEN_RGB565 && graphics->layers == 1) { // Display buffer is screen native
+    if (graphics->pen_type == PicoGraphics::PEN_RGB565 && !palette && graphics->layers == 1) { // Display buffer is screen native
       for (int y = region.y; y < region.y + region.h; ++y) {
         memcpy(&framebuffer[y * width + region.x], (uint16_t*)graphics->frame_buffer + y * width + region.x, region.w * sizeof(uint16_t));
+      }
+    }
+    else if (graphics->pen_type == PicoGraphics::PEN_P8 && palette && graphics->layers == 1) {
+      uint8_t* fb8 = (uint8_t*)framebuffer;
+      for (int y = region.y; y < region.y + region.h; ++y) {
+        memcpy(&fb8[y * width + region.x], (uint8_t*)graphics->frame_buffer + y * width + region.x, region.w * sizeof(uint8_t));
       }
     }
   }
@@ -568,6 +671,32 @@ void ST7701::start_frame_xfer()
     else if (brightness == 255) value = BACKLIGHT_PWM_TOP;
     else value = 181 + (brightness * brightness) / 85;
     pwm_set_gpio_level(lcd_bl, value);
+  }
+
+  void ST7701::set_palette_colour(uint8_t entry, RGB888 colour) {
+    if (!palette) return;
+
+    // Note bit reversal is done by PIO.
+    uint32_t encoded_colour = 
+      ((colour << 8)  & 0xF8000000) |  // R
+      ((colour << 11) & 0x07E00000) |  // G
+      ((colour << 13) & 0x001F8000) |  // B
+      ((colour >> 4)  & 0x00004000);   // Low bit of R
+
+    palette[entry] = encoded_colour;
+  }
+
+  void ST7701::set_palette_colour(uint8_t entry, const RGB& colour) {
+    if (!palette) return;
+
+    // Note bit reversal is done by PIO.
+    uint32_t encoded_colour = 
+      ((colour.r << 24) & 0xF8000000) |  // R
+      ((colour.g << 19) & 0x07E00000) |  // G
+      ((colour.b << 13) & 0x001F8000) |  // B
+      ((colour.r << 12) & 0x00004000);   // Low bit of R
+
+    palette[entry] = encoded_colour;
   }
 
   void __no_inline_not_in_flash_func(ST7701::wait_for_vsync()) {

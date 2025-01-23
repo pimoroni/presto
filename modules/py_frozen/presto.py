@@ -6,7 +6,7 @@ from ezwifi import EzWiFi
 
 from collections import namedtuple
 from machine import Pin, PWM
-from picographics import PicoGraphics, DISPLAY_PRESTO, DISPLAY_PRESTO_FULL_RES
+from picographics import PicoGraphics, DISPLAY_PRESTO, DISPLAY_PRESTO_FULL_RES, PEN_RGB565, PEN_P8
 
 
 Touch = namedtuple("touch", ("x", "y", "touched"))
@@ -30,7 +30,7 @@ class Presto():
     NUM_LEDS = 7
     LED_PIN = 33
 
-    def __init__(self, full_res=False, ambient_light=False, direct_to_fb=False, layers=None):
+    def __init__(self, full_res=False, palette=False, ambient_light=False, direct_to_fb=False, layers=None):
         # WiFi - *must* happen before Presto bringup
         # Note: Forces WiFi details to be in secrets.py
         self.wifi = EzWiFi()
@@ -41,9 +41,10 @@ class Presto():
         # Display Driver & PicoGraphics
         if layers is None:
             layers = 1 if full_res else 2
-        self.presto = _presto.Presto(full_res=full_res)
-        self.buffer = None if (full_res and not direct_to_fb) else memoryview(self.presto)
-        self.display = PicoGraphics(DISPLAY_PRESTO_FULL_RES if full_res else DISPLAY_PRESTO, buffer=self.buffer, layers=layers)
+        pen = PEN_P8 if palette else PEN_RGB565
+        self.presto = _presto.Presto(full_res=full_res, palette=palette)
+        self.buffer = None if (full_res and not palette and not direct_to_fb) else memoryview(self.presto)
+        self.display = PicoGraphics(DISPLAY_PRESTO_FULL_RES if full_res else DISPLAY_PRESTO, buffer=self.buffer, layers=layers, pen_type=pen)
         self.width, self.height = self.display.get_bounds()
 
         if ambient_light:
