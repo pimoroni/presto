@@ -32,7 +32,7 @@ and then apply rotation and scale as needed.
 
 * `rotate(angle, (x, y))` - rotate polygons by `angle` in degrees
 around point `(x, y)`.
-* `scale(scale_x, scale_t)` - apply a scale, change the size of polygons
+* `scale(scale_x, scale_y)` - apply a scale, change the size of polygons
 * `translate(x, y)` - apply a translation, change the position of polygons
 * `matrix([1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0])` - apply an arbitrary matrix transformation
 * `reset()` - reset the transform object back to the default (no transform)
