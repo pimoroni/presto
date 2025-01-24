@@ -21,7 +21,8 @@ extern "C" {
 
 // MicroPython's GC heap will automatically resize, so we should just
 // statically allocate these in C++ to avoid fragmentation.
-__attribute__((section(".uninitialized_data"))) static uint16_t presto_buffer[WIDTH * HEIGHT] = {0};
+__attribute__((section(".uninitialized_data"))) static uint16_t presto_buffer[WIDTH * HEIGHT];
+__attribute__((section(".uninitialized_data"), aligned(1024))) static uint32_t presto_palette[256];
 
 void __printf_debug_flush() {
     for(auto i = 0u; i < 10; i++) {
@@ -51,6 +52,7 @@ typedef struct _Presto_obj_t {
     ST7701* presto;
     uint16_t width;
     uint16_t height;
+    bool using_palette;
     volatile bool exit_core1;
 
     // Automatic ambient backlight control
@@ -93,13 +95,28 @@ static void __no_inline_not_in_flash_func(update_backlight_leds)() {
             uint32_t r = presto_obj->led_values[i].r;
             uint32_t g = presto_obj->led_values[i].g;
             uint32_t b = presto_obj->led_values[i].b;
-            for (int y = 0; y < SAMPLE_RANGE; ++y) {
-                uint16_t* ptr = &presto_buffer[(led_sample_locations[i].y + y) * presto_obj->width + led_sample_locations[i].x];
-                for (int x = 0; x < SAMPLE_RANGE; ++x) {
-                    uint16_t sample = __builtin_bswap16(*ptr++);
-                    r += (sample >> 8) & 0xF8;
-                    g += (sample >> 3) & 0xFC;
-                    b += (sample << 3) & 0xF8;
+
+            if (presto_obj->using_palette) {
+                for (int y = 0; y < SAMPLE_RANGE; ++y) {
+                    uint8_t* ptr = (uint8_t*)presto_buffer;
+                    ptr += (led_sample_locations[i].y + y) * presto_obj->width + led_sample_locations[i].x;
+                    for (int x = 0; x < SAMPLE_RANGE; ++x) {
+                        uint16_t sample = presto_obj->presto->get_encoded_palette_entry(*ptr++) >> 16;
+                        r += (sample >> 8) & 0xF8;
+                        g += (sample >> 3) & 0xFC;
+                        b += (sample << 3) & 0xF8;
+                    }
+                }
+            }
+            else {
+                for (int y = 0; y < SAMPLE_RANGE; ++y) {
+                    uint16_t* ptr = &presto_buffer[(led_sample_locations[i].y + y) * presto_obj->width + led_sample_locations[i].x];
+                    for (int x = 0; x < SAMPLE_RANGE; ++x) {
+                        uint16_t sample = __builtin_bswap16(*ptr++);
+                        r += (sample >> 8) & 0xF8;
+                        g += (sample >> 3) & 0xFC;
+                        b += (sample << 3) & 0xF8;
+                    }
                 }
             }
             presto_obj->led_values[i].r = r;
@@ -162,9 +179,10 @@ static uint32_t core1_stack[stack_size] = {0};
 mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     _Presto_obj_t *self = nullptr;
 
-    enum { ARG_full_res };
+    enum { ARG_full_res, ARG_palette };
     static const mp_arg_t allowed_args[] = {
-        { MP_QSTR_full_res, MP_ARG_BOOL, {.u_bool = false} }
+        { MP_QSTR_full_res, MP_ARG_BOOL, {.u_bool = false} },
+        { MP_QSTR_palette, MP_ARG_BOOL, {.u_bool = false} },
     };
 
     // Parse args.
@@ -186,10 +204,12 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
         self->height = HEIGHT;
     }
 
+    self->using_palette = args[ARG_palette].u_bool;
+
     presto_debug("m_new_class(ST7701...\n");
     self->presto = m_new_class(ST7701, self->width, self->height, ROTATE_0,
         SPIPins{spi1, LCD_CS, LCD_CLK, LCD_DAT, PIN_UNUSED, LCD_DC, BACKLIGHT},
-        presto_buffer,
+        presto_buffer, self->using_palette ? presto_palette : nullptr,
         LCD_D0);
 
     presto_debug("launch core1\n");
@@ -220,6 +240,10 @@ mp_int_t Presto_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_
         bufinfo->buf = presto_buffer + (self->width * self->height);
         // Return the remaining space, enough for three layers at 16bpp
         bufinfo->len = self->width * self->height * 2 * 3;
+    } else if (self->using_palette) {
+        // Full res palette mode, there is enough space for a single layer
+        bufinfo->buf = (uint8_t*)presto_buffer + (self->width * self->height);
+        bufinfo->len = self->width * self->height;
     } else {
         // Just return the buffer as-is, this is not really useful for much
         // other than doing fast writes *directly* to the front buffer

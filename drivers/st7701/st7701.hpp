@@ -30,11 +30,15 @@ namespace pimoroni {
     uint lcd_bl;
     uint parallel_sm;
     uint timing_sm;
+    uint palette_sm;
     PIO st_pio;
     uint parallel_offset;
     uint timing_offset;
+    uint palette_offset;
     uint st_dma;
     uint st_dma2;
+    int st_dma3 = -1;
+    int st_dma4 = -1;
 
     uint d0 = 1; // First pin of 18-bit parallel interface
     uint hsync  = 19;
@@ -47,7 +51,7 @@ namespace pimoroni {
 
   public:
     // Parallel init
-    ST7701(uint16_t width, uint16_t height, Rotation rotation, SPIPins control_pins, uint16_t* framebuffer,
+    ST7701(uint16_t width, uint16_t height, Rotation rotation, SPIPins control_pins, uint16_t* framebuffer, uint32_t* palette = nullptr,
       uint d0=1, uint hsync=19, uint vsync=20, uint lcd_de = 21, uint lcd_dot_clk = 22);
 
     void init();
@@ -55,6 +59,13 @@ namespace pimoroni {
     void update(PicoGraphics *graphics) override;
     void partial_update(PicoGraphics *display, Rect region) override;
     void set_backlight(uint8_t brightness) override;
+
+    void set_palette_colour(uint8_t entry, RGB888 colour);
+    void set_palette_colour(uint8_t entry, const RGB& colour);
+
+    // The format is an 18-bit value: RGB566, followed by the final bit of red.
+    // It is MSB aligned, i.e. the top bit of red is in the MSB.
+    uint32_t get_encoded_palette_entry(uint8_t entry) const { return palette[entry]; }
 
     void set_framebuffer(uint16_t* next_fb) {
       next_framebuffer = next_fb;
@@ -69,8 +80,6 @@ namespace pimoroni {
   private:
     void common_init();
     void configure_display(Rotation rotate);
-    void write_blocking_dma(const uint8_t *src, size_t len);
-    void write_blocking_parallel(const uint8_t *src, size_t len);
     void command(uint8_t command, size_t len = 0, const char *data = NULL);
 
     void start_line_xfer();
@@ -83,6 +92,8 @@ namespace pimoroni {
 
     uint16_t* framebuffer;
     uint16_t* next_framebuffer = nullptr;
+
+    uint32_t* palette = nullptr;
 
     uint16_t* next_line_addr;
     int display_row = 0;
