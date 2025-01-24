@@ -52,47 +52,44 @@ bl.start()
 total_image_count = 0
 
 # Store our current location within the user gallery
-current_image = 1
-
-
-# We might not have enough space to load the entire directory list into RAM
-# so we iterate though 'os.ilistdir' and store each file name in a .txt file for later
-def create_index(dir):
-
-    # check to see if contents.txt exists and skip the indexing if it does.
-    if not file_exists(dir + "/index.txt"):
-
-        f = open(dir + "/index.txt", "a")
-
-        for file in os.ilistdir(dir):
-            # We're only looking for jpeg images, we don't want to index any other file type
-            if ".jpg" in file[0] or ".jpeg" in file[0]:
-                f.write(str(file[0]) + "\n")
-
-        f.close()
-
-        print("'index.txt' generated successfully!")
-
-    else:
-        print("\nindex.txt already generated! \nIf you have changed the files in the current directory you will need to delete 'content.txt' and run the program again.\n\n")
-
-
-def count_files(dir):
-    c = 0
-    for file in os.ilistdir(dir):
-        c += 1
-    return c - 1
-
-
-# Delete the current index file if it exists
-# This will force it to recreate it on the next boot.
-def delete_index(dir):
-    print("Removing 'index.txt'")
-    os.remove(dir + "/index.txt")
-
+current_image = 0
 
 lfsr = 1
 tap = 0xdc29
+
+
+# Display an error msg on screen and keep it looping
+def display_error(text):
+    while 1:
+        display.set_pen(BACKGROUND)
+        display.clear()
+        display.set_pen(WHITE)
+        display.text(f"Error: {text}", 10, 10, WIDTH - 10, 1)
+        presto.update()
+        time.sleep(1)
+
+
+try:
+    # Setup for SD Card
+    sd_spi = machine.SPI(0, sck=machine.Pin(34, machine.Pin.OUT), mosi=machine.Pin(35, machine.Pin.OUT), miso=machine.Pin(36, machine.Pin.OUT))
+    sd = sdcard.SDCard(sd_spi, machine.Pin(39))
+
+    # Mount the SD to the directory 'sd'
+    uos.mount(sd, "/sd")
+except OSError:
+    display_error("Unable to mount SD card")
+
+
+def numberedfiles(k):
+    try:
+        return int(k[:-4])
+    except ValueError:
+        pass
+    return 0
+
+
+files = list(sorted(os.listdir("sd/gallery"), key=numberedfiles))
+total_image_count = len(files) - 1
 
 
 def return_point():
@@ -141,22 +138,18 @@ def show_image(show_next=False, show_previous=False):
         if current_image < total_image_count:
             current_image += 1
         else:
-            current_image = 1
+            current_image = 0
     if show_previous:
-        if current_image > 1:
+        if current_image > 0:
             current_image -= 1
         else:
             current_image = total_image_count
 
     # Open the index file and read lines until we're at the correct position
     try:
-        f = open(DIR + "/index.txt", 'r')
-        for i in range(current_image - 1):
-            f.readline()
-        file = f.readline()
-        f.close()
+        img = f"sd/gallery/{files[current_image]}"
 
-        j.open_file(f"{DIR}/{file}")
+        j.open_file(img)
 
         img_height, img_width = j.get_height(), j.get_width()
 
@@ -192,51 +185,6 @@ def clear():
     display.clear()
     display.set_layer(1)
     display.clear()
-
-
-# Display an error msg on screen and keep it looping
-def display_error(text):
-    while 1:
-        display.set_pen(BACKGROUND)
-        display.clear()
-        display.set_pen(WHITE)
-        display.text(f"Error: {text}", 10, 10, WIDTH - 10, 1)
-        presto.update()
-        time.sleep(1)
-
-
-try:
-    # Setup for SD Card
-    sd_spi = machine.SPI(0, sck=machine.Pin(34, machine.Pin.OUT), mosi=machine.Pin(35, machine.Pin.OUT), miso=machine.Pin(36, machine.Pin.OUT))
-    sd = sdcard.SDCard(sd_spi, machine.Pin(39))
-
-    # Mount the SD to the directory 'sd'
-    uos.mount(sd, "/sd")
-except OSError:
-    display_error("Unable to mount SD card")
-
-
-# Function to check if a file is present on the filesystem
-def file_exists(filename):
-    try:
-        return (os.stat(filename)[0] & 0x4000) == 0
-    except OSError:
-        return False
-
-
-try:
-    # Delete the index to force it to recreate the file in the next step
-    delete_index(DIR)
-except OSError:
-    print("Unable to delete index")
-
-# Create the index
-# And count the images
-try:
-    create_index(DIR)
-    total_image_count = count_files(DIR)
-except OSError:
-    display_error("Unable to create index file. \nCheck that your file names do not contain non unicode characters.")
 
 
 # Store the last time the screen was updated
