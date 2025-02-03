@@ -234,10 +234,11 @@ def approx_time_fr(hours, minutes,ampm):
             coords_minus+=moins+minutes_maps[10]
         elif minutes == 40 :
             coords_minus+=moins+minutes_maps[20]
+        elif minutes == 55 : # "moins cinq"
+            coords_minus+=moins+minutes_maps[5]
         else :
             minutes = 60 - minutes  # Transformation en "moins X"
-            coords_minus+=moins+minutes_maps[minutes]
-        
+            coords_minus+=moins+minutes_maps[minutes]        
     else:
         if minutes == 30 :  # "et demie"
             coords+=et1+demie
@@ -250,7 +251,7 @@ def approx_time_fr(hours, minutes,ampm):
         
 
    
-    if full_minutes == "No" :
+    if full_minutes == "No" or minutes == 55  :
         return coords_minus
     else:
         return coords
