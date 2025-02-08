@@ -19,4 +19,4 @@ include("$(PORT_DIR)/boards/manifest.py")
 include("$(BOARD_DIR)/manifest.py")
 
 # Include pga/modules/py_frozen
-freeze("py_frozen/")
+freeze("../modules/py_frozen/")
