@@ -114,9 +114,8 @@ class Tomato(object):
         display.set_pen(self.text_colour)
         text = self.return_string()
         vector.set_font_size(96)
-        x, y, w, h = vector.measure_text(text, x=0, y=0, angle=None)
-        tx = int(CX - (w // 2))
-        ty = int(CY - (h // 2)) + 10
+        tx = int(CX - (205 // 2))
+        ty = int(CY - (58 // 2)) + 10
         vector.text(text, tx, ty)
 
     def run(self):
