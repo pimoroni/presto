@@ -153,16 +153,28 @@ class PSRAM(io.StringIO):
         self.ptr = _ptr
         return result
 
+    def eraseblock(self, block_num):
+        if self.debug:
+            print(f"PSRAM: eraseblock: {block_num}")
+        viper_memset(block_num * self.blocksize + self.offset, 0, self.length)
+
     def ioctl(self, op, arg):
         if self.debug:
             print(f"PSRAML: ioctl: {op} {arg}")
-        if op == 4:
+        if op == 1:  # Initialize
+            return None
+        if op == 2:  # Shutdown
+            return None
+        if op == 3:  # Sync
+            return 0
+        if op == 4:  # Block Count
             return self.blocks
-        if op == 5:
+        if op == 5:  # Block Size
             return self.blocksize
         if op == 6:  # Erase
-            # We don't need to erase blocks ever,
-            # but it might be worth implementing?
+            # We don't really *need* to erase blocks
+            # but should we?
+            # self.eraseblock(arg)
             return 0
 
     def __str__(self):
@@ -170,8 +182,8 @@ class PSRAM(io.StringIO):
         return f"PSRAM: length: {length}, crc: {hcrc:04x}, valid: {valid}"
 
 
-def mktmpfs(size=1024 * 64, raw=False):
-    psram = PSRAM(size, create=True, skip_crc=size > 1024 * 256)
+def mktmpfs(size=1024 * 64, raw=False, debug=False):
+    psram = PSRAM(size, create=True, skip_crc=size > 1024 * 256, debug=debug)
 
     if not raw:
         try:
