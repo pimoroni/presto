@@ -5,7 +5,7 @@ from ezwifi import EzWiFi
 
 from collections import namedtuple
 from machine import Pin, PWM
-from picographics import PicoGraphics, DISPLAY_PRESTO, DISPLAY_PRESTO_FULL_RES, PEN_RGB565, PEN_P8,PEN_RGB332
+from picographics import PicoGraphics, DISPLAY_PRESTO, DISPLAY_PRESTO_FULL_RES, PEN_RGB565, PEN_P8, PEN_RGB332
 
 
 Touch = namedtuple("touch", ("x", "y", "touched"))
