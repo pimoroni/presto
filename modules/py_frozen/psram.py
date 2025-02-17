@@ -54,6 +54,10 @@ class PSRAMBlockDevice:
         if op == 2:  # Shutdown
             return None
         if op == 3:  # Sync
+            # TODO: This is... not great, but seems to work?
+            flush = bytearray(1024)
+            viper_memcpy(flush, PSRAM_BASE, len(flush))
+            del flush
             return 0
         if op == 4:  # Block Count
             return self.blocks
