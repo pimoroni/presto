@@ -21,6 +21,17 @@ def viper_memset(dest: ptr8, value: int, num: int):
         dest[i] = value
 
 
+@micropython.viper
+def viper_psram_flush():
+    # XIP_MAINTENANCE_BASE
+    dest: ptr8 = ptr8(0x18000000)
+    i: int = 1
+    end: int = 16 * 1024
+    while i < end:
+        dest[i] = 0
+        i += 8
+
+
 class PSRAMBlockDevice:
     def __init__(self, size, offset=None, blocksize=256, debug=False):
         self.debug = debug
@@ -54,10 +65,7 @@ class PSRAMBlockDevice:
         if op == 2:  # Shutdown
             return None
         if op == 3:  # Sync
-            # TODO: This is... not great, but seems to work?
-            flush = bytearray(1024)
-            viper_memcpy(flush, PSRAM_BASE, len(flush))
-            del flush
+            viper_psram_flush()
             return 0
         if op == 4:  # Block Count
             return self.blocks
