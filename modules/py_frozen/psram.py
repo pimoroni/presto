@@ -26,8 +26,9 @@ def viper_psram_flush():
     # Workaround for RP2350-E11
     # Detailed here: https://forums.raspberrypi.com/viewtopic.php?t=378249#p2263677
     dest: ptr8 = ptr8(0x1bffc000)  # XIP_MAINTENANCE_BASE
-    for i in range(1, 16 * 1024, 8):
-        dest[i] = 0      # Clean
+    for i in range(0, 16 * 1024, 8):
+        dest[i + 1] = 0  # Clean
+        dest[i + 0] = 0  # Invalidate (without this, frozen bytecode doesn't work?)
 
 
 class PSRAMBlockDevice:
