@@ -1,7 +1,7 @@
 # This is a port of awesome_game.py from the tufty2040 examples
 #https://github.com/pimoroni/pimoroni-pico/blob/main/micropython/examples/tufty2040/awesome_game.py
 from time import sleep
-from my_presto import Presto
+from presto import Presto
 import random
 import time
 import plasma
