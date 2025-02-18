@@ -47,6 +47,9 @@ function ci_micropython_clone {
     cd "$CI_BUILD_ROOT/micropython/lib/pico-sdk"
     log_inform "HACK: cyw43 stability backport for Pico2 W. See: https://github.com/raspberrypi/pico-sdk/pull/2209"
     git apply "$CI_PROJECT_ROOT/boards/pico2_w_cyw43.patch"
+    cd "$CI_BUILD_ROOT/micropython"
+    log_inform "HACK: fix for pendsv build regression. See: https://github.com/micropython/micropython/pull/16733"
+    git apply "$CI_PROJECT_ROOT/boards/pendsv_build.patch"
     cd "$CI_BUILD_ROOT"
 }
 

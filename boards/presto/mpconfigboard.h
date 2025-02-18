@@ -33,9 +33,3 @@ int mp_hal_is_pin_reserved(int n);
 
 #define MICROPY_PY_THREAD                       (0)
 #define MICROPY_GC_SPLIT_HEAP                   (0)
-
-// Hack for pendsv.c using "mp_thread_recursive_mutex_t"
-struct _mp_state_thread_t;
-#include "mpthreadport.h"
-
-typedef recursive_mutex_nowait_t mp_thread_recursive_mutex_t;
