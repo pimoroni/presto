@@ -2,3 +2,4 @@
 *.af
 *.jpg
 *.png
+*.rgb332
