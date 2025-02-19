@@ -1,5 +1,6 @@
 # This is a port of awesome_game.py from the tufty2040 examples
 #https://github.com/pimoroni/pimoroni-pico/blob/main/micropython/examples/tufty2040/awesome_game.py
+import math
 from time import sleep
 from presto import Presto
 import random
@@ -7,31 +8,27 @@ import time
 import plasma
 
 # Setup for the Presto display
-presto = Presto(sprites=True)
+presto = Presto()
 display = presto.display
 WIDTH, HEIGHT = display.get_bounds()
 
 # We'll need this for the touch element of the screen
 touch = presto.touch
 
-# Load the spritsheets so we can flip between them
-tilemap = bytearray(128 * 128)
-open("s4m_ur4i-pirate-tilemap.rgb332", "rb").readinto(tilemap)
+# Load the spreadsheets so we can flip between them
+tilemap = bytearray(32_768)
+open("s4m_ur4i-pirate-tilemap.16bpp", "rb").readinto(tilemap)
 
-character = bytearray(128 * 128)
-open("s4m_ur4i-pirate-characters.rgb332", "rb").readinto(character)
+character = bytearray(32_768)
+open("s4m_ur4i-pirate-characters.16bpp", "rb").readinto(character)
 
 display.set_spritesheet(character)
 
-# Setup backlights to be toggled when you score
+# Setup so the backlights can be toggled when you get a treasure chest
 # The total number of LEDs to set, the Presto has 7
 NUM_LEDS = 7
-
-# Plasma setup
-bl = plasma.WS2812(7, 0, 0, 33)
+bl = plasma.WS2812(NUM_LEDS, 0, 0, 33)
 bl.start()
-
-
 
 class Player():
     def __init__(self):
@@ -42,7 +39,7 @@ class Player():
         self.y = 180
         self.w = 15
         self.h = 30
-        self.speed = 10
+        self.speed = 5
         self.is_alive = True
         self.lives = 3
         self.score = 0
@@ -96,12 +93,12 @@ class Block():
         self.y = -self.h
         # was originally 4-12, but 12 felt too fast
         # self.speed = random.randint(4, 12)
-        self.speed = random.randint(4, 8)
+        self.speed = random.randint(2, 4)
 
 
 
 class Game():
-    def __init__(self):
+    def __init__(self, FPS_COUNTER=False):
         self.player = Player()
         self.block = []
         self.last_new_block = 0
@@ -110,6 +107,11 @@ class Game():
         self.last_treasure = 0
 
         self.SKY = display.create_pen(72, 180, 224)
+        #FPS setup
+        self.show_fps = FPS_COUNTER
+        self.fps_start_time = time.time()
+        self.fps_counter = 0
+        self.current_fps = 0
 
         for i in range(5):
             self.block.append(Block())
@@ -122,6 +124,10 @@ class Game():
 
         self.treasure.randomize()
         self.player.reset()
+        if self.show_fps:
+            self.current_fps = 0
+            self.fps_counter = 0
+            self.fps_start_time = time.time()
 
     def get_input(self):
         x = touch.x
@@ -144,11 +150,20 @@ class Game():
         self.background()
         for block in self.block:
             block.sprite()
-        display.set_pen(255)
+        display.set_pen(0xFFFF)
         display.text("Score: " + str(self.player.score), 10, 10, 320, 2)
         self.treasure.sprite()
         display.set_pen(0)
         self.player.sprite()
+        if self.show_fps:
+            #1 for every second
+            self.fps_counter += 1
+            if (time.time() - self.fps_start_time) > 1:
+                self.current_fps = self.fps_counter / (time.time() - self.fps_start_time)
+                self.fps_counter = 0
+                self.fps_start_time = time.time()
+            display.set_pen(0xFFFF)
+            display.text("FPS: " + str(math.floor(self.current_fps)), 175, 10, 320, 2)
         display.update()
 
     def check_collision(self, a, b):
@@ -183,13 +198,12 @@ class Game():
 
 
 
-game = Game()
-
-
+game = Game(FPS_COUNTER=True)
 while True:
+
     touch.poll()
     game.background()
-    display.set_pen(255)
+    display.set_pen(0xFFFF)
     display.text("ARGH!", 40, 35, 200, 5)
     display.text("Touch screen to Start", 80, 150, 180, 1)
     display.update()
@@ -206,7 +220,7 @@ while True:
         presto.update()
 
     game.background()
-    display.set_pen(255)
+    display.set_pen(0xFFFF)
     display.text("OOPS!", 40, 35, 200, 5)
     display.text("Your score:  " + str(game.player.score), 50, 150, 180, 2)
     display.update()

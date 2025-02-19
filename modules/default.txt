@@ -2,4 +2,4 @@
 *.af
 *.jpg
 *.png
-*.rgb332
+*.16bpp
