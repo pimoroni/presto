@@ -45,8 +45,9 @@ function ci_micropython_clone {
     git submodule update --init lib/btstack
     cd "$CI_BUILD_ROOT"
     cd "$CI_BUILD_ROOT/micropython/lib/pico-sdk"
-    log_inform "HACK: cyw43 stability backport for Pico2 W. See: https://github.com/raspberrypi/pico-sdk/pull/2209"
-    git apply "$CI_PROJECT_ROOT/boards/pico2_w_cyw43.patch"
+    log_inform "HACK: fetch Pico SDK 2.1.1 for cyw43 stability fixes."
+    git fetch origin 2.1.1
+    git checkout 2.1.1
     cd "$CI_BUILD_ROOT/micropython"
     log_inform "HACK: fix for pendsv build regression. See: https://github.com/micropython/micropython/pull/16733"
     git apply "$CI_PROJECT_ROOT/boards/pendsv_build.patch"
