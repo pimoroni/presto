@@ -33,8 +33,11 @@ words = ["it", "d", "is", "m", "about", "lv", "half", "c", "quarter", "b", "to",
 # WiFi setup
 wifi = presto.connect()
 
-# Set the correct time using the NTP service.
-ntptime.settime()
+# grab the current time from the ntp server and update the Pico RTC
+try:
+    ntptime.settime()
+except OSError:
+    print("Unable to contact NTP server")
 
 def approx_time(hours, minutes):
     nums = {0: "twelve", 1: "one", 2: "two",
@@ -58,11 +61,6 @@ def approx_time(hours, minutes):
 
 def update():
     global time_string
-    # grab the current time from the ntp server and update the Pico RTC
-    try:
-        ntptime.settime()
-    except OSError:
-        print("Unable to contact NTP server")
 
     current_t = rtc.datetime()
     time_string = approx_time(current_t[4] - 12 if current_t[4] > 12 else current_t[4], current_t[5])
