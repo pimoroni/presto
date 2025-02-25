@@ -1,4 +1,12 @@
-*.py
 *.af
 *.jpg
 *.png
+main.py
+cheerlights_bulb.py
+cubes.py
+image_gallery.py
+random_maze.py
+stop_watch.py
+tomato.py
+vector_clock_full.py
+word_clock.py
