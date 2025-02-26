@@ -51,7 +51,11 @@ except ImportError as e:
         show_message(e)
 
 # Set the correct time using the NTP service.
-ntptime.settime()
+try:
+    ntptime.settime()
+except OSError:
+    while True:
+        show_message("Unable to get time.\n\nCheck your network try again.")
 
 
 def approx_time(hours, minutes):
