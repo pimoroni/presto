@@ -52,25 +52,33 @@ BLACK = display.create_pen(0, 0, 0)
 
 MARGIN = 15
 
-# Connect to the network and get time.
-display.set_pen(ORANGE)
-display.clear()
-display.set_pen(ORANGE_2)
-display.text("Connecting...", 5, 10, WIDTH, 2)
-presto.update()
 
-presto.connect()
+def show_message(text):
+    display.set_pen(ORANGE)
+    display.clear()
+    display.set_pen(ORANGE_2)
+    display.text(f"{text}", 5, 10, WIDTH, 2)
+    presto.update()
+
+
+# Connect to the network and get time.
+show_message("Connecting...")
+
+try:
+    presto.connect()
+except ValueError as e:
+    while True:
+        show_message(e)
+except ImportError as e:
+    while True:
+        show_message(e)
 
 # Set the correct time using the NTP service.
 try:
     ntptime.settime()
 except OSError:
     while True:
-        display.set_pen(ORANGE)
-        display.clear()
-        display.set_pen(ORANGE_2)
-        display.text("Unable to get time.\n\nCheck network settings in 'secrets.py' and try again.", 5, 10, WIDTH - 10, 2)
-        presto.update()
+        show_message("Unable to get time.\n\nCheck network settings in 'secrets.py' and try again.")
 
 # Keep a record of the last time we updated.
 # We only want to be requesting new information every half an hour.
