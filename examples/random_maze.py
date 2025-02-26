@@ -380,7 +380,8 @@ try:
 
 # Handle the QwSTPad being disconnected unexpectedly
 except OSError:
-    show_message("QwSTPad: Disconnected!")
+    while True:
+        show_message("QwSTPad: Disconnected!")
 
 # Turn off the LEDs of the connected QwSTPad
 finally:
