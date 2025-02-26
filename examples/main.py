@@ -191,7 +191,7 @@ class Application:
         # Translate to our final display offset
         self.t.translate(OFFSET_X, OFFSET_Y)
         # Translate back to screen space, moving origin 0, 0 to our X and Y
-        self.t.translate(CX + self.x, CY + self.y)  
+        self.t.translate(CX + self.x, CY + self.y)
         # Scale the icon around origin 0, 0
         self.t.scale(self.scale, self.scale)
 
@@ -242,6 +242,13 @@ class Application:
     def launch(self):
         with open("/ramfs/launch.txt", "w") as f:
             f.write(self.file)
+
+        # Clear the display buffer before launching the next app
+        display.set_pen(BLACK)
+        display.clear()
+        presto.update()
+
+        # Reset!
         machine.reset()
 
 
