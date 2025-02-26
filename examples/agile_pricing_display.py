@@ -31,10 +31,6 @@ DEBUG = True
 presto = Presto(ambient_light=True)
 display = presto.display
 WIDTH, HEIGHT = display.get_bounds()
-presto.connect()
-
-# Set the correct time using the NTP service.
-ntptime.settime()
 
 # Pico Vector
 vector = PicoVector(display)
@@ -56,12 +52,25 @@ BLACK = display.create_pen(0, 0, 0)
 
 MARGIN = 15
 
-# Clear the screen and use orange as the background colour
+# Connect to the network and get time.
 display.set_pen(ORANGE)
 display.clear()
-display.set_pen(ORANGE_3)
-display.text("Getting prices...", 10, 90 + 2, WIDTH, 4)
+display.set_pen(ORANGE_2)
+display.text("Connecting...", 5, 10, WIDTH, 2)
 presto.update()
+
+presto.connect()
+
+# Set the correct time using the NTP service.
+try:
+    ntptime.settime()
+except OSError:
+    while True:
+        display.set_pen(ORANGE)
+        display.clear()
+        display.set_pen(ORANGE_2)
+        display.text("Unable to get time.\n\nCheck network settings in 'secrets.py' and try again.", 5, 10, WIDTH - 10, 2)
+        presto.update()
 
 # Keep a record of the last time we updated.
 # We only want to be requesting new information every half an hour.
