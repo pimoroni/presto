@@ -10,3 +10,4 @@ stop_watch.py
 tomato.py
 vector_clock_full.py
 word_clock.py
+gallery/*.jpg
