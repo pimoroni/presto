@@ -6,6 +6,7 @@ cheerlights_bulb.py
 cubes.py
 image_gallery.py
 random_maze.py
+secrets.py
 stop_watch.py
 tomato.py
 vector_clock_full.py
