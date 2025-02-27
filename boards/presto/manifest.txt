@@ -1,5 +1,4 @@
 *.af
-*.jpg
 *.png
 main.py
 cheerlights_bulb.py
