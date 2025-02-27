@@ -1,7 +1,6 @@
 import asyncio
 import _presto
 from touch import FT6236
-from backlight import Reactive
 from ezwifi import EzWiFi
 
 from collections import namedtuple
