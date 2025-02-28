@@ -23,9 +23,6 @@ from presto import Presto
 # The total number of LEDs to set, the Presto has 7
 NUM_LEDS = 7
 
-# Where our images are located on the SD card
-DIR = 'sd/gallery'
-
 # Seconds between changing the image on screen
 # This interval shows us a new image every 5 minutes
 INTERVAL = 60 * 5
@@ -52,6 +49,9 @@ j = jpegdec.JPEG(display)
 bl = plasma.WS2812(7, 0, 0, 33)
 bl.start()
 
+# Where our images are located
+directory = 'gallery'
+
 # Stores the total number of images in the user gallery
 total_image_count = 0
 
@@ -65,8 +65,10 @@ tap = 0xdc29
 # Display an error msg on screen and keep it looping
 def display_error(text):
     while 1:
-        display.set_pen(BACKGROUND)
-        display.clear()
+        for i in range(2):
+            display.set_layer(i)
+            display.set_pen(BACKGROUND)
+            display.clear()
         display.set_pen(WHITE)
         display.text(f"Error: {text}", 10, 10, WIDTH - 10, 1)
         presto.update()
@@ -80,8 +82,13 @@ try:
 
     # Mount the SD to the directory 'sd'
     uos.mount(sd, "/sd")
+
+    # if the gallery folder exists on the SD card we want to use the images in there!
+    if os.stat('sd/gallery'):
+        directory = 'sd/gallery'
+
 except OSError:
-    display_error("Unable to mount SD card")
+    pass
 
 
 def numberedfiles(k):
@@ -92,7 +99,11 @@ def numberedfiles(k):
     return 0
 
 
-files = list(sorted(os.listdir("sd/gallery"), key=numberedfiles))
+try:
+    files = list(file for file in sorted(os.listdir(directory), key=numberedfiles) if file.endswith('.jpg'))
+except OSError:
+    display_error("Problem loading images.\n\nEnsure that your Presto or SD card contains a 'gallery' folder in the root")
+
 total_image_count = len(files) - 1
 
 
@@ -151,7 +162,7 @@ def show_image(show_next=False, show_previous=False):
 
     # Open the index file and read lines until we're at the correct position
     try:
-        img = f"sd/gallery/{files[current_image]}"
+        img = f"{directory}/{files[current_image]}"
 
         j.open_file(img)
 
@@ -181,6 +192,8 @@ def show_image(show_next=False, show_previous=False):
 
     except OSError:
         display_error("Unable to find/read file.\n\nCheck that the 'gallery' folder in the root of your SD card contains JPEG images!")
+    except IndexError:
+        display_error("Unable to read images in the 'gallery' folder.\n\nCheck the files are present and are in JPEG format.")
 
 
 def clear():

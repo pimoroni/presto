@@ -112,7 +112,6 @@ INTERVAL = 60
 presto = Presto()
 display = presto.display
 WIDTH, HEIGHT = display.get_bounds()
-wifi = presto.connect()
 
 touch = presto.touch
 
@@ -124,6 +123,27 @@ vector.set_antialiasing(ANTIALIAS_BEST)
 WHITE = display.create_pen(255, 255, 255)
 BLACK = display.create_pen(0, 0, 0)
 GRAY = display.create_pen(75, 75, 75)
+PINK = display.create_pen(250, 125, 180)
+
+
+def show_message(text):
+    display.set_pen(PINK)
+    display.clear()
+    display.set_pen(WHITE)
+    display.text(f"{text}", 5, 10, WIDTH - 10, 2)
+    presto.update()
+
+
+show_message("Connecting...")
+
+try:
+    wifi = presto.connect()
+except ValueError as e:
+    while True:
+        show_message(e)
+except ImportError as e:
+    while True:
+        show_message(e)
 
 # WS2812 / NeoPixel™ LEDs used for the backlight
 bl = plasma.WS2812(7, 0, 0, 33)
@@ -253,6 +273,6 @@ while True:
             draw_bulb((50, 50, 50))
 
     else:
-        print("Lost connection to network")
+        show_message("No network connection!")
 
     presto.update()

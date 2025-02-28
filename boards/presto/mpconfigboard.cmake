@@ -41,3 +41,10 @@ set(MICROPY_BLUETOOTH_BTSTACK ON)
 set(MICROPY_PY_BLUETOOTH_CYW43 ON)
 
 set(MICROPY_HW_ENABLE_PSRAM ON)
+
+# Board specific version of the frozen manifest
+set(MICROPY_FROZEN_MANIFEST ${MICROPY_BOARD_DIR}/manifest.py)
+
+set(PIMORONI_UF2_MANIFEST ${MICROPY_BOARD_DIR}/manifest.txt)
+set(PIMORONI_UF2_DIR ${CMAKE_CURRENT_LIST_DIR}/../../examples)
+include(${CMAKE_CURRENT_LIST_DIR}/../common.cmake)

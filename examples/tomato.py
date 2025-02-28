@@ -68,7 +68,7 @@ class Tomato(object):
         self.foreground_rect.rectangle(10, 10, WIDTH - 20, HEIGHT - 120, (10, 10, 10, 10))
 
         # Touch button
-        self.start_button = Button(CX - 56, HEIGHT - 75, CX - 2, 50)
+        self.start_button = Button(CX // 2, HEIGHT - 75, CX, 50)
         x, y, w, h = self.start_button.bounds
         self.start = Polygon()
         self.start.rectangle(x, y, w, h, (10, 10, 10, 10))
@@ -109,9 +109,9 @@ class Tomato(object):
             if self.is_break_time:
                 vector.text("Start Break", self.start_button.bounds[0] + 8, self.start_button.bounds[1] + 33)
             else:
-                vector.text("Start Task", self.start_button.bounds[0] + 12, self.start_button.bounds[1] + 33)
+                vector.text("Start Task", self.start_button.bounds[0] + 13, self.start_button.bounds[1] + 33)
         elif self.running and self.paused:
-            vector.text("Resume", self.start_button.bounds[0] + 22, self.start_button.bounds[1] + 33)
+            vector.text("Resume", self.start_button.bounds[0] + 24, self.start_button.bounds[1] + 33)
         else:
             vector.text("Pause", self.start_button.bounds[0] + 32, self.start_button.bounds[1] + 33)
 

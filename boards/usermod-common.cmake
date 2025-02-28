@@ -1,20 +1,21 @@
 if(NOT DEFINED PIMORONI_PICO_PATH)
-set(PIMORONI_PICO_PATH ../pimoroni-pico)
+set(PIMORONI_PICO_PATH ${CMAKE_CURRENT_LIST_DIR}/../pimoroni-pico)
 endif()
-include(${CMAKE_CURRENT_LIST_DIR}/../pimoroni_pico_import.cmake)
+include(${PIMORONI_PICO_PATH}/pimoroni_pico_import.cmake)
 
+include_directories(${CMAKE_CURRENT_LIST_DIR}/..)
 include_directories(${PIMORONI_PICO_PATH}/micropython)
 
 list(APPEND CMAKE_MODULE_PATH "${PIMORONI_PICO_PATH}/micropython")
 list(APPEND CMAKE_MODULE_PATH "${PIMORONI_PICO_PATH}/micropython/modules")
 
-# Allows us to find /pga/modules/c/<module>/micropython
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}")
+# Allows us to find /modules/c/<module>/micropython
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/..")
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
-include(c/presto/micropython)
+include(modules/c/presto/micropython)
 
 # Essential
 include(pimoroni_i2c/micropython)
