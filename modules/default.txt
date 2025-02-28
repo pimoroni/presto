@@ -2,3 +2,4 @@
 *.af
 *.jpg
 *.png
+*.16bpp
