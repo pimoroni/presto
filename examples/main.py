@@ -11,14 +11,12 @@ from picovector import ANTIALIAS_FAST, PicoVector, Polygon, Transform, HALIGN_CE
 psram.mkramfs()
 
 try:
-    os.stat("/ramfs/launch.txt")[0] & 0x4000 == 0
-    f = open("/ramfs/launch.txt", "r")
-    result = f.readline()
-    f.close()
+    with open("/ramfs/launch.txt", "r") as f:
+        result = f.readline()
 except OSError:
-    result = False
+    result = ""
 
-if result and result.endswith(".py"):
+if result.endswith(".py"):
     os.remove("/ramfs/launch.txt")
     __import__(result[:-3])
 
@@ -29,9 +27,11 @@ bl.start()
 presto = Presto(ambient_light=False)
 
 display = presto.display
+
 WIDTH, HEIGHT = display.get_bounds()
-CY = HEIGHT // 2
-CX = WIDTH // 2
+
+CENTER_Y = HEIGHT // 2
+CENTER_X = WIDTH // 2
 
 OFFSET_X = 0
 OFFSET_Y = -30
@@ -40,7 +40,6 @@ RADIUS_X = 160
 RADIUS_Y = 30
 
 # Couple of colours for use later
-WHITE = display.create_pen(255, 255, 255)
 BLACK = display.create_pen(0, 0, 0)
 BACKGROUND = display.create_pen(255, 250, 240)
 
@@ -55,6 +54,20 @@ vector.set_antialiasing(ANTIALIAS_FAST)
 vector.set_font("Roboto-Medium.af", 10)
 vector.set_font_align(HALIGN_CENTER)
 t = Transform()
+
+# Touch tracking and menu movement
+touch_start_x = 0
+touch_start_time = None
+tap = False
+
+move_angle = 0
+move = 0
+friction = 0.98
+
+# Rounded corners
+rounded_corners = Polygon()
+rounded_corners.rectangle(0, 0, WIDTH, HEIGHT)
+rounded_corners.rectangle(0, 0, WIDTH, HEIGHT, (10, 10, 10, 10))
 
 
 class Application:
@@ -129,6 +142,7 @@ class Application:
 
             if line.startswith("# NAME "):
                 self.name = line[7:]
+
             if line.startswith("# DESC "):
                 self.description = line[7:]
 
@@ -137,12 +151,10 @@ class Application:
         self.file = file
 
         # Background
-        self.i = Polygon()
-        self.i.rectangle(0 - w / 2, 0 - h / 2, w, h, (10, 10, 10, 10))
+        self.bg = Polygon().rectangle(0 - w / 2, 0 - h / 2, w, h, (10, 10, 10, 10))
 
         # Outline
-        self.ol = Polygon()
-        self.ol.rectangle(0 - w / 2, 0 - h / 2, w, h, (10, 10, 10, 10), stroke=2)
+        self.ol = Polygon().rectangle(0 - w / 2, 0 - h / 2, w, h, (10, 10, 10, 10), stroke=2)
 
         # Transform
         self.t = Transform()
@@ -193,14 +205,14 @@ class Application:
         # Translate to our final display offset
         self.t.translate(OFFSET_X, OFFSET_Y)
         # Translate back to screen space, moving origin 0, 0 to our X and Y
-        self.t.translate(CX + self.x, CY + self.y)
+        self.t.translate(CENTER_X + self.x, CENTER_Y + self.y)
         # Scale the icon around origin 0, 0
         self.t.scale(self.scale, self.scale)
 
     def draw(self, selected=False):
         display.set_pen(self.color_bg)
         vector.set_transform(self.t)
-        vector.draw(self.i)
+        vector.draw(self.bg)
         display.set_pen(self.color_fg)
         self.t.translate(0, 2)
         vector.draw(self.icon)
@@ -231,8 +243,8 @@ class Application:
         y = -h // 2
 
         return (
-            int(x + self.x + CX + OFFSET_X),
-            int(y + self.y + CY + OFFSET_Y),
+            int(x + self.x + CENTER_X + OFFSET_X),
+            int(y + self.y + CENTER_Y + OFFSET_Y),
             int(w),
             int(h),
         )
@@ -254,19 +266,6 @@ icons = [
     Application(60, 60, file) for file in os.listdir()
     if file.endswith(".py") and file not in ("main.py", "secrets.py")]
 
-touch_start_x = 0
-touch_start_time = None
-tap = False
-
-move_angle = 0
-move = 0
-friction = 0.98
-
-# Rounded corners
-bg = Polygon()
-bg.rectangle(0, 0, WIDTH, HEIGHT)
-bg.rectangle(0, 0, WIDTH, HEIGHT, (10, 10, 10, 10))
-
 # Take a local reference to touch for a tiny performance boost
 touch = presto.touch
 
@@ -280,7 +279,7 @@ while True:
 
     # Draw rounded corners in black
     display.set_pen(BLACK)
-    vector.draw(bg)
+    vector.draw(rounded_corners)
 
     touch.poll()
 
