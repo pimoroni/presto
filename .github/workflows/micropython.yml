@@ -67,8 +67,6 @@ jobs:
       shell: bash
       run: |
         source $CI_PROJECT_ROOT/ci/micropython.sh && ci_debug
-        python3 -m venv "$CI_BUILD_ROOT/.dir2uf2"
-        source "$CI_BUILD_ROOT/.dir2uf2/bin/activate"
         ci_cmake_build ${{ matrix.name }}
 
     - name: "Artifacts: Upload .uf2"
