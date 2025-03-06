@@ -7,9 +7,6 @@ from breakout_bme280 import BreakoutBME280
 from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
 import machine
 
-# Setup for the i2c and bme sensor
-bme = BreakoutBME280(machine.I2C())
-
 # Setup for the Presto display
 presto = Presto(ambient_light=True)
 display = presto.display
@@ -34,6 +31,22 @@ vector.set_font("Roboto-Medium.af", 96)
 vector.set_font_letter_spacing(100)
 vector.set_font_word_spacing(100)
 vector.set_transform(t)
+
+
+def show_message(text):
+    display.set_pen(BACKGROUND)
+    display.clear()
+    display.set_pen(FOREGROUND)
+    display.text(f"{text}", 5, 10, WIDTH, 2)
+    presto.update()
+
+
+# Setup for the i2c and bme sensor
+try:
+    bme = BreakoutBME280(machine.I2C())
+except RuntimeError:
+    while True:
+        show_message("No Multi-Sensor stick detected!\n\nConnect and try again.")
 
 
 class Widget(object):
@@ -102,7 +115,12 @@ while True:
     vector.draw(background_rect)
 
     # Get readings and format strings
-    reading = bme.read()
+    try:
+        reading = bme.read()
+    except RuntimeError:
+        while True:
+            show_message("Failed to get reading from BME280.\n\nCheck connection and reset :)")
+
     temp_string = f"{reading[0]:.1f}C"
     pressure_string = f"{reading[1] // 100:.0f} hPa"
     humidity_string = f"{reading[2]:.0f}%"
