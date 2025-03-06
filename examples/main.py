@@ -107,7 +107,9 @@ class Application:
 
         self.selected = False
         self.icon = Polygon()
-        self.name = file[:-3]
+
+        # Bit of filename formatting for scripts without a title in the header.
+        self.name = " ".join([w[0].upper() + w[1:] for w in file[:-3].replace("_", " ").split()])
         self.description = ""
 
         with open(file) as f:
@@ -196,10 +198,6 @@ class Application:
         self.t.scale(self.scale, self.scale)
 
     def draw(self, selected=False):
-        # Bit of formatting for scripts without a title in the header.
-        name = self.name.replace("_", " ")
-        name = " ".join([w[0].upper() + w[1:] for w in name.split()])
-
         display.set_pen(self.color_bg)
         vector.set_transform(self.t)
         vector.draw(self.i)
@@ -211,7 +209,7 @@ class Application:
             self.t.translate(0, -2)
             display.set_pen(BLACK)
             vector.set_font_size(10)
-            vector.text(name, -self.w // 2, 40, max_width=self.w)
+            vector.text(self.name, -self.w, 40, max_width=self.w * 2)
             display.set_pen(self.color_ol)
             vector.draw(self.ol)
             vector.set_font_size(8)
@@ -279,20 +277,24 @@ move_angle = 0
 move = 0
 friction = 0.98
 
+# Rounded corners
 bg = Polygon()
+bg.rectangle(0, 0, WIDTH, HEIGHT)
 bg.rectangle(0, 0, WIDTH, HEIGHT, (10, 10, 10, 10))
 
+# Take a local reference to touch for a tiny performance boost
+touch = presto.touch
+
 while True:
-    # Take a local reference to touch for a tiny performance boost
-    touch = presto.touch
-
+    # We don't want any of the icon transforms to apply to our background
     vector.set_transform(t)
-    t.reset()
 
-    display.set_pen(BLACK)
-    display.clear()
+    # Clear screen to our background colour
     display.set_pen(BACKGROUND)
+    display.clear()
 
+    # Draw rounded corners in black
+    display.set_pen(BLACK)
     vector.draw(bg)
 
     touch.poll()
