@@ -30,11 +30,33 @@ time_string = None
 words = ["it", "d", "is", "m", "about", "lv", "half", "c", "quarter", "b", "to", "past", "n", "one",
          "two", "three", "four", "five", "six", "eleven", "ten", "d", "qdh", "eight", "seven", "rm", "twelve", "nine", "p", "ncsnheypresto", "O'Clock", "agrdsp"]
 
-# WiFi setup
-wifi = presto.connect()
+
+def show_message(text):
+    display.set_pen(BLACK)
+    display.clear()
+    display.set_pen(WHITE)
+    display.text(f"{text}", 5, 10, WIDTH, 2)
+    presto.update()
+
+
+show_message("Connecting...")
+
+try:
+    wifi = presto.connect()
+except ValueError as e:
+    while True:
+        show_message(e)
+except ImportError as e:
+    while True:
+        show_message(e)
 
 # Set the correct time using the NTP service.
-ntptime.settime()
+try:
+    ntptime.settime()
+except OSError:
+    while True:
+        show_message("Unable to get time.\n\nCheck your network try again.")
+
 
 def approx_time(hours, minutes):
     nums = {0: "twelve", 1: "one", 2: "two",

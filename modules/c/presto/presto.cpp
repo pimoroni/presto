@@ -33,6 +33,7 @@ void __printf_debug_flush() {
 
 int mp_vprintf(const mp_print_t *print, const char *fmt, va_list args);
 
+#if DEBUG
 void presto_debug(const char *fmt, ...) {
     va_list ap;
     va_start(ap, fmt);
@@ -41,6 +42,9 @@ void presto_debug(const char *fmt, ...) {
     __printf_debug_flush();
     (void)ret;
 }
+#else
+#define presto_debug(fmt, ...)
+#endif
 
 typedef struct _Presto_led_values_t {
     uint32_t r, g, b;

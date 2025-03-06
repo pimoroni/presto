@@ -6,44 +6,28 @@ on:
   release:
     types: [created]
 
-env:
-  MICROPYTHON_VERSION: feature/presto-wireless
-  MICROPYTHON_FLAVOUR: pimoroni
-  PIMORONI_PICO_VERSION: feature/picovector2-and-layers
-
 jobs:
   build:
-    name: ${{ matrix.name }} (${{ matrix.board }} ${{ matrix.variant }} ${{ matrix.modules }})
-    runs-on: ubuntu-latest
+    name: MicroPython ${{ matrix.name }}
+    runs-on: ubuntu-24.04
     continue-on-error: true
     strategy:
       matrix:
         include:
         - name: presto
-          board: presto
-          variant:
-          modules: default
 
     env:
       # MicroPython version will be contained in github.event.release.tag_name for releases
-      RELEASE_FILE: ${{ matrix.name }}-${{ github.event.release.tag_name || github.sha }}-micropython
-      PIMORONI_PICO_DIR: "${{ github.workspace }}/pimoroni-pico"
-      USER_C_MODULES: "${{ github.workspace }}/src-${{ github.sha }}/modules/${{ matrix.modules }}.cmake"
-      USER_FS_MANIFEST: "${{ github.workspace }}/src-${{ github.sha }}/modules/${{ matrix.modules }}.txt"
-      USER_FS_SOURCE: "${{ github.workspace }}/src-${{ github.sha }}/examples"
-      TAG_OR_SHA: ${{ github.event.release.tag_name || github.sha }}
-      MICROPY_BOARD: ${{ matrix.board }}
-      MICROPY_BOARD_VARIANT: ${{ matrix.variant }}
-      MICROPY_BOARD_DIR: "${{ github.workspace }}/src-${{ github.sha }}/${{ matrix.BOARD }}"
-      MICROPY_FROZEN_MANIFEST: "${{ github.workspace }}/src-${{ github.sha }}/modules/${{ matrix.modules }}.py"
-      BOARD_NAME: ${{ matrix.name }}
-      BUILD_TOOLS: src-${{ github.sha }}/ci/micropython.sh
+      CI_RELEASE_FILENAME: ${{ matrix.name }}-${{ github.event.release.tag_name || github.sha }}-micropython
+      CI_PROJECT_ROOT: ${{ github.workspace }}/src-${{ github.sha }}
+      CI_BUILD_ROOT: ${{ github.workspace }}
+      CI_USE_ENV: 1
 
     steps:
     - name: Compiler Cache Fixup
       run: |
         mkdir -p /home/runner/.ccache
-
+  
     - name: "CCache: Restore saved cache"
       uses: actions/cache@v4
       with:
@@ -53,108 +37,59 @@ jobs:
           ccache-micropython-${{ matrix.name }}-${{ github.ref }}
           ccache-micropython-${{ matrix.name }}-
 
-    - name: "Src: Checkout"
+    - name: "Checkout Project"
       uses: actions/checkout@v4
       with:
         submodules: true
-        path: src-${{ github.sha }}
+        path: ${{ env.CI_PROJECT_ROOT }}
 
-    - name: "Pimoroni Pico: Checkout"
-      uses: actions/checkout@v4
-      with:
-        repository: pimoroni/pimoroni-pico
-        ref: ${{env.PIMORONI_PICO_VERSION}}
-        submodules: true
-        path: pimoroni-pico
-
-    - name: Install Arm GNU Toolchain (arm-none-eabi-gcc)
+    - name: "Install Arm GNU Toolchain (arm-none-eabi-gcc)"
       uses: carlosperate/arm-none-eabi-gcc-action@v1
       with:
         release: '13.3.Rel1'
 
-    - name: "CCache: Install"
+    - name: "Prepare tools & dependencies"
+      shell: bash
       run: |
-        source $BUILD_TOOLS
-        apt_install_build_deps
-      
-    - name: "MicroPython: Checkout"
-      run: |
-        source $BUILD_TOOLS
-        micropython_clone
-
-    - name: "Py_Decl: Checkout"
-      uses: actions/checkout@v4
-      with:
-        repository: gadgetoid/py_decl
-        ref: v0.0.4
-        path: py_decl
-        
-    - name: "dir2uf2: Checkout"
-      uses: actions/checkout@v4
-      with:
-        repository: gadgetoid/dir2uf2
-        ref: v0.0.10
-        path: dir2uf2
-
-    - name: "MicroPython: Build MPY Cross"
-      run: |
-        source $BUILD_TOOLS
-        micropython_build_mpy_cross
+        source $CI_PROJECT_ROOT/ci/micropython.sh && ci_debug
+        mkdir -p $CI_BUILD_ROOT
+        ci_apt_install_build_deps
+        ci_prepare_all
 
     - name: "MicroPython: Configure"
       shell: bash
       run: |
-        source $BUILD_TOOLS
+        source $CI_PROJECT_ROOT/ci/micropython.sh && ci_debug
         micropython_version
-        cmake_configure
+        ci_cmake_configure ${{ matrix.name }}
 
     - name: "MicroPython: Build"
       shell: bash
       run: |
-        source $BUILD_TOOLS
-        cmake_build
-
-    - name: "Py_Decl: Verify .uf2"
-      shell: bash
-      run: |
-        python3 py_decl/py_decl.py --to-json --verify build-${{ matrix.name }}/${{ env.RELEASE_FILE }}.uf2
-
-    - name: "dir2uf2: Append filesystem to .uf2"
-      shell: bash
-      run: |
-        python3 -m pip install littlefs-python==0.12.0
-        ./dir2uf2/dir2uf2 --fs-compact --append-to build-${{ matrix.name }}/${{ env.RELEASE_FILE }}.uf2 --manifest ${{env.USER_FS_MANIFEST}} --filename with-filesystem.uf2 ${{env.USER_FS_SOURCE}}/
+        source $CI_PROJECT_ROOT/ci/micropython.sh && ci_debug
+        ci_cmake_build ${{ matrix.name }}
 
     - name: "Artifacts: Upload .uf2"
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ env.RELEASE_FILE }}.uf2
-        path: build-${{ matrix.name }}/${{ env.RELEASE_FILE }}.uf2
-
-    - name: "Artifacts: Upload .uf2 with filesystem"
+        name: ${{ env.CI_RELEASE_FILENAME }}.uf2
+        path: ${{ env.CI_BUILD_ROOT }}/${{ env.CI_RELEASE_FILENAME }}.uf2
+        
+    - name: "Artifacts: Upload .uf2 (With Filesystem)"
       uses: actions/upload-artifact@v4
       with:
-        name: ${{ env.RELEASE_FILE }}-with-filesystem.uf2
-        path: ${{ env.RELEASE_FILE }}-with-filesystem.uf2
+        if-no-files-found: ignore
+        name: ${{ env.CI_RELEASE_FILENAME }}-with-filesystem.uf2
+        path: ${{ env.CI_BUILD_ROOT }}/${{ env.CI_RELEASE_FILENAME }}-with-filesystem.uf2
 
     - name: "Release: Upload .uf2"
       if: github.event_name == 'release'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
-        asset_path: build-${{ matrix.name }}/${{ env.RELEASE_FILE }}.uf2
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_name: ${{ env.RELEASE_FILE }}.uf2
-        asset_content_type: application/octet-stream
+        files: ${{ env.CI_BUILD_ROOT }}/${{ env.CI_RELEASE_FILENAME }}.uf2
 
-    - name: "Release: Upload .uf2 with filesystem"
-      if: github.event_name == 'release'
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: "Release: Upload .uf2 (With Filesystem)"
+      if: ${{ github.event_name == 'release' && hashFiles('${{ env.CI_BUILD_ROOT }}/${{ env.CI_RELEASE_FILENAME }}-with-filesystem.uf2') != '' }}
+      uses: softprops/action-gh-release@v1
       with:
-        asset_path: ${{ env.RELEASE_FILE }}-with-filesystem.uf2
-        upload_url: ${{ github.event.release.upload_url }}
-        asset_name: ${{ env.RELEASE_FILE }}-with-filesystem.uf2
-        asset_content_type: application/octet-stream
+        files: ${{ env.CI_BUILD_ROOT }}/${{ env.CI_RELEASE_FILENAME }}-with-filesystem.uf2

@@ -17,10 +17,11 @@ CX = WIDTH // 2
 CY = HEIGHT // 2
 
 # Couple of colours for use later
-WHITE = display.create_pen(255, 255, 255)
-RED = display.create_pen(230, 60, 45)
-GREEN = display.create_pen(9, 185, 120)
 BLACK = display.create_pen(0, 0, 0)
+hue = 0.09
+background = display.create_pen_hsv(hue, 0.8, 1.0)
+foreground = display.create_pen_hsv(hue, 0.5, 1.0)
+text_colour = display.create_pen_hsv(hue, 0.2, 1.0)
 
 # We'll need this for the touch element of the screen
 touch = presto.touch
@@ -36,17 +37,21 @@ vector.set_font_word_spacing(100)
 vector.set_transform(t)
 
 # Touch buttons
-start_button = Button(1, HEIGHT - 50, CX - 2, 49)
-stop_button = Button(WIDTH - CX, HEIGHT - 50, CX - 2, 49)
+start_button = Button(3, HEIGHT - 55, CX - 5, 49)
+stop_button = Button((WIDTH - CX) + 1, HEIGHT - 55, CX - 5, 49)
 
 start = Polygon()
-start.rectangle(*start_button.bounds, (5, 5, 5, 5))
+start.rectangle(*start_button.bounds, (10, 10, 10, 10))
 
 stop = Polygon()
-stop.rectangle(*stop_button.bounds, (5, 5, 5, 5))
+stop.rectangle(*stop_button.bounds, (10, 10, 10, 10))
 
 outline = Polygon()
-outline.rectangle(5, 20, WIDTH - 10, HEIGHT - 100, (5, 5, 5, 5), 2)
+outline.rectangle(5, 20, WIDTH - 10, HEIGHT - 100, (10, 10, 10, 10), 2)
+
+# We'll use a rect with rounded corners for the background.
+background_rect = Polygon()
+background_rect.rectangle(0, 0, WIDTH, HEIGHT, (10, 10, 10, 10))
 
 
 class StopWatch(object):
@@ -87,28 +92,31 @@ timer = StopWatch()
 
 while True:
 
-    display.set_pen(WHITE)
+    display.set_pen(BLACK)
     display.clear()
 
-    display.set_pen(GREEN)
+    display.set_pen(background)
+    vector.draw(background_rect)
+
+    display.set_pen(foreground)
     vector.draw(start)
 
-    display.set_pen(RED)
+    display.set_pen(foreground)
     vector.draw(stop)
 
-    display.set_pen(BLACK)
+    display.set_pen(text_colour)
     vector.draw(outline)
 
     vector.set_font_size(32)
     if timer.elapsed and timer.running is False:
-        vector.text("Resume", start_button.bounds[0] + 10, start_button.bounds[1] + 33)
+        vector.text("Resume", start_button.bounds[0] + 8, start_button.bounds[1] + 33)
     else:
         vector.text("Start", start_button.bounds[0] + 27, start_button.bounds[1] + 33)
 
     if timer.running:
         vector.text("Stop", stop_button.bounds[0] + 30, stop_button.bounds[1] + 33)
     else:
-        vector.text("Reset", stop_button.bounds[0] + 25, stop_button.bounds[1] + 33)
+        vector.text("Reset", stop_button.bounds[0] + 23, stop_button.bounds[1] + 33)
 
     if start_button.is_pressed() and timer.running is False:
         timer.start()

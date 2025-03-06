@@ -47,6 +47,15 @@ WALL = display.create_pen(127, 125, 244)
 BACKGROUND = display.create_pen(60, 57, 169)
 PATH = display.create_pen((227 + 60) // 2, (231 + 57) // 2, (110 + 169) // 2)
 
+
+def show_message(text):
+    display.set_pen(BACKGROUND)
+    display.clear()
+    display.set_pen(WALL)
+    display.text(f"{text}", 5, 10, WIDTH, 2)
+    presto.update()
+
+
 # Gameplay Constants
 Position = namedtuple("Position", ("x", "y"))
 MIN_MAZE_WIDTH = 2
@@ -286,8 +295,8 @@ build_maze()
 try:
     player = Player(*start, PLAYER, QwSTPad(i2c, I2C_ADDRESS))
 except OSError:
-    print("QwSTPad: Not Connected ... Exiting")
-    raise SystemExit
+    while True:
+        show_message("QwSTPad: Not Found!\n\nConnect a QwSTPad and try again :)")
 
 print("QwSTPad: Connected ... Starting")
 
@@ -371,7 +380,8 @@ try:
 
 # Handle the QwSTPad being disconnected unexpectedly
 except OSError:
-    print("QwSTPad: Disconnected .. Exiting")
+    while True:
+        show_message("QwSTPad: Disconnected!")
 
 # Turn off the LEDs of the connected QwSTPad
 finally:
