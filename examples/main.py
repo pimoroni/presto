@@ -99,11 +99,11 @@ class Application:
 
     maximum_scale = 1.6
     minimum_scale = 0.6
+    count = 0
 
     def __init__(self, w, h, file):
-        global icon_count
-        self.index = icon_count
-        icon_count += 1
+        self.index = Application.count
+        Application.count += 1
 
         self.selected = False
         self.icon = Polygon()
@@ -164,7 +164,7 @@ class Application:
         return touch.x > x and touch.x < x + w and touch.y > y and touch.y < y + h
 
     def update(self, move_angle):
-        angle_per_icon = 2 * math.pi / icon_count
+        angle_per_icon = 2 * math.pi / Application.count
         self.angle = angle_per_icon * self.index + move_angle
 
         self.angle %= 2 * math.pi
@@ -250,27 +250,12 @@ class Application:
         machine.reset()
 
 
-icon_count = 0
+icons = [
+    Application(60, 60, file) for file in os.listdir()
+    if file.endswith(".py") and file not in ("main.py", "secrets.py")]
 
-
-files = [
-    file
-    for file in os.listdir()
-    if file.endswith(".py") and file not in ("main.py", "secrets.py")
-]
-w = 60
-h = 60
-icons = [Application(w, h, x) for x in files]
-
-num_icons = len(icons)
-
-sx, sy = 0, 0
-ex, ey = 0, 0
-st, et = None, None
-touch_ms = 0
-touch_dist = 0
-touch_speed = 0
-touch_dir = 0
+touch_start_x = 0
+touch_start_time = None
 tap = False
 
 move_angle = 0
@@ -299,48 +284,46 @@ while True:
 
     touch.poll()
 
-    if touch.state and st is None:
-        st = time.ticks_ms()
-        sx, sy = touch.x, touch.y
+    if touch.state and touch_start_time is None:
+        touch_start_time = time.ticks_ms()
+        touch_start_x = touch.x
         tap = True
 
     elif touch.state:
-        ex, ey = touch.x, touch.y
+        # Get the duration of the touch in milliseconds
+        touch_ms = time.ticks_ms() - touch_start_time
 
-        et = time.ticks_ms()
-        touch_ms = et - st  # et phone home
-        # get the x distance between the touch start and current touch
-        touch_dist = abs(sx - ex)
-        # Get the touch direction bounded to -1, 0, +1, for easy multiply later
-        touch_dir = max(min(1, sx - ex), -1)
+        # Get the x distance between the touch start and current touch
+        touch_dist = touch_start_x - touch.x
+
         # Calculate the touch speed, speed = distance / time
         touch_speed = touch_dist / touch_ms
-        touch_speed *= 2
 
-        # Any movement at all should cancel our tap action
-        if touch_dist > 4:
+        # Any movement should cancel our tap action
+        if abs(touch_dist) > 4:
             tap = False
 
         # If a touch is under this minimal distance it counts as a "stop spinning, darn it"
-        if touch_dist > 10:
+        if abs(touch_dist) > 10:
             # Apply the touch speed with the direction multiplier from above
-            move -= math.radians(touch_speed * touch_dir)
-            if touch_speed > 1:
+            move -= math.radians(touch_speed)
+            if abs(touch_speed) > 0.5:
                 friction = 0.98  # Normal friction ( the closer this is to 1 the longer it will take to slow down )
             else:
                 friction = 0.8
+
         else:
             # Pick the one you like best
             # move = 0      # Stop abruptly
             friction = 0.7  # Apply a braking friction
     else:
-        st = None
+        touch_start_time = None
 
     move_angle += move         # Apply the movement distance, this is in degrees and needs finagled to follow your finger
-    move_angle %= 2 * math.pi  # Wrap to 0-359
+    move_angle %= 2 * math.pi  # Wrap at 360 degrees (in radians)
     move *= friction           # Apply friction, this will slowly decrease "move" when there's no touch, to slow the spin down
 
-    # Pre-calculate the scales and angles
+    # Pre-calculate the scales and angles for sorting.
     for icon in icons:
         icon.update(move_angle)
 
