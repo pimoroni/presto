@@ -45,10 +45,6 @@ touch = presto.touch
 # JPEG Dec
 j = jpegdec.JPEG(display)
 
-# Plasma setup
-bl = plasma.WS2812(7, 0, 0, 33)
-bl.start()
-
 # Where our images are located
 directory = 'gallery'
 
@@ -231,23 +227,23 @@ while True:
         # The LEDs on the right side of the presto light up to show it is working
         if touch.x > WIDTH // 2:
             for i in LEDS_RIGHT:
-                bl.set_rgb(i, 255, 255, 255)
+                presto.set_led_rgb(i, 255, 255, 255)
             show_image(show_next=True)
             presto.update()
             last_updated = time.time()
             for i in LEDS_RIGHT:
-                bl.set_rgb(i, 0, 0, 0)
+                presto.set_led_rgb(i, 0, 0, 0)
             time.sleep(0.01)
 
         # Left half of the screen moves to the previous image
         elif touch.x < WIDTH // 2:
             for i in LEDS_LEFT:
-                bl.set_rgb(i, 255, 255, 255)
+                presto.set_led_rgb(i, 255, 255, 255)
             show_image(show_previous=True)
             presto.update()
             last_updated = time.time()
             for i in LEDS_LEFT:
-                bl.set_rgb(i, 0, 0, 0)
+                presto.set_led_rgb(i, 0, 0, 0)
             time.sleep(0.01)
 
         # Wait here until the user stops touching the screen

@@ -23,4 +23,8 @@ extern mp_obj_t Presto_partial_update(size_t n_args, const mp_obj_t *pos_args, m
 extern mp_int_t Presto_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags);
 extern mp_obj_t Presto_set_backlight(mp_obj_t self_in, mp_obj_t brightness);
 extern mp_obj_t Presto_auto_ambient_leds(mp_obj_t self_in, mp_obj_t enable);
+
+extern mp_obj_t Presto_set_led_rgb(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
+extern mp_obj_t Presto_set_led_hsv(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args);
+
 extern mp_obj_t Presto___del__(mp_obj_t self_in);

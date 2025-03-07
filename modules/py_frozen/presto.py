@@ -70,6 +70,12 @@ class Presto():
     def auto_ambient_leds(self, enable):
         self.presto.auto_ambient_leds(enable)
 
+    def set_led_rgb(self, i, r, g, b):
+        self.presto.set_led_rgb(i, r, g, b)
+
+    def set_led_hsv(self, i, h, s, v):
+        self.presto.set_led_hsv(i, h, s, v)
+
     def connect(self, ssid=None, password=None):
         return asyncio.get_event_loop().run_until_complete(self.wifi.connect(ssid, password))
 

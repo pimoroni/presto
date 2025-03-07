@@ -20,9 +20,6 @@ if result.endswith(".py"):
     os.remove("/ramfs/launch.txt")
     __import__(result[:-3])
 
-bl = plasma.WS2812(7, 0, 0, 33)
-bl.start()
-
 # Setup for the Presto display
 presto = Presto(ambient_light=False)
 
@@ -357,6 +354,6 @@ while True:
     # Cycle the hue of the backlight LEDs to match the icon colours
     hue = 1.0 - (move_angle % (2 * math.pi)) / (2 * math.pi)
     for i in range(7):
-        bl.set_hsv(i, hue, 1.0, 0.5)
+        presto.set_led_hsv(i, hue, 1.0, 0.5)
 
     presto.update()
