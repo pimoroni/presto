@@ -1,8 +1,17 @@
-# Presto
+# Presto <!-- omit in toc -->
 
 Most of your interaction with Presto will be through the `presto` module.
 
 It will help you set up PicoGraphics, touch, WiFi, ambient lighting and more.
+
+- [Getting Started](#getting-started)
+- [Features](#features)
+  - [Updating The Display](#updating-the-display)
+  - [Touch](#touch)
+  - [Back/Ambient Lights](#backambient-lights)
+    - [Auto LEDs](#auto-leds)
+    - [Manual LEDs](#manual-leds)
+  - [Wireless](#wireless)
 
 ## Getting Started
 
@@ -58,43 +67,22 @@ To access touch information you can use:
 
 ### Back/Ambient Lights
 
+#### Auto LEDs
+
 If you've set `ambient_light=True` then Presto will automatically update the LEDs
 to match the screen content.
 
 Note - you can disable this with `presto.auto_ambient_leds(False)`.
 
-Otherwise you can use either MicroPython's `neopixel` library or our `Plasma` to
-drive the LEDs.
+#### Manual LEDs
 
-#### Using the NeoPixel Library
-
-```python
-import neopixel
-
-NUM_LEDS = 7
-LED_PIN = 33
-
-lights = neopixel.NeoPixel(machine.Pin(LED_PIN), NUM_LEDS)
-
-lights[0] = (255, 255, 0)
-
-lights.write()
-```
-
-#### Using the Plasma Library
+With Presto's auto backlighting disabled you can control the LED colours
+manually, like so:
 
 
 ```python
-import plasma
-
-NUM_LEDS = 7
-LED_PIN = 33
-
-lights = plasma.WS2812(NUM_LEDS, 0, 0, LED_PIN)
-lights.start()
-
-lights.set_hsv(0, 0.5, 1.0, 1.0)
-lights.set_rgb(1, 255, 255, 0)
+presto.set_led_hsv(0, 0.5, 1.0, 1.0)
+presto.set_led_rgb(1, 255, 255, 0)
 ```
 
 ### Wireless

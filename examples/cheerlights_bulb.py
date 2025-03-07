@@ -145,10 +145,6 @@ except ImportError as e:
     while True:
         show_message(e)
 
-# WS2812 / NeoPixel™ LEDs used for the backlight
-bl = plasma.WS2812(7, 0, 0, 33)
-bl.start()
-
 # Centre points
 CX = WIDTH // 2
 CY = HEIGHT // 2
@@ -257,7 +253,7 @@ while True:
             draw_bulb(colour)
 
             for i in range(7):
-                bl.set_rgb(i, *colour)
+                presto.set_led_rgb(i, *colour)
 
             time.sleep(0.02)
 
@@ -266,7 +262,7 @@ while True:
             display.clear()
 
             for i in range(7):
-                bl.set_rgb(i, 0, 0, 0)
+                presto.set_led_rgb(i, 0, 0, 0)
 
             time.sleep(0.02)
 
