@@ -6,6 +6,7 @@ cubes.py
 image_gallery.py
 random_maze.py
 secrets.py
+sensor-stick-temperature.py
 stop_watch.py
 tomato.py
 vector_clock_full.py
