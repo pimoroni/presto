@@ -89,7 +89,7 @@ jobs:
         files: ${{ env.CI_BUILD_ROOT }}/${{ env.CI_RELEASE_FILENAME }}.uf2
 
     - name: "Release: Upload .uf2 (With Filesystem)"
-      if: ${{ github.event_name == 'release' && hashFiles('${{ env.CI_BUILD_ROOT }}/${{ env.CI_RELEASE_FILENAME }}-with-filesystem.uf2') != '' }}
+      if: github.event_name == 'release'
       uses: softprops/action-gh-release@v1
       with:
         files: ${{ env.CI_BUILD_ROOT }}/${{ env.CI_RELEASE_FILENAME }}-with-filesystem.uf2
