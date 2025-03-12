@@ -1,6 +1,7 @@
 *.af
 *.png
 main.py
+attitude_indicator.py
 cheerlights_bulb.py
 cubes.py
 image_gallery.py
