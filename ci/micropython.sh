@@ -3,8 +3,8 @@ export TERM=${TERM:="xterm-256color"}
 MICROPYTHON_FLAVOUR="pimoroni"
 MICROPYTHON_VERSION="feature/presto-wireless-2025"
 
-PIMORONI_PICO_FLAVOUR="pimoroni"
-PIMORONI_PICO_VERSION="feature/picovector2-and-layers"
+PIMORONI_PICO_FLAVOUR="MichaelBell"
+PIMORONI_PICO_VERSION="faster-pv-render"
 
 PY_DECL_VERSION="v0.0.3"
 DIR2UF2_VERSION="v0.0.9"
