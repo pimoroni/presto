@@ -10,7 +10,6 @@ from time import sleep
 from presto import Presto
 import random
 import time
-import plasma
 
 # Setup for the Presto display
 presto = Presto()
@@ -112,7 +111,7 @@ class Game():
         self.fps_counter = 0
         self.current_fps = 0
 
-        for i in range(5):
+        for _i in range(5):
             self.block.append(Block())
 
     def reset(self):
@@ -209,7 +208,6 @@ while True:
 
     while not touch.state:
         presto.update()
-        pass
 
     while game.player.is_alive:
         if touch.state:
@@ -230,7 +228,6 @@ while True:
     touch.poll()
     while not touch.state:
         presto.update()
-        pass
 
     game.reset()
     presto.update()
