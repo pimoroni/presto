@@ -60,7 +60,7 @@ class FT6236:
 
     def poll(self):
         if self._irq:
-            return None
+            return
 
         if not self._touch_int.value() or self.state or self.state2:
             self._handle_touch(self._touch_int)
@@ -71,7 +71,7 @@ class FT6236:
         y = ((data[2] & 0x0f) << 8) | data[3]
         return int(x / self._scale), int(y / self._scale), e not in (self.STATE_NONE, self.STATE_UP)
 
-    def _handle_touch(self, pin):
+    def _handle_touch(self, pin):  # noqa ARG002
         self.state = self.state2 = False
 
         self._i2c.writeto(self.TOUCH_ADDR, b"\x00", False)
