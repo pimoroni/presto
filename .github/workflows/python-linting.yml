@@ -1,0 +1,41 @@
+name: Python Linting
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    name: Python Linting
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Source
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+
+    - name: Install Python
+      uses: actions/setup-python@8d9ed9ac5c53483de85588cdf95a591a75ab9f55
+      with:
+        python-version: '3.13'
+
+    - name: Install Python Deps
+      run: python -m pip install ruff
+
+    - name: Lint MicroPython Examples - isort
+      shell: bash
+      run: |
+        ruff check --select I examples/
+
+    - name: Lint MicroPython Examples - flake8
+      shell: bash
+      run: |
+        ruff check --select F examples/
+
+    - name: Lint MicroPython Modules - isort
+      shell: bash
+      run: |
+        ruff check --select I modules/py_frozen
+
+    - name: Lint MicroPython Modules - flake8
+      shell: bash
+      run: |
+        ruff check --select F modules/py_frozen
