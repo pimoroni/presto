@@ -108,9 +108,7 @@ class LSM6DS3:
 
         data = self._read_reg(STEP_COUNTER_L, 2)
         steps = (data[1] << 8) | data[0]
-        steps = twos_comp(steps)
-
-        return steps
+        return twos_comp(steps)
 
     def reset_step_count(self):
 
@@ -122,34 +120,24 @@ class LSM6DS3:
     def tilt_detected(self):
 
         tilt = self._read_reg(FUNC_SRC1, 1)
-        tilt = (tilt[0] >> 5) & 0b1
-
-        return tilt
+        return (tilt[0] >> 5) & 0b1
 
     def sig_motion_detected(self):
 
         sig = self._read_reg(FUNC_SRC1, 1)
-        sig = (sig[0] >> 6) & 0b1
-
-        return sig
+        return (sig[0] >> 6) & 0b1
 
     def single_tap_detected(self):
 
         s = self._read_reg(TAP_SRC, 1)
-        s = (s[0] >> 5) & 0b1
-
-        return s
+        return (s[0] >> 5) & 0b1
 
     def double_tap_detected(self):
 
         d = self._read_reg(TAP_SRC, 1)
-        d = (d[0] >> 4) & 0b1
-
-        return d
+        return (d[0] >> 4) & 0b1
 
     def freefall_detected(self):
 
         fall = self._read_reg(WAKE_UP_SRC, 1)
-        fall = fall[0] >> 5
-
-        return fall
+        return fall[0] >> 5

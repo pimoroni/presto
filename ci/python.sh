@@ -28,9 +28,9 @@ function qa_examples_fix {
 }
 
 function qa_modules_check {
-    ruff check --select "$QA_INCLUDE" examples/ --ignore "$QA_IGNORE"
+    ruff check --select "$QA_INCLUDE" modules/py_frozen --ignore "$QA_IGNORE"
 }
 
 function qa_modules_fix {
-    ruff check --select "$QA_INCLUDE" examples/ --ignore "$QA_IGNORE" --fix
+    ruff check --select "$QA_INCLUDE" modules/py_frozen --ignore "$QA_IGNORE" --fix
 }

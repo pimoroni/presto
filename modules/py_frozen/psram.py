@@ -68,6 +68,7 @@ class PSRAMBlockDevice:
         if op == 6:  # Erase
             # We don't really *need* to erase blocks but should we?
             return 0
+        return None
 
 
 def mkramfs(size=1024 * 64, mount_point="/ramfs", debug=False):
