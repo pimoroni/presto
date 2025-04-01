@@ -198,9 +198,9 @@ try:
                 try:
                     p.update()
                 # Handle QwSTPads being disconnected unexpectedly
-                except OSError:
+                except OSError as err:
                     print(f"P{p.index + 1}: Disconnected ... Exiting")
-                    raise SystemExit
+                    raise SystemExit from err
 
             # Check if any projectiles have hit players
             for p in players:
