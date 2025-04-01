@@ -237,19 +237,19 @@ class Player(object):
         # Read the player's gamepad
         button = self.pad.read_buttons()
 
-        if button['L'] and maze[self.y][self.x - 1] != 1:
+        if button["L"] and maze[self.y][self.x - 1] != 1:
             self.x -= 1
             time.sleep(MOVEMENT_SLEEP)
 
-        elif button['R'] and maze[self.y][self.x + 1] != 1:
+        elif button["R"] and maze[self.y][self.x + 1] != 1:
             self.x += 1
             time.sleep(MOVEMENT_SLEEP)
 
-        elif button['U'] and maze[self.y - 1][self.x] != 1:
+        elif button["U"] and maze[self.y - 1][self.x] != 1:
             self.y -= 1
             time.sleep(MOVEMENT_SLEEP)
 
-        elif button['D'] and maze[self.y + 1][self.x] != 1:
+        elif button["D"] and maze[self.y + 1][self.x] != 1:
             self.y += 1
             time.sleep(MOVEMENT_SLEEP)
 
@@ -322,7 +322,7 @@ try:
                 complete = True
         else:
             # Check for the player wanting to continue
-            if player.pad.read_buttons()['+']:
+            if player.pad.read_buttons()["+"]:
                 complete = False
                 level += 1
                 build_maze()
