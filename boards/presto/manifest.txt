@@ -1,5 +1,6 @@
 *.af
 *.png
+*.16bpp
 main.py
 attitude_indicator.py
 cheerlights_bulb.py
