@@ -1,5 +1,5 @@
-import vfs
 import micropython
+import vfs
 
 PSRAM_BASE = 0x11000000
 PSRAM_SIZE = 8 * 1024 * 1024

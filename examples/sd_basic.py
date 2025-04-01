@@ -3,8 +3,8 @@
 An example to show how to setup the SD Card slot and list the files in the root dir
 
 '''
-import sdcard
 import machine
+import sdcard
 import uos
 
 try:

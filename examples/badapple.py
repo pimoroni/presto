@@ -1,14 +1,14 @@
-from picographics import PicoGraphics, DISPLAY_PRESTO
-from presto import Presto
 from time import ticks_us
-import micropython
 
 import machine
+import micropython
+from picographics import DISPLAY_PRESTO, PicoGraphics
+from presto import Presto
 
 machine.freq(264000000)
 
-import sdcard
 import machine
+import sdcard
 import uos
 
 try:

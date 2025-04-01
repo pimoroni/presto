@@ -1,7 +1,7 @@
-import sdcard
-import machine
-import uos
 import jpegdec
+import machine
+import sdcard
+import uos
 from presto import Presto
 
 # Setup for the Presto display

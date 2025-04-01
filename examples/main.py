@@ -1,11 +1,11 @@
-import time
 import math
 import os
+import time
+
 import machine
 import psram
-
+from picovector import ANTIALIAS_FAST, HALIGN_CENTER, PicoVector, Polygon, Transform
 from presto import Presto
-from picovector import ANTIALIAS_FAST, PicoVector, Polygon, Transform, HALIGN_CENTER
 
 psram.mkramfs()
 

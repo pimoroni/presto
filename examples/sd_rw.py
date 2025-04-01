@@ -3,8 +3,8 @@
 SD Card example showing the writing and reading back of a text file.
 
 '''
-import sdcard
 import machine
+import sdcard
 import uos
 
 try:
