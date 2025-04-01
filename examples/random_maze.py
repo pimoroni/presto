@@ -151,7 +151,7 @@ class MazeBuilder:
         self.maze = []
 
         row = [1]
-        for x in range(0, self.width):
+        for _ in range(0, self.width):
             row.append(1)
             row.append(1)
         self.maze.append(row)

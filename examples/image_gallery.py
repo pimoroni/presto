@@ -126,7 +126,7 @@ def fizzlefade():
 
     while True:
 
-        for i in range(2000):
+        for _ in range(2000):
             x, y = return_point()
             if x > -1 and y > -1:
                 display.pixel(x, y)

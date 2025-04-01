@@ -72,5 +72,6 @@ def render(data:ptr8, x:int, y:int, next_tick:int):  # noqa: F821
 # Read out the file and render
 while True:
     data = video.read(1024)
-    if len(data) < 1024: break
+    if len(data) < 1024:
+        break
     x, y, next_tick = render(data, x, y, next_tick)
