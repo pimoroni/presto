@@ -3,7 +3,6 @@ import math
 import os
 import machine
 import psram
-import plasma
 
 from presto import Presto
 from picovector import ANTIALIAS_FAST, PicoVector, Polygon, Transform, HALIGN_CENTER
