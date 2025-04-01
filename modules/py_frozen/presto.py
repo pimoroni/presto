@@ -98,3 +98,4 @@ class Presto():
     def clear(self):
         self.display.clear()
         self.presto.update(self.display)
+

@@ -44,13 +44,13 @@ def render(data:ptr8, x:int, y:int, next_tick:int):  # noqa: F821
         # greyscale colour values
         span_len = int(data[i])
         colour = int(data[i+1])
-        
+
         # Expand the grey colour to each colour channel
         colour = (colour << 11) | (colour << 6) | colour
-        
+
         # Byte swap for the display
         colour = (colour & 0xFF) << 8 | (colour >> 8)
-        
+
         display.set_pen(colour)
         display.pixel_span(x, y, span_len)
 
@@ -60,13 +60,13 @@ def render(data:ptr8, x:int, y:int, next_tick:int):  # noqa: F821
             x = 0
             if y >= 240:
                 presto.update(display)
-                
+
                 # Wait until the next frame at 15FPS
                 next_tick += 1000000 // 15
                 while int(ticks_us()) < next_tick:
                     pass
                 y = 0
-                
+
     return x, y, next_tick
 
 # Read out the file and render
