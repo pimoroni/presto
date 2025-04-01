@@ -9,7 +9,6 @@ from collections import namedtuple
 
 from machine import I2C
 from presto import Presto
-
 from qwstpad import ADDRESSES, QwSTPad
 
 """

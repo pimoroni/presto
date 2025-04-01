@@ -3,8 +3,9 @@
 # DESC A pomodoro timer for your Presto
 
 import time
+
 from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
-from presto import Presto, Buzzer
+from presto import Buzzer, Presto
 from touch import Button
 
 presto = Presto(ambient_light=True)

@@ -1,5 +1,6 @@
 import time
 from random import randint
+
 from presto import Presto
 
 # Setup for the Presto display

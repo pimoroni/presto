@@ -2,12 +2,13 @@
 # NAME Indoor/Outdoor
 # DESC Display the indoor and outdoor temperature
 
-from presto import Presto
-from breakout_bme280 import BreakoutBME280
-from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
+import time
+
 import machine
 import urequests
-import time
+from breakout_bme280 import BreakoutBME280
+from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
+from presto import Presto
 
 # Set your latitude/longitude here (find yours by right clicking in Google Maps!)
 LAT = 53.38609085276884
