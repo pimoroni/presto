@@ -1,8 +1,9 @@
 *.af
 *.png
-*.16bpp
+*.16bpp 
 main.py
 attitude_indicator.py
+awesome_game.py
 cheerlights_bulb.py
 cubes.py
 image_gallery.py

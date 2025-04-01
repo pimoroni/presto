@@ -1,5 +1,10 @@
-# This is a port of awesome_game.py from the tufty2040 examples
-#https://github.com/pimoroni/pimoroni-pico/blob/main/micropython/examples/tufty2040/awesome_game.py
+# NAME awesome_game
+# DESC tufty2040 port of awesome_game.py
+"""
+This is a port of awesome_game.py from the tufty2040 examples
+https://github.com/pimoroni/pimoroni-pico/blob/main/micropython/examples/tufty2040/awesome_game.py
+"""
+
 import math
 from time import sleep
 from presto import Presto
@@ -23,12 +28,6 @@ character = bytearray(32_768)
 open("s4m_ur4i-pirate-characters.16bpp", "rb").readinto(character)
 
 display.set_spritesheet(character)
-
-# Setup so the backlights can be toggled when you get a treasure chest
-# The total number of LEDs to set, the Presto has 7
-NUM_LEDS = 7
-bl = plasma.WS2812(NUM_LEDS, 0, 0, 33)
-bl.start()
 
 class Player():
     def __init__(self):
@@ -118,7 +117,7 @@ class Game():
 
     def reset(self):
         for i in range(7):
-            bl.set_rgb(i, 0, 0, 0)
+            presto.set_led_rgb(i, 0, 0, 0)
         for block in self.block:
             block.randomize()
 
@@ -185,7 +184,7 @@ class Game():
                 if 0 < self.player.score < 8:
                     for i in range(self.player.score):
                         # turn a light gold
-                        bl.set_rgb(i, 255, 215, 0)
+                        presto.set_led_rgb(i, 255, 215, 0)
                 self.treasure.enabled = False
                 self.last_treasure = time.time()
 
