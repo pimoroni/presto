@@ -1,6 +1,6 @@
-'''
+"""
 Watch the backlighting react to a ball moving on screen
-'''
+"""
 
 import math
 import time

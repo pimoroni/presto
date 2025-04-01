@@ -2,10 +2,10 @@
 # NAME Energy Price
 # DESC Shows last, current and next energy price.
 
-'''
+"""
 A demo for the Pimoroni Presto.
 Shows the current, next and last energy price for Octopus Energys Agile Price tarrif
-'''
+"""
 
 import datetime
 import time
@@ -126,7 +126,7 @@ def get_prices():
             print(f"Prices endpoint: {API_URL}{request_string}")
 
         # Finally we return our 3 values
-        return json['results'][0]['value_inc_vat'], json['results'][1]['value_inc_vat'], json['results'][2]['value_inc_vat']
+        return json["results"][0]["value_inc_vat"], json["results"][1]["value_inc_vat"], json["results"][2]["value_inc_vat"]
 
     # if the above request fails, we want to handle the error and return values to keep the application running.
     except ValueError:

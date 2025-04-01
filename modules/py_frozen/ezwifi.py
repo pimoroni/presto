@@ -45,7 +45,7 @@ class EzWiFi:
 
     def on(self, handler_name, handler=None):
         if handler_name not in self._events.keys():
-            raise ValueError(f"Invalid event: \"{handler_name}\"")
+            raise ValueError(f'Invalid event: "{handler_name}"')
 
         def _on(handler):
             self._events[handler_name] = handler

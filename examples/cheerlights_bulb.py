@@ -206,7 +206,7 @@ def get_cheerlight():
         req.close()
         print("Success!")
 
-        colour = tuple(int(json['field2'][i:i + 2], 16) for i in (1, 3, 5))
+        colour = tuple(int(json["field2"][i:i + 2], 16) for i in (1, 3, 5))
 
         return colour
 

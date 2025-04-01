@@ -74,7 +74,7 @@ class FT6236:
     def _handle_touch(self, pin):
         self.state = self.state2 = False
 
-        self._i2c.writeto(self.TOUCH_ADDR, b'\x00', False)
+        self._i2c.writeto(self.TOUCH_ADDR, b"\x00", False)
         self._i2c.readfrom_into(self.TOUCH_ADDR, self._buf)
 
         mode, gesture, touches = self._data[:3]
