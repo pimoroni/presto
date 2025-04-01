@@ -15,7 +15,6 @@ import time
 
 import jpegdec
 import machine
-import plasma
 import sdcard
 import uos
 from presto import Presto

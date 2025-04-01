@@ -1,6 +1,7 @@
 from picographics import PicoGraphics, DISPLAY_PRESTO
 from presto import Presto
 from time import ticks_us
+import micropython
 
 import machine
 
@@ -37,7 +38,7 @@ next_tick = ticks_us()
 # This Micropython Viper function is compiled to native code
 # for maximum execution speed.
 @micropython.viper
-def render(data:ptr8, x:int, y:int, next_tick:int):
+def render(data:ptr8, x:int, y:int, next_tick:int):  # noqa: F821
     for i in range(0, 1024, 2):
         # The encoded video data is an array of span lengths and
         # greyscale colour values

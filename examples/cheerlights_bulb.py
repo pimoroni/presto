@@ -4,7 +4,6 @@
 
 import time
 
-import plasma
 import requests
 from machine import Pin
 from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform

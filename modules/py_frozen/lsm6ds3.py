@@ -1,3 +1,5 @@
+from micropython import const
+
 # Registers
 WHO_AM_I = const(0x0F)
 CTRL2_G = const(0x11)
