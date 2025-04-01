@@ -151,20 +151,20 @@ class MazeBuilder:
         self.maze = []
 
         row = [1]
-        for _ in range(0, self.width):
+        for _ in range(self.width):
             row.append(1)
             row.append(1)
         self.maze.append(row)
 
-        for y in range(0, self.height):
+        for y in range(self.height):
             row = [1]
-            for x in range(0, self.width):
+            for x in range(self.width):
                 row.append(0)
                 row.append(1 if self.cell_grid[x][y].right else 0)
             self.maze.append(row)
 
             row = [1]
-            for x in range(0, self.width):
+            for x in range(self.width):
                 row.append(1 if self.cell_grid[x][y].bottom else 0)
                 row.append(1)
             self.maze.append(row)

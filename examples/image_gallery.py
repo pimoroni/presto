@@ -95,7 +95,7 @@ def numberedfiles(k):
 
 
 try:
-    files = list(file for file in sorted(os.listdir(directory), key=numberedfiles) if file.endswith(".jpg"))
+    files = [file for file in sorted(os.listdir(directory), key=numberedfiles) if file.endswith(".jpg")]
 except OSError:
     display_error("Problem loading images.\n\nEnsure that your Presto or SD card contains a 'gallery' folder in the root")
 
