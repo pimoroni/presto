@@ -18,24 +18,12 @@ jobs:
         python-version: '3.13'
 
     - name: Install Python Deps
-      run: python -m pip install ruff
+      run: source ci/python.sh && qa_prepare_all
 
-    - name: Lint MicroPython Examples - isort
+    - name: Lint MicroPython Examples
       shell: bash
-      run: |
-        ruff check --select I examples/
+      run: source ci/python.sh && qa_examples_lint
 
-    - name: Lint MicroPython Examples - flake8
+    - name: Lint MicroPython Modules
       shell: bash
-      run: |
-        ruff check --select F examples/
-
-    - name: Lint MicroPython Modules - isort
-      shell: bash
-      run: |
-        ruff check --select I modules/py_frozen
-
-    - name: Lint MicroPython Modules - flake8
-      shell: bash
-      run: |
-        ruff check --select F modules/py_frozen
+      run: source ci/python.sh && qa_modules_lint
