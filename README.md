@@ -33,7 +33,7 @@ There are two choices, a regular build that just updates the MicroPython firmwar
 ## Useful Links
 
 * [Learn: Getting Started with Presto](https://learn.pimoroni.com/article/getting-started-with-presto)
-* [Function Reference](docs/README.md)
+* [Function Reference](docs/presto.md)
 * [Pico Graphics documentation](https://github.com/pimoroni/pimoroni-pico/blob/main/micropython/modules/picographics/README.md)
 * [Pico Vector documentation](docs/picovector.md)
 
