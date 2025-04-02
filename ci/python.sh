@@ -1,3 +1,4 @@
+# Include:
 # F = Pyflakes
 # Q = Quotes
 # E/W = pycodestyle (Whitespace, Line lengths etc)
@@ -12,8 +13,14 @@
 # SLF - flake8-self
 # ARG - flake8-unused-arguments
 
+# Ignore:
+# E501 - "line too long". How narrow is your screen!?
+# E402 - "module level import not at top of file". Needs must!
+# COM812 - "Add trailing comma". These are a little obnoxious and weird.
+# ICN001 - "numpy should be imported as np". No. No it should not.
+
 QA_INCLUDE="F,Q,W,E,B,COM,BLE,C4,ISC,ICN,PIE,RSE,RET,SLF,ARG"
-QA_IGNORE="E501,E402,COM812"
+QA_IGNORE="E501,E402,COM812,ICN001"
 
 function qa_prepare_all {
     pip install ruff
