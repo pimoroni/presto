@@ -1,6 +1,6 @@
 *.af
 *.png
-*.16bpp 
+*.16bpp
 main.py
 attitude_indicator.py
 awesome_game.py
