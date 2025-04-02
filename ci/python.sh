@@ -19,18 +19,34 @@ function qa_prepare_all {
     pip install ruff
 }
 
+function qa_check {
+    ruff check --select "$QA_INCLUDE" --ignore "$QA_IGNORE" "$1"
+}
+
+function qa_fix {
+    ruff check --select "$QA_INCLUDE" --ignore "$QA_IGNORE" --fix "$1"
+}
+
 function qa_examples_check {
-    ruff check --select "$QA_INCLUDE" examples/ --ignore "$QA_IGNORE"
+    qa_check examples/
 }
 
 function qa_examples_fix {
-    ruff check --select "$QA_INCLUDE" examples/ --ignore "$QA_IGNORE" --fix
+    qa_fix examples/
 }
 
 function qa_modules_check {
-    ruff check --select "$QA_INCLUDE" modules/py_frozen --ignore "$QA_IGNORE"
+    qa_check modules/py_frozen/
 }
 
 function qa_modules_fix {
-    ruff check --select "$QA_INCLUDE" modules/py_frozen --ignore "$QA_IGNORE" --fix
+    qa_fix modules/py_frozen/
+}
+
+function qa_tools_check {
+    qa_check tools/
+}
+
+function qa_tools_fix {
+    qa_fix tools/
 }
