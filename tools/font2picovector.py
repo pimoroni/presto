@@ -10,6 +10,16 @@ Tool for converting a single glyph from a font into a set of PicoVector contours
 
 Set up a venv and `pip install simplification freetype-py`.
 
+Material Symbols:
+
+Presto icons use MaterialSymbolsOutlined-Regular.ttf. To generate your own:
+
+    - Find your icon from: https://fonts.google.com/icons
+
+    - Click the icon and scroll down the right pane until you see "Code point."
+
+    - Copy the "Code point" - eg: f564 - this is the number you give to font2picovector.py.
+
 Example usage:
 
     python font2picovector.py --font Some_Font.otf --size 40x40 f564
