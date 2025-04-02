@@ -316,6 +316,6 @@ if pil_found:
 
     for contour in contours:
         i_contour = [(c.x * image_scale + (image_width // 2) + 1, c.y * image_scale + (image_height // 2) + 1) for c in contour]
-        draw.polygon(i_contour, fill=(0, 0, 0, 0), outline=(255, 255, 255))
+        draw.polygon(i_contour, fill=None, outline=(255, 255, 255))
 
     img.save(f"test-{args.codepoint:04x}-{int(args.size.width)}x{int(args.size.height)}.png")
