@@ -166,10 +166,10 @@ then be displayed using PicoVector. Most of your favourite fonts should work
 Converting from an OTF or TTF font is done with the `afinate` utility. It's a 
 Python script that handles decomposing the font into a simple list of points.
 
-Right now you'll need the `port-to-c17` branch:
+Right now you'll need the `feature/port-to-c17` branch:
 
 ```
-git clone https://github.com/lowfatcode/alright-fonts --branch port-to-c17
+git clone https://github.com/lowfatcode/alright-fonts --branch feature/port-to-c17
 ```
 
 And you'll need to set up/activate a virtual env and install some dependencies:
