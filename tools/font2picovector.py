@@ -92,6 +92,10 @@ class Point:
     def __repr__(self):
         return "({}, {})".format(self.x, self.y)
 
+    @staticmethod
+    def parse_arg(arg):
+        return Point(*(int(c) for c in arg.split("x")))
+
 
 class Bounds:
     def __init__(self, *args):
@@ -133,13 +137,18 @@ class Bounds:
             Point(self.x, self.y2),
         ]
 
+    @staticmethod
+    def parse_arg(arg):
+        return Bounds(*(int(c) for c in arg.split("x")))
 
-def load_glyph(face, codepoint, quality=30, precision=2, target_bounds=None, include_bounding_box=False):
+
+def load_glyph(face, codepoint, quality=30, precision=2, target_bounds=None, offset=None, include_bounding_box=False):
     # glyph doesn't exist in face
     if face.get_char_index(codepoint) == 0:
         return None
 
     target_bounds = target_bounds or Bounds(50, 50)
+    offset = offset or Point(0, 0)
 
     # load the glyph
     face.load_char(codepoint, freetype.FT_LOAD_PEDANTIC)
@@ -234,7 +243,7 @@ def load_glyph(face, codepoint, quality=30, precision=2, target_bounds=None, inc
     print(f"> scaled bounds: {actual_bounds.x:.2f} {actual_bounds.y:.2f} {actual_bounds.x2:.2f} {actual_bounds.y2:.2f}")
 
     # Cancel out any offset to align to the top left
-    offset = Point(-actual_bounds.x, -actual_bounds.y)
+    offset += Point(-actual_bounds.x, -actual_bounds.y)
 
     # Calculate an offset based on the bounding box and center the result
     offset.x += (target_bounds.width - actual_bounds.width) / 2
@@ -268,10 +277,6 @@ def load_glyph(face, codepoint, quality=30, precision=2, target_bounds=None, inc
 # parse command line arguments
 # ===========================================================================
 
-def bounds(input):
-    return Bounds(*(int(c) for c in input.split("x")))
-
-
 parser = argparse.ArgumentParser(
     description="Create an PicoVector-compatible contour list from a chosen glyph/font."
 )
@@ -283,10 +288,17 @@ parser.add_argument(
 )
 parser.add_argument(
     "--size",
-    type=bounds,
+    type=Bounds.parse_arg,
     required=False,
     default=Bounds(50, 50),
     help="Target width/height, eg: 50x50."
+)
+parser.add_argument(
+    "--offset",
+    type=Point.parse_arg,
+    required=False,
+    default=Point(0, 0),
+    help="Offset x/y, eg: 12x0."
 )
 parser.add_argument("codepoint", type=lambda n: int(n, 16), help="glyph to output")
 args = parser.parse_args()
@@ -301,7 +313,7 @@ font = freetype.Face(args.font.name)
 
 print(f"> decomposing: {args.codepoint:04x}")
 
-contours = load_glyph(font, args.codepoint, target_bounds=args.size)
+contours = load_glyph(font, args.codepoint, target_bounds=args.size, offset=args.offset)
 print(f"\n# ICON {contours}\n")
 
 # If PIL is available, output a debug image
