@@ -1,6 +1,6 @@
 # Pimoroni Presto<!-- omit in toc -->
 
-## RP2350-powered 4" touchscreen display with RGB backlighting<!-- omit in toc -->
+## RP2350-powered 4" touchscreen display with RGB ambient lighting<!-- omit in toc -->
 
 This repository is home to the MicroPython firmware and examples for
 Pimoroni Presto.
