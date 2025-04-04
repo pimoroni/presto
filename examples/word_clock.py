@@ -66,25 +66,24 @@ def approx_time(hours, minutes):
 
     if hours == 12:
         hours = 0
+
     if minutes > 0 and minutes < 8:
         return "it is about " + nums[hours] + " O'Clock"
-    elif minutes >= 8 and minutes < 23:
+
+    if minutes >= 8 and minutes < 23:
         return "it is about quarter past " + nums[hours]
-    elif minutes >= 23 and minutes < 38:
+
+    if minutes >= 23 and minutes < 38:
         return "it is about half past " + nums[hours]
-    elif minutes >= 38 and minutes < 53:
+
+    if minutes >= 38 and minutes < 53:
         return "it is about quarter to " + nums[hours + 1]
-    else:
-        return "it is about " + nums[hours + 1] + " O'Clock"
+
+    return "it is about " + nums[hours + 1] + " O'Clock"
 
 
 def update():
     global time_string
-    # grab the current time from the ntp server and update the Pico RTC
-    try:
-        ntptime.settime()
-    except OSError:
-        print("Unable to contact NTP server")
 
     current_t = rtc.datetime()
     time_string = approx_time(current_t[4] - 12 if current_t[4] > 12 else current_t[4], current_t[5])
