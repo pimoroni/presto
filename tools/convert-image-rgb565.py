@@ -18,10 +18,10 @@ OUTPUT_PATH = IMAGE_PATH.with_suffix(".16bpp")
 def image_to_data(image):
     """Generator function to convert a PIL image to 16-bit 565 RGB bytes."""
     # Convert the image to RGB (ignoring alpha if present)
-    image = image.convert('RGB')
+    image = image.convert("RGB")
 
     # Convert the image to a NumPy array
-    pb = numpy.array(image).astype('uint16')
+    pb = numpy.array(image).astype("uint16")
 
     # Extract the RGB channels
     r = (pb[:, :, 0] >> 3) & 0x1F  # 5 bits for red

@@ -2,10 +2,10 @@
 # NAME Temperature
 # DESC Display data from your Multi Sensor Stick!
 
-from presto import Presto
+import machine
 from breakout_bme280 import BreakoutBME280
 from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
-import machine
+from presto import Presto
 
 # Setup for the Presto display
 presto = Presto(ambient_light=True)

@@ -1,10 +1,10 @@
-'''
+"""
 
 An example to show how to setup the SD Card slot and list the files in the root dir
 
-'''
-import sdcard
+"""
 import machine
+import sdcard
 import uos
 
 try:
@@ -16,7 +16,7 @@ try:
     uos.mount(sd, "/sd")
 
     # Print a list of the files on the root of the SD
-    print(uos.listdir('sd'))
+    print(uos.listdir("sd"))
 
 except OSError as e:
     print(e)

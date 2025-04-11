@@ -1,7 +1,8 @@
+import math
+import time
+
 from picovector import ANTIALIAS_FAST, PicoVector, Polygon, Transform
 from presto import Presto
-import time
-import math
 
 presto = Presto(ambient_light=True)
 display = presto.display
