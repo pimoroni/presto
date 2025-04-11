@@ -36,6 +36,7 @@ There are two choices, a regular build that just updates the MicroPython firmwar
 * [Function Reference](docs/README.md)
 * [Pico Graphics documentation](https://github.com/pimoroni/pimoroni-pico/blob/main/micropython/modules/picographics/README.md)
 * [Pico Vector documentation](docs/picovector.md)
+* [EzWiFi documentation](docs/wifi.md)
 
 ## Other Resources
 
