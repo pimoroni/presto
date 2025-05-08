@@ -47,7 +47,6 @@ namespace pimoroni {
     uint lcd_dot_clk = 22;
 
     static const uint32_t SPI_BAUD = 8'000'000;
-    static const uint32_t BACKLIGHT_PWM_TOP = 6200;
 
   public:
     // Parallel init
