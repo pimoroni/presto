@@ -190,5 +190,5 @@ asyncio.run(main())
 ### Other Functions
 
 * `ipv4` - returns the ipv4 address, shortcut for `if.ipconfig("addr4")[0]`
-* `ipvv6` - returns the ipv4 address, shortcut for `if.ipconfig("addr6")[0]`
+* `ipv6` - returns the first ipv6 address, shortcut for `if.ipconfig("addr6")[0][0]`
 * `isconnected` - returns the connection status
