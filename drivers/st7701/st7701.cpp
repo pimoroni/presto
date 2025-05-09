@@ -400,7 +400,8 @@ void ST7701::start_frame_xfer()
     // pwm control
     if(lcd_bl != PIN_UNUSED) {
       pwm_config cfg = pwm_get_default_config();
-      pwm_config_set_wrap(&cfg, BACKLIGHT_PWM_TOP);
+      // PWM frequency for CTRL-Pin on AP3031 must be below 1000 Hz for seamless dimming between 0% and 100%
+      pwm_config_set_clkdiv_int(&cfg, 20);
       pwm_init(pwm_gpio_to_slice_num(lcd_bl), &cfg, true);
       gpio_set_function(lcd_bl, GPIO_FUNC_PWM);
       set_backlight(0); // Turn backlight off initially to avoid nasty surprises
@@ -665,11 +666,8 @@ void ST7701::start_frame_xfer()
   }
 
   void ST7701::set_backlight(uint8_t brightness) {
-    // At least on my hardware this gives reasonable control over the possible range of backlight brightness
-    uint16_t value;
-    if (brightness == 0) value = 0;
-    else if (brightness == 255) value = BACKLIGHT_PWM_TOP;
-    else value = 181 + (brightness * brightness) / 85;
+    float gamma = 1.8;
+    uint16_t value = (uint16_t)(pow((float)(brightness) / 255.0f, gamma) * 65535.0f + 0.5f);
     pwm_set_gpio_level(lcd_bl, value);
   }
 
