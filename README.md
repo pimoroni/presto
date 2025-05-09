@@ -42,7 +42,7 @@ There are two choices, a regular build that just updates the MicroPython firmwar
 
 Links to community projects and other resources that you might find helpful can be found below. Note that these code examples have not been written/tested by us and we're not able to offer support with them.
 
-- Nothing here yet - [open up an issue](issues/new) or [send us a message](https://pimoroni.freshdesk.com/support/tickets/new) if you'd like to tell us about something cool you've made with Presto!
+- PrestoDeck (Spotify Music Player) by AKZ Dev - [Youtube](https://www.youtube.com/watch?v=iOz5XUVkFkY) / [Github](https://github.com/fatihak/PrestoDeck)
 
 
 
