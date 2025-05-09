@@ -1,12 +1,17 @@
 import asyncio
-import _presto
-from touch import FT6236
-from ezwifi import EzWiFi
-
 from collections import namedtuple
-from machine import Pin, PWM
-from picographics import PicoGraphics, DISPLAY_PRESTO, DISPLAY_PRESTO_FULL_RES, PEN_RGB565, PEN_P8
 
+import _presto
+from ezwifi import EzWiFi
+from machine import PWM, Pin
+from picographics import (
+    DISPLAY_PRESTO,
+    DISPLAY_PRESTO_FULL_RES,
+    PEN_P8,
+    PEN_RGB565,
+    PicoGraphics,
+)
+from touch import FT6236
 
 Touch = namedtuple("touch", ("x", "y", "touched"))
 
@@ -93,3 +98,4 @@ class Presto():
     def clear(self):
         self.display.clear()
         self.presto.update(self.display)
+

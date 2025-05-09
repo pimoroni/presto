@@ -2,20 +2,19 @@
 # NAME Photo Frame
 # DESC A touch enabled image gallery
 
-'''
+"""
 An image gallery demo to turn your Pimoroni Presto into a desktop photo frame!
 
 - Create a folder called 'gallery' on the root of your SD card and fill it with JPEGs.
 - The image will change automatically every 5 minutes
 - You can also tap the right side of the screen to skip next image and left side to go to the previous :)
 
-'''
+"""
 import os
 import time
 
 import jpegdec
 import machine
-import plasma
 import sdcard
 import uos
 from presto import Presto
@@ -46,7 +45,7 @@ touch = presto.touch
 j = jpegdec.JPEG(display)
 
 # Where our images are located
-directory = 'gallery'
+directory = "gallery"
 
 # Stores the total number of images in the user gallery
 total_image_count = 0
@@ -80,8 +79,8 @@ try:
     uos.mount(sd, "/sd")
 
     # if the gallery folder exists on the SD card we want to use the images in there!
-    if os.stat('sd/gallery'):
-        directory = 'sd/gallery'
+    if os.stat("sd/gallery"):
+        directory = "sd/gallery"
 
 except OSError:
     pass
@@ -96,7 +95,7 @@ def numberedfiles(k):
 
 
 try:
-    files = list(file for file in sorted(os.listdir(directory), key=numberedfiles) if file.endswith('.jpg'))
+    files = [file for file in sorted(os.listdir(directory), key=numberedfiles) if file.endswith(".jpg")]
 except OSError:
     display_error("Problem loading images.\n\nEnsure that your Presto or SD card contains a 'gallery' folder in the root")
 
@@ -127,7 +126,7 @@ def fizzlefade():
 
     while True:
 
-        for i in range(2000):
+        for _ in range(2000):
             x, y = return_point()
             if x > -1 and y > -1:
                 display.pixel(x, y)
