@@ -26,6 +26,19 @@ display = presto.display
 
 WIDTH, HEIGHT = display.get_bounds()
 
+icons = {
+    "travel": "\ue6ca",
+    "bomb": "\uf568",
+    "lightbulb": "\ue0f0",
+    "deployed-code": "\uf720",
+    "photo-library": "\ue413",
+    "joystick": "\uf5ee",
+    "monitoring": "\uf190",
+    "timer": "\ue425",
+    "description": "\ue873",
+    "schedule": "\ue8b5"
+}
+
 CENTER_Y = HEIGHT // 2
 CENTER_X = WIDTH // 2
 
@@ -47,8 +60,11 @@ presto.update()
 # Pico Vector
 vector = PicoVector(display)
 vector.set_antialiasing(ANTIALIAS_FAST)
-vector.set_font("Roboto-Medium.af", 10)
+
+vector.set_font("Roboto-Medium-With-Material-Symbols.af", 20)
 vector.set_font_align(HALIGN_CENTER)
+
+
 t = Transform()
 
 # Touch tracking and menu movement
@@ -67,45 +83,6 @@ rounded_corners.rectangle(0, 0, WIDTH, HEIGHT, (10, 10, 10, 10))
 
 
 class Application:
-    DEFAULT_ICON = [
-        [(-10.0, 12.5), (10.0, 12.5), (10.0, 7.5), (-10.0, 7.5), (-10.0, 12.5)],
-        [(-10.0, 2.5), (10.0, 2.5), (10.0, -2.5), (-10.0, -2.5), (-10.0, 2.5)],
-        [
-            (-15.0, 22.5),
-            (-16.43, 22.31),
-            (-17.75, 21.71),
-            (-18.52, 21.11),
-            (-19.47, 19.78),
-            (-19.92, 18.46),
-            (-20.0, 17.56),
-            (-20.0, -22.5),
-            (-19.77, -24.05),
-            (-18.82, -25.73),
-            (-17.79, -26.64),
-            (-16.69, -27.21),
-            (-15.06, -27.5),
-            (5.0, -27.5),
-            (20.0, -12.5),
-            (20.0, 17.5),
-            (19.77, 19.04),
-            (19.36, 19.95),
-            (18.55, 21.02),
-            (17.74, 21.68),
-            (16.7, 22.21),
-            (15.06, 22.5),
-            (-15.0, 22.5),
-        ],
-        [
-            (2.5, -10.0),
-            (2.5, -22.5),
-            (-15.0, -22.5),
-            (-15.0, 17.5),
-            (15.0, 17.5),
-            (15.0, -10.0),
-            (2.5, -10.0),
-        ]
-    ]
-
     maximum_scale = 1.6
     minimum_scale = 0.6
     count = 0
@@ -115,7 +92,7 @@ class Application:
         Application.count += 1
 
         self.selected = False
-        self.icon = Polygon()
+        self.icon = "description"
 
         # Bit of filename formatting for scripts without a title in the header.
         self.name = " ".join([w[0].upper() + w[1:] for w in file[:-3].replace("_", " ").split()])
@@ -126,15 +103,8 @@ class Application:
 
         for line in header:
             if line.startswith("# ICON "):
-                try:
-                    for path in eval(line[7:]):
-                        self.icon.path(*path)
-                except:  # noqa: E722 - eval could barf up all kinds of nonsense
-                    pass
-            else:
-                # If there's no icon in the file header we'll use the default.
-                for path in self.DEFAULT_ICON:
-                    self.icon.path(*path)
+                icon = line[7:].strip()
+                self.icon = icons[icon]
 
             if line.startswith("# NAME "):
                 self.name = line[7:]
@@ -206,12 +176,13 @@ class Application:
         self.t.scale(self.scale, self.scale)
 
     def draw(self, selected=False):
+        vector.set_font_size(20)
         display.set_pen(self.color_bg)
         vector.set_transform(self.t)
         vector.draw(self.bg)
         display.set_pen(self.color_fg)
         self.t.translate(0, 2)
-        vector.draw(self.icon)
+        vector.text(self.icon, 0, 0)
 
         if selected:
             self.t.translate(0, -2)
