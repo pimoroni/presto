@@ -4,7 +4,7 @@ MICROPYTHON_FLAVOUR="pimoroni"
 MICROPYTHON_VERSION="feature/presto-wireless-april-2025"
 
 PIMORONI_PICO_FLAVOUR="pimoroni"
-PIMORONI_PICO_VERSION="feature/picovector2-and-layers"
+PIMORONI_PICO_VERSION="main"
 
 PY_DECL_VERSION="v0.0.3"
 DIR2UF2_VERSION="v0.0.9"
