@@ -106,17 +106,17 @@ class Player:
         # Read the player's gamepad
         button = self.pad.read_buttons()
 
-        if button['L']:
+        if button["L"]:
             self.direction -= 0.1
 
-        if button['R']:
+        if button["R"]:
             self.direction += 0.1
 
-        if button['U']:
+        if button["U"]:
             self.x += PLAYER_SPEED * math.cos(self.direction)
             self.y += PLAYER_SPEED * math.sin(self.direction)
 
-        if button['D']:
+        if button["D"]:
             self.x -= PLAYER_SPEED * math.cos(self.direction)
             self.y -= PLAYER_SPEED * math.sin(self.direction)
 
@@ -124,7 +124,7 @@ class Player:
         self.x = min(max(self.x, self.size), WIDTH - self.size)
         self.y = min(max(self.y, self.size), HEIGHT - self.size)
 
-        if button['A']:
+        if button["A"]:
             self.fire()
 
         new_proj = []
@@ -198,9 +198,9 @@ try:
                 try:
                     p.update()
                 # Handle QwSTPads being disconnected unexpectedly
-                except OSError:
+                except OSError as err:
                     print(f"P{p.index + 1}: Disconnected ... Exiting")
-                    raise SystemExit
+                    raise SystemExit from err
 
             # Check if any projectiles have hit players
             for p in players:

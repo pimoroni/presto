@@ -1,6 +1,6 @@
-'''
+"""
 A demo that flips between 2 images and changes the backlighting
-'''
+"""
 
 import time
 
