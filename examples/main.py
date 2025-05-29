@@ -283,6 +283,7 @@ while True:
     if touch.state and touch_start_time is None:
         touch_start_time = time.ticks_ms()
         touch_start_x = touch.x
+        last_touch_x = touch.x
         tap = True
 
     elif touch.state:
@@ -301,12 +302,12 @@ while True:
 
         # If a touch is under this minimal distance it counts as a "stop spinning, darn it"
         if abs(touch_dist) > 10:
-            # Apply the touch speed with the direction multiplier from above
-            move -= math.radians(touch_speed)
-            if abs(touch_speed) > 0.5:
-                friction = 0.98  # Normal friction ( the closer this is to 1 the longer it will take to slow down )
-            else:
-                friction = 0.8
+            # Follow finger as it moves
+            move = -math.radians(last_touch_x - touch.x) * 0.12
+            last_touch_x = touch.x
+
+            # Normal friction after touch ends ( the closer this is to 1 the longer it will take to slow down )
+            friction = 0.8
 
         else:
             # Pick the one you like best
