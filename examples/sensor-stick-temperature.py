@@ -1,11 +1,11 @@
-# ICON [[(-20.0, 16.67), (-20.0, 12.22), (-15.56, 7.78), (-15.56, 16.67), (-20.0, 16.67)], [(-11.11, 16.67), (-11.11, 3.33), (-6.67, -1.11), (-6.67, 16.67), (-11.11, 16.67)], [(-2.22, 16.67), (-2.22, -1.11), (2.22, 3.39), (2.22, 16.67), (-2.22, 16.67)], [(6.67, 16.67), (6.67, 3.39), (11.11, -1.06), (11.11, 16.67), (6.67, 16.67)], [(15.56, 16.67), (15.56, -5.56), (20.0, -10.0), (20.0, 16.67), (15.56, 16.67)], [(-20.0, 5.17), (-20.0, -1.11), (-4.44, -16.67), (4.44, -7.78), (20.0, -23.33), (20.0, -17.06), (4.44, -1.5), (-4.44, -10.39), (-20.0, 5.17)]]
+# ICON monitoring
 # NAME Temperature
 # DESC Display data from your Multi Sensor Stick!
 
-import machine
+from presto import Presto
 from breakout_bme280 import BreakoutBME280
 from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
-from presto import Presto
+import machine
 
 # Setup for the Presto display
 presto = Presto(ambient_light=True)
