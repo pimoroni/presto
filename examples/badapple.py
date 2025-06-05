@@ -1,15 +1,21 @@
+# Bad Apple on Presto.
+#
+# To create the badapple240x240.bin file for the SD card see
+# https://github.com/MichaelBell/badapple/tree/presto
+# and use the "bit_dump240.py" script in that repo.
+
 from time import ticks_us
 
 import machine
 import micropython
 from picographics import DISPLAY_PRESTO, PicoGraphics
+
 from presto import Presto
 
 machine.freq(264000000)
 
-import machine
-import sdcard
-import uos
+import sdcard  # noqa: E402
+import uos     # noqa: E402
 
 try:
     # Setup for SD Card
@@ -24,7 +30,7 @@ except OSError as e:
 
 # Setup for the Presto display
 presto = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
+display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto.presto))
 WIDTH, HEIGHT = display.get_bounds()
 
 # Read the bad apple video file from the SD card
@@ -35,10 +41,11 @@ x = 0
 tick_increment = 1000000 // 30
 next_tick = ticks_us()
 
+
 # This Micropython Viper function is compiled to native code
 # for maximum execution speed.
 @micropython.viper
-def render(data:ptr8, x:int, y:int, next_tick:int):  # noqa: F821
+def render(data: ptr8, x: int, y: int, next_tick: int):  # noqa: F821
     for i in range(0, 1024, 2):
         # The encoded video data is an array of span lengths and
         # greyscale colour values
@@ -59,7 +66,7 @@ def render(data:ptr8, x:int, y:int, next_tick:int):  # noqa: F821
             y += 1
             x = 0
             if y >= 240:
-                presto.update(display)
+                presto.update()
 
                 # Wait until the next frame at 15FPS
                 next_tick += 1000000 // 15
@@ -68,6 +75,7 @@ def render(data:ptr8, x:int, y:int, next_tick:int):  # noqa: F821
                 y = 0
 
     return x, y, next_tick
+
 
 # Read out the file and render
 while True:
