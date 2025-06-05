@@ -1,3 +1,9 @@
+# Bad Apple on Presto.
+#
+# To create the badapple240x240.bin file for the SD card see
+# https://github.com/MichaelBell/badapple/tree/presto
+# and use the "bit_dump240.py" script in that repo.
+
 from picographics import PicoGraphics, DISPLAY_PRESTO
 from presto import Presto
 from time import ticks_us
@@ -23,7 +29,7 @@ except OSError as e:
 
 # Setup for the Presto display
 presto = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto))
+display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto.presto))
 WIDTH, HEIGHT = display.get_bounds()
 
 # Read the bad apple video file from the SD card
@@ -58,7 +64,7 @@ def render(data:ptr8, x:int, y:int, next_tick:int):
             y += 1
             x = 0
             if y >= 240:
-                presto.update(display)
+                presto.update()
                 
                 # Wait until the next frame at 15FPS
                 next_tick += 1000000 // 15
