@@ -451,6 +451,17 @@ command( 0xFF, 5, "\x77\x01\x00\x00\x10" );
 command( 0x3A, 1, "\x66" );
 command( 0x36, 1, "\x00" );
 
+
+    command(reg::CND2BKxSEL, 5, "\x77\x01\x00\x00\x10");
+      command(reg::MADCTL, 1, "\x00");  // Normal scan direction and RGB pixels
+      command(reg::LNESET, 2, "\x3b\x00");   // (59 + 1) * 8 = 480 lines
+      command(reg::PORCTRL, 2, "\x0d\x02");  // Display porch settings: 13 VBP, 2 VFP (these should not be changed)
+      command(reg::INVSET, 2, "\x31\x01");
+      command(reg::COLCTRL, 1, "\x08");      // LED polarity reversed
+      command(reg::PVGAMCTRL, 16, "\x00\x11\x18\x0e\x11\x06\x07\x08\x07\x22\x04\x12\x0f\xaa\x31\x18");
+      command(reg::NVGAMCTRL, 16, "\x00\x11\x19\x0e\x12\x07\x08\x08\x08\x22\x04\x11\x11\xa9\x32\x18");
+      command(reg::RGBCTRL, 3, "\x80\x2e\x0e");  // HV mode, H and V back porch + sync
+
 // command(reg::INVON);
     
 command( 0x11 );
