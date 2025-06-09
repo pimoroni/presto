@@ -1,4 +1,4 @@
-# Pimoroni Presto<!-- omit in toc -->
+# Pimoroni Presto (display test branch)<!-- omit in toc -->
 
 ## RP2350-powered 4" touchscreen display with RGB ambient lighting<!-- omit in toc -->
 
