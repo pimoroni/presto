@@ -410,67 +410,122 @@ void ST7701::start_frame_xfer()
 
     sleep_ms(150);
 
-    // Commmand 2 BK0 - kinda a page select
-    command(reg::CND2BKxSEL, 5, "\x77\x01\x00\x00\x10");
 
-    /*if(width == 480 && height == 480)*/ {
-      // TODO: Figure out what's actually display specific
-      command(reg::MADCTL, 1, "\x00");  // Normal scan direction and RGB pixels
-      command(reg::LNESET, 2, "\x3b\x00");   // (59 + 1) * 8 = 480 lines
-      command(reg::PORCTRL, 2, "\x0d\x02");  // Display porch settings: 13 VBP, 2 VFP (these should not be changed)
-      command(reg::INVSET, 2, "\x31\x01");
-      command(reg::COLCTRL, 1, "\x08");      // LED polarity reversed
-      command(reg::PVGAMCTRL, 16, "\x00\x11\x18\x0e\x11\x06\x07\x08\x07\x22\x04\x12\x0f\xaa\x31\x18");
-      command(reg::NVGAMCTRL, 16, "\x00\x11\x19\x0e\x12\x07\x08\x08\x08\x22\x04\x11\x11\xa9\x32\x18");
-      command(reg::RGBCTRL, 3, "\x80\x2e\x0e");  // HV mode, H and V back porch + sync
-    }
 
-    // Command 2 BK1 - Voltages and power and stuff
-    command(reg::CND2BKxSEL, 5, "\x77\x01\x00\x00\x11");
-    command(reg::VHRS, 1, "\x60");    // 4.7375v
-    command(reg::VCOMS, 1, "\x32");   // 0.725v
-    command(reg::VGHSS, 1, "\x07");   // 15v
-    command(reg::TESTCMD, 1, "\x80"); // y tho?
-    command(reg::VGLS, 1, "\x49");    // -10.17v
-    command(reg::PWCTRL1, 1, "\x85"); // Middle/Min/Min bias
-    command(reg::PWCTRL2, 1, "\x21"); // 6.6 / -4.6
-    command(reg::PDR1, 1, "\x78");    // 1.6uS
-    command(reg::PDR2, 1, "\x78");    // 6.4uS
 
-    // Begin Forbidden Knowledge
-    // This sequence is probably specific to TL040WVS03CT15-H1263A.
-    // It is not documented in the ST7701s datasheet.
-    // TODO: 👇 W H A T ! ? 👇
-    command(0xE0, 3, "\x00\x1b\x02");
-    command(0xE1, 11, "\x08\xa0\x00\x00\x07\xa0\x00\x00\x00\x44\x44");
-    command(0xE2, 12, "\x11\x11\x44\x44\xed\xa0\x00\x00\xec\xa0\x00\x00");
-    command(0xE3, 4, "\x00\x00\x11\x11");
-    command(0xE4, 2, "\x44\x44");
-    command(0xE5, 16, "\x0a\xe9\xd8\xa0\x0c\xeb\xd8\xa0\x0e\xed\xd8\xa0\x10\xef\xd8\xa0");
-    command(0xE6, 4, "\x00\x00\x11\x11");
-    command(0xE7, 2, "\x44\x44");
-    command(0xE8, 16, "\x09\xe8\xd8\xa0\x0b\xea\xd8\xa0\x0d\xec\xd8\xa0\x0f\xee\xd8\xa0");
-    command(0xEB, 7, "\x02\x00\xe4\xe4\x88\x00\x40");
-    command(0xEC, 2, "\x3c\x00");
-    command(0xED, 16, "\xab\x89\x76\x54\x02\xff\xff\xff\xff\xff\xff\x20\x45\x67\x98\xba");
-    command(0x36, 1, "\x00");
+command( 0xFF, 5, "\x77\x01\x00\x00\x13" );
+command( 0xEF, 1, "\x08" );
+command( 0xFF, 5, "\x77\x01\x00\x00\x10" );
+command( 0xC0, 2, "\x3B\x00" );
+command( 0xC1, 2, "\x0E\x0C" );
+command( 0xC2, 2, "\x07\x0A" );
+command( 0xCC, 1, "\x30" );
+command( 0xCD, 1, "\x08" );
+command( 0xB0, 16, "\x40\x07\x53\x0E\x12\x07\x0A\x09\x09\x26\x05\x10\x0D\x6E\x3B\xD6" );
+command( 0xB1, 16, "\x40\x17\x5C\x0D\x11\x06\x08\x08\x08\x22\x03\x12\x11\x65\x28\xE8" );
+command( 0xFF, 5, "\x77\x01\x00\x00\x11" );
+command( 0xB0, 1, "\x4D" );
+command( 0xB1, 1, "\x32" );
+command( 0xB2, 1, "\x81" );
+command( 0xB3, 1, "\x80" );
+command( 0xB5, 1, "\x4C" );
+command( 0xB7, 1, "\x85" );
+command( 0xB8, 1, "\x33" );
+command( 0xC1, 1, "\x78" );
+command( 0xC2, 1, "\x78" );
+command( 0xD0, 1, "\x88" );
+command( 0xE0, 3, "\x00\x00\x02" );
+command( 0xE1, 11, "\x05\x30\x00\x00\x06\x30\x00\x00\x0E\x30\x30" );
+command( 0xE2, 12, "\x10\x10\x30\x30\xF4\x00\x00\x00\xF4\x00\x00\x00" );
+command( 0xE3, 4, "\x00\x00\x11\x11" );
+command( 0xE4, 2, "\x44\x44" );
+command( 0xE5, 16, "\x0A\xF4\x30\xF0\x0C\xF6\x30\xF0\x06\xF0\x30\xF0\x08\xF2\x30\xF0" );
+command( 0xE6, 4, "\x00\x00\x11\x11" );
+command( 0xE7, 2, "\x44\x44" );
+command( 0xE8, 16, "\x0B\xF5\x30\xF0\x0D\xF7\x30\xF0\x07\xF1\x30\xF0\x09\xF3\x30\xF0" );
+command( 0xE9, 2, "\x36\x01" );
+command( 0xEB, 7, "\x00\x01\xE4\xE4\x44\x88\x33" );
+command( 0xED, 16, "\x20\xFA\xB7\x76\x65\x54\x4F\xFF\xFF\xF4\x45\x56\x67\x7B\xAF\x02" );
+command( 0xEF, 6, "\x10\x0D\x04\x08\x3F\x1F" );
+command( 0xFF, 5, "\x77\x01\x00\x00\x10" );
+command( 0x3A, 1, "\x66" );
+command( 0x36, 1, "\x00" );
 
-    // Command 2 BK3
-    command(reg::CND2BKxSEL, 5, "\x77\x01\x00\x00\x13");
-    command(0xE5, 1, "\xe4");
-    // End Forbidden Knowledge
-
-    command(reg::CND2BKxSEL, 5, "\x77\x01\x00\x00\x00");
-    //command(reg::COLMOD, 1, "\x77");  // 24 bits per pixel...
-    command(reg::COLMOD, 1, "\x66");    // 18 bits per pixel...
-    //command(reg::COLMOD, 1, "\x55");  // 16 bits per pixel...
+// command(reg::INVON);
     
-    command(reg::INVON);
-    sleep_ms(1);
-    command(reg::SLPOUT);
-    sleep_ms(120);
-    command(reg::DISPON);
-    sleep_ms(50);
+command( 0x11 );
+sleep_ms(120);
+command( 0x29 );
+sleep_ms(50);
+
+
+
+
+
+
+
+    
+    // // Commmand 2 BK0 - kinda a page select
+    // command(reg::CND2BKxSEL, 5, "\x77\x01\x00\x00\x10");
+
+    // /*if(width == 480 && height == 480)*/ {
+    //   // TODO: Figure out what's actually display specific
+    //   command(reg::MADCTL, 1, "\x00");  // Normal scan direction and RGB pixels
+    //   command(reg::LNESET, 2, "\x3b\x00");   // (59 + 1) * 8 = 480 lines
+    //   command(reg::PORCTRL, 2, "\x0d\x02");  // Display porch settings: 13 VBP, 2 VFP (these should not be changed)
+    //   command(reg::INVSET, 2, "\x31\x01");
+    //   command(reg::COLCTRL, 1, "\x08");      // LED polarity reversed
+    //   command(reg::PVGAMCTRL, 16, "\x00\x11\x18\x0e\x11\x06\x07\x08\x07\x22\x04\x12\x0f\xaa\x31\x18");
+    //   command(reg::NVGAMCTRL, 16, "\x00\x11\x19\x0e\x12\x07\x08\x08\x08\x22\x04\x11\x11\xa9\x32\x18");
+    //   command(reg::RGBCTRL, 3, "\x80\x2e\x0e");  // HV mode, H and V back porch + sync
+    // }
+
+    // // Command 2 BK1 - Voltages and power and stuff
+    // command(reg::CND2BKxSEL, 5, "\x77\x01\x00\x00\x11");
+    // command(reg::VHRS, 1, "\x60");    // 4.7375v
+    // command(reg::VCOMS, 1, "\x32");   // 0.725v
+    // command(reg::VGHSS, 1, "\x07");   // 15v
+    // command(reg::TESTCMD, 1, "\x80"); // y tho?
+    // command(reg::VGLS, 1, "\x49");    // -10.17v
+    // command(reg::PWCTRL1, 1, "\x85"); // Middle/Min/Min bias
+    // command(reg::PWCTRL2, 1, "\x21"); // 6.6 / -4.6
+    // command(reg::PDR1, 1, "\x78");    // 1.6uS
+    // command(reg::PDR2, 1, "\x78");    // 6.4uS
+
+    // // Begin Forbidden Knowledge
+    // // This sequence is probably specific to TL040WVS03CT15-H1263A.
+    // // It is not documented in the ST7701s datasheet.
+    // // TODO: 👇 W H A T ! ? 👇
+    // command(0xE0, 3, "\x00\x1b\x02");
+    // command(0xE1, 11, "\x08\xa0\x00\x00\x07\xa0\x00\x00\x00\x44\x44");
+    // command(0xE2, 12, "\x11\x11\x44\x44\xed\xa0\x00\x00\xec\xa0\x00\x00");
+    // command(0xE3, 4, "\x00\x00\x11\x11");
+    // command(0xE4, 2, "\x44\x44");
+    // command(0xE5, 16, "\x0a\xe9\xd8\xa0\x0c\xeb\xd8\xa0\x0e\xed\xd8\xa0\x10\xef\xd8\xa0");
+    // command(0xE6, 4, "\x00\x00\x11\x11");
+    // command(0xE7, 2, "\x44\x44");
+    // command(0xE8, 16, "\x09\xe8\xd8\xa0\x0b\xea\xd8\xa0\x0d\xec\xd8\xa0\x0f\xee\xd8\xa0");
+    // command(0xEB, 7, "\x02\x00\xe4\xe4\x88\x00\x40");
+    // command(0xEC, 2, "\x3c\x00");
+    // command(0xED, 16, "\xab\x89\x76\x54\x02\xff\xff\xff\xff\xff\xff\x20\x45\x67\x98\xba");
+    // command(0x36, 1, "\x00");
+
+    // // Command 2 BK3
+    // command(reg::CND2BKxSEL, 5, "\x77\x01\x00\x00\x13");
+    // command(0xE5, 1, "\xe4");
+    // // End Forbidden Knowledge
+
+    // command(reg::CND2BKxSEL, 5, "\x77\x01\x00\x00\x00");
+    // //command(reg::COLMOD, 1, "\x77");  // 24 bits per pixel...
+    // command(reg::COLMOD, 1, "\x66");    // 18 bits per pixel...
+    // //command(reg::COLMOD, 1, "\x55");  // 16 bits per pixel...
+    
+    // command(reg::INVON);
+    // sleep_ms(1);
+    // command(reg::SLPOUT);
+    // sleep_ms(120);
+    // command(reg::DISPON);
+    // sleep_ms(50);
 
     // TODO: Support rotation
     // configure_display(rotation);
