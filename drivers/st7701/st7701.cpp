@@ -85,15 +85,58 @@ namespace pimoroni {
     CND2BKxSEL = 0xFF,
   };
 
+// #define DISPLAY_HEIGHT   480
+// #define TIMING_V_PULSE   8
+// #define TIMING_V_BACK    (5 + TIMING_V_PULSE)
+// #define TIMING_V_DISPLAY (DISPLAY_HEIGHT + TIMING_V_BACK)
+// #define TIMING_V_FRONT   (5 + TIMING_V_DISPLAY)
+// #define TIMING_H_FRONT   4
+// #define TIMING_H_PULSE   16
+// #define TIMING_H_BACK    30
+// #define TIMING_H_DISPLAY 480
+
+// #define  HT  480	  //Horizontal total period = (HT + 1) pixels
+// #define  VT 490	 //Vertical Total = (VT + 1) lines
 #define DISPLAY_HEIGHT   480
+
+
+
+// #define  VPW 8  //Vertical Sync Pulse Width = (VPW + 1) lines
 #define TIMING_V_PULSE   8
-#define TIMING_V_BACK    (5 + TIMING_V_PULSE)
+
+// #define  VPS 2  //Vertical Sync Pulse Start Position = VPS lines					  
+#define TIMING_V_BACK    (2 + TIMING_V_PULSE)  //(5 + TIMING_V_PULSE)
+
+
 #define TIMING_V_DISPLAY (DISPLAY_HEIGHT + TIMING_V_BACK)
-#define TIMING_V_FRONT   (5 + TIMING_V_DISPLAY)
-#define TIMING_H_FRONT   4
-#define TIMING_H_PULSE   16
-#define TIMING_H_BACK    30
+
+
+
+
+// #define  FPS 1   //Vertical Display Period Start Position = FPS lines				  
+#define TIMING_V_FRONT   (1 + TIMING_V_DISPLAY)// (5 + TIMING_V_DISPLAY)
+
+
+// #define  LPS 3	  //Horizontal Display Period Start Position = LPS pixels		
+#define TIMING_H_FRONT   3 //4
+
+// #define  HPW 2   //Horizontal Sync Pulse Width = (HPW + 1) pixels	
+#define TIMING_H_PULSE   3 //16
+
+// #define  HPS 10	  //Horizontal Sync Pulse Start Position = (HPS + 1) pixels	 		 
+#define TIMING_H_BACK    11
+
+
+
 #define TIMING_H_DISPLAY 480
+
+
+
+
+
+
+
+
 
 static ST7701* st7701_inst;
 
@@ -452,15 +495,15 @@ command( 0x3A, 1, "\x66" );
 command( 0x36, 1, "\x00" );
 
 
-    command(reg::CND2BKxSEL, 5, "\x77\x01\x00\x00\x10");
-      command(reg::MADCTL, 1, "\x00");  // Normal scan direction and RGB pixels
-      command(reg::LNESET, 2, "\x3b\x00");   // (59 + 1) * 8 = 480 lines
-      command(reg::PORCTRL, 2, "\x0d\x02");  // Display porch settings: 13 VBP, 2 VFP (these should not be changed)
-      command(reg::INVSET, 2, "\x31\x01");
-      command(reg::COLCTRL, 1, "\x08");      // LED polarity reversed
-      command(reg::PVGAMCTRL, 16, "\x00\x11\x18\x0e\x11\x06\x07\x08\x07\x22\x04\x12\x0f\xaa\x31\x18");
-      command(reg::NVGAMCTRL, 16, "\x00\x11\x19\x0e\x12\x07\x08\x08\x08\x22\x04\x11\x11\xa9\x32\x18");
-      command(reg::RGBCTRL, 3, "\x80\x2e\x0e");  // HV mode, H and V back porch + sync
+    // command(reg::CND2BKxSEL, 5, "\x77\x01\x00\x00\x10");
+    //   command(reg::MADCTL, 1, "\x00");  // Normal scan direction and RGB pixels
+    //   command(reg::LNESET, 2, "\x3b\x00");   // (59 + 1) * 8 = 480 lines
+    //   command(reg::PORCTRL, 2, "\x0d\x02");  // Display porch settings: 13 VBP, 2 VFP (these should not be changed)
+    //   command(reg::INVSET, 2, "\x31\x01");
+    //   command(reg::COLCTRL, 1, "\x08");      // LED polarity reversed
+    //   command(reg::PVGAMCTRL, 16, "\x00\x11\x18\x0e\x11\x06\x07\x08\x07\x22\x04\x12\x0f\xaa\x31\x18");
+    //   command(reg::NVGAMCTRL, 16, "\x00\x11\x19\x0e\x12\x07\x08\x08\x08\x22\x04\x11\x11\xa9\x32\x18");
+    //   command(reg::RGBCTRL, 3, "\x80\x2e\x0e");  // HV mode, H and V back porch + sync
 
 // command(reg::INVON);
     
