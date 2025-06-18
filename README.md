@@ -45,6 +45,7 @@ Links to community projects and other resources that you might find helpful can 
 - PrestoDeck (Spotify Music Player) - [Youtube](https://www.youtube.com/watch?v=iOz5XUVkFkY) / [Github](https://github.com/fatihak/PrestoDeck)
 - [Last.fm Now Playing Display](https://github.com/andypiper/presto-lastfm)
 - [PrestoMaze - maze generation and solving](https://github.com/kurosuke/PrestoMaze/)
+- [Presto Stream Deck Controller](https://forums.pimoroni.com/t/presto-stream-deck-controller/27930)
 
 
 
