@@ -1,10 +1,10 @@
-# ICON [[(-4.5, 16.82), (-9.92, 6.75), (-19.99, 1.33), (-16.1, -2.5), (-8.17, -1.13), (-2.58, -6.71), (-19.93, -14.1), (-15.33, -18.8), (5.73, -15.08), (12.52, -21.87), (13.6, -22.66), (15.25, -23.11), (16.46, -23.05), (17.73, -22.63), (19.14, -21.42), (19.62, -20.63), (19.97, -19.45), (19.99, -18.25), (19.79, -17.33), (19.32, -16.37), (18.79, -15.72), (11.92, -8.84), (15.64, 12.17), (10.99, 16.82), (3.54, -0.53), (-2.04, 5.05), (-0.61, 12.93), (-4.5, 16.82)]]
+# ICON travel
 # NAME Attitude Indicator
 # DESC A Demo for the Multi-Sensor Stick
-from presto import Presto
-from picovector import ANTIALIAS_FAST, PicoVector, Polygon, Transform
 import machine
 from lsm6ds3 import LSM6DS3, NORMAL_MODE_104HZ
+from picovector import ANTIALIAS_FAST, PicoVector, Polygon, Transform
+from presto import Presto
 
 # Setup for the Presto display
 presto = Presto(ambient_light=True)

@@ -1,5 +1,6 @@
-import network
 import asyncio
+
+import network
 from micropython import const
 
 
@@ -44,7 +45,7 @@ class EzWiFi:
 
     def on(self, handler_name, handler=None):
         if handler_name not in self._events.keys():
-            raise ValueError(f"Invalid event: \"{handler_name}\"")
+            raise ValueError(f'Invalid event: "{handler_name}"')
 
         def _on(handler):
             self._events[handler_name] = handler
@@ -103,14 +104,14 @@ class EzWiFi:
 
     def _secrets(self):
         try:
-            from secrets import WIFI_SSID, WIFI_PASSWORD
+            from secrets import WIFI_PASSWORD, WIFI_SSID
             if not WIFI_SSID:
                 raise ValueError("secrets.py: WIFI_SSID is empty!")
             if not WIFI_PASSWORD:
                 raise ValueError("secrets.py: WIFI_PASSWORD is empty!")
             return WIFI_SSID, WIFI_PASSWORD
-        except ImportError:
-            raise ImportError("secrets.py: missing or invalid!")
+        except ImportError as err:
+            raise ImportError("secrets.py: missing or invalid!") from err
 
 
 def connect(**kwargs):

@@ -1,10 +1,10 @@
-'''
+"""
 
 SD Card example showing the writing and reading back of a text file.
 
-'''
-import sdcard
+"""
 import machine
+import sdcard
 import uos
 
 try:
@@ -16,7 +16,7 @@ try:
     uos.mount(sd, "/sd")
 
     # Open the file in write mode, if the file doesn't exist it will create it
-    f = open('sd/presto.txt', 'w')
+    f = open("sd/presto.txt", "w")
     # Write the string to the file we opened above
     f.write("Hello from Pimoroni Presto!")
     # Once we're done writing to the file we can close it.
@@ -24,7 +24,7 @@ try:
 
     # Now lets read the file back and print the content to the terminal!
     # This opens the file in read only mode
-    f = open('sd/presto.txt')
+    f = open("sd/presto.txt")
 
     # Read the content and store it in a variable
     data = f.read()
