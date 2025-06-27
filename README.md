@@ -46,6 +46,7 @@ Links to community projects and other resources that you might find helpful can 
 - [Last.fm Now Playing Display](https://github.com/andypiper/presto-lastfm)
 - [PrestoMaze - maze generation and solving](https://github.com/kurosuke/PrestoMaze/)
 - [Presto Stream Deck Controller](https://forums.pimoroni.com/t/presto-stream-deck-controller/27930)
+- [Presto Solar System](https://github.com/mrglennjones/presto-solar-system)
 
 
 
