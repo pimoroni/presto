@@ -1,3 +1,7 @@
+# ICON [[(-20.0, 16.67), (-20.0, 12.22), (-15.56, 7.78), (-15.56, 16.67), (-20.0, 16.67)], [(-11.11, 16.67), (-11.11, 3.33), (-6.67, -1.11), (-6.67, 16.67), (-11.11, 16.67)], [(-2.22, 16.67), (-2.22, -1.11), (2.22, 3.39), (2.22, 16.67), (-2.22, 16.67)], [(6.67, 16.67), (6.67, 3.39), (11.11, -1.06), (11.11, 16.67), (6.67, 16.67)], [(15.56, 16.67), (15.56, -5.56), (20.0, -10.0), (20.0, 16.67), (15.56, 16.67)], [(-20.0, 5.17), (-20.0, -1.11), (-4.44, -16.67), (4.44, -7.78), (20.0, -23.33), (20.0, -17.06), (4.44, -1.5), (-4.44, -10.39), (-20.0, 5.17)]]
+# NAME Energy Price
+# DESC Shows last, current and next energy price.
+
 '''
 A demo for the Pimoroni Presto.
 Shows the current, next and last energy price for Octopus Energys Agile Price tarrif
@@ -27,10 +31,6 @@ DEBUG = True
 presto = Presto(ambient_light=True)
 display = presto.display
 WIDTH, HEIGHT = display.get_bounds()
-presto.connect()
-
-# Set the correct time using the NTP service.
-ntptime.settime()
 
 # Pico Vector
 vector = PicoVector(display)
@@ -52,12 +52,33 @@ BLACK = display.create_pen(0, 0, 0)
 
 MARGIN = 15
 
-# Clear the screen and use orange as the background colour
-display.set_pen(ORANGE)
-display.clear()
-display.set_pen(ORANGE_3)
-display.text("Getting prices...", 10, 90 + 2, WIDTH, 4)
-presto.update()
+
+def show_message(text):
+    display.set_pen(ORANGE)
+    display.clear()
+    display.set_pen(ORANGE_2)
+    display.text(f"{text}", 5, 10, WIDTH, 2)
+    presto.update()
+
+
+# Connect to the network and get time.
+show_message("Connecting...")
+
+try:
+    presto.connect()
+except ValueError as e:
+    while True:
+        show_message(e)
+except ImportError as e:
+    while True:
+        show_message(e)
+
+# Set the correct time using the NTP service.
+try:
+    ntptime.settime()
+except OSError:
+    while True:
+        show_message("Unable to get time.\n\nCheck network settings in 'secrets.py' and try again.")
 
 # Keep a record of the last time we updated.
 # We only want to be requesting new information every half an hour.

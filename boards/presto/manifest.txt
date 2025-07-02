@@ -1,0 +1,17 @@
+*.af
+*.png
+*.16bpp
+main.py
+attitude_indicator.py
+awesome_game.py
+cheerlights_bulb.py
+cubes.py
+image_gallery.py
+random_maze.py
+secrets.py
+sensor-stick-temperature.py
+stop_watch.py
+tomato.py
+vector_clock_full.py
+word_clock.py
+gallery/*.jpg

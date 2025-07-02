@@ -158,45 +158,26 @@ Under the hood PicoVector uses [Alright Fonts](https://github.com/lowfatcode/alr
 a font-format for embedded and low resource platforms.
 
 Alright Fonts supports converting TTF and OTF fonts into .af format which can
-then be displayed using PicoVector. Most of your favourite fonts should work
-- including silly fonts like [Jokerman](https://en.wikipedia.org/wiki/Jokerman_(typeface)) - but there are some limitations to their complexity.
+then be displayed using PicoVector. Most of your favourite fonts should work, including silly fonts like [Jokerman](https://en.wikipedia.org/wiki/Jokerman_(typeface)) - but there are some limitations to their complexity.
 
 ### Converting
 
 Converting from an OTF or TTF font is done with the `afinate` utility. It's a 
 Python script that handles decomposing the font into a simple list of points.
 
-Right now you'll need the `port-to-c17` branch:
+The latest version of this conversion utility can be found at the repo below, along with installation instructions and some pre-converted sample fonts:
 
-```
-git clone https://github.com/lowfatcode/alright-fonts --branch port-to-c17
-```
-
-And you'll need to set up/activate a virtual env and install some dependencies:
-
-```
-cd alright-fonts
-python3 -m venv .venv
-source .venv/bin/activate
-pip install freetype.py simplification
-```
-
-And, finally, convert a font with `afinate`:
-
-```
-./afinate --font jokerman.ttf --quality medium jokerman.af
-```
-
-This will output two things- a wall of text detailing which characters have
-been converted and how many points/contours they consist of, and the font
-file itself. You'll then need to upload the font to your board, this could
-be via the file explorer in Thonny or your preferred method.
+- [PicoVector Fonts / Alright Fonts](https://github.com/pimoroni/picovector-fonts)
 
 ### Loading & Configuring
 
 ```python
 vector.set_font("jokerman.af", 24)
 ```
+
+`set_font` specifies the font and size.
+
+Your *.af font file will need to be present on Presto's file system, you can upload it using Thonny's Files window or another means like `mpremote`.
 
 ### Spacing & Alignment
 
