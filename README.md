@@ -42,8 +42,11 @@ There are two choices, a regular build that just updates the MicroPython firmwar
 
 Links to community projects and other resources that you might find helpful can be found below. Note that these code examples have not been written/tested by us and we're not able to offer support with them.
 
-- PrestoDeck (Spotify Music Player) by AKZ Dev - [Youtube](https://www.youtube.com/watch?v=iOz5XUVkFkY) / [Github](https://github.com/fatihak/PrestoDeck)
-- [Last.fm Now Playing Display for Pimoroni Presto](https://github.com/andypiper/presto-lastfm) by Andy Piper
+- PrestoDeck (Spotify Music Player) - [Youtube](https://www.youtube.com/watch?v=iOz5XUVkFkY) / [Github](https://github.com/fatihak/PrestoDeck)
+- [Last.fm Now Playing Display](https://github.com/andypiper/presto-lastfm)
+- [PrestoMaze - maze generation and solving](https://github.com/kurosuke/PrestoMaze/)
+- [Presto Stream Deck Controller](https://forums.pimoroni.com/t/presto-stream-deck-controller/27930)
+- [Presto Solar System](https://github.com/mrglennjones/presto-solar-system)
 
 
 
