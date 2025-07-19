@@ -15,6 +15,11 @@
 
 namespace pimoroni {
 
+  /// ST7701S display driver
+  /// See datasheet:
+  /// https://focuslcds.com/wp-content/uploads/Drivers/ST7701S.pdf
+  /// See ESPHome implementation:
+  /// https://github.com/esphome/esphome/blob/dev/esphome/components/st7701s
   class ST7701 : public DisplayDriver {
     spi_inst_t *spi = PIMORONI_SPI_DEFAULT_INSTANCE;
 
@@ -49,6 +54,9 @@ namespace pimoroni {
     static const uint32_t SPI_BAUD = 8'000'000;
     static const uint32_t BACKLIGHT_PWM_TOP = 6200;
 
+    // Default after power-on or reset is 0
+    //uint8_t madctl = 0;
+
   public:
     // Parallel init
     ST7701(uint16_t width, uint16_t height, Rotation rotation, SPIPins control_pins, uint16_t* framebuffer, uint32_t* palette = nullptr,
@@ -80,7 +88,11 @@ namespace pimoroni {
   private:
     void common_init();
     void configure_display(Rotation rotate);
-    void command(uint8_t command, size_t len = 0, const char *data = NULL);
+    void command(uint8_t command, size_t len = 0, const char *data = NULL) const;
+    void command_bkx_disable() const;
+    void command_bk0_enable() const;
+    void command_bk1_enable() const;
+    void command_bk3_enable() const;
 
     void start_line_xfer();
     void start_frame_xfer();

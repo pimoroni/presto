@@ -21,12 +21,19 @@
 #endif
 
 namespace pimoroni {
+
   enum dcx {
     CMD = 0x00,
     DATA = 0x01
   };
 
-  enum reg {
+  /// ST7701S controller has two Command Tables refered to as Command1 and Command2
+  /// Commands from table 2 are organized in 3 banks: BK0, BK1 and BK3
+  /// Table 2 command banks can be enabled and disabled using CND2BKxSEL
+  /// Commands from table 1 should always be working
+
+  // Command1
+  enum cmd {
     SWRESET = 0x01, // Software Reset
     SLPOUT = 0x11,  // Sleep Out
     PTLON = 0x12,   // Partial Display Mode On
@@ -45,7 +52,11 @@ namespace pimoroni {
     IDMON = 0x39,   // Idle Mode On
     COLMOD = 0x3A,  // Interface Pixel Format
     GSL = 0x45,     // Get Scan Line
-    // Command2_BK0
+    CND2BKxSEL = 0xFF, // Select which command2 banks are enabled
+  };
+
+  // Command2_BK0
+  enum bk0 {
     PVGAMCTRL = 0xB0,  // Positive Voltage Gamma Control
     NVGAMCTRL = 0xB1,  // Negative Voltage Gamma Control
     DGMEN = 0xB8,   // Digital Gamma Enable
@@ -64,7 +75,10 @@ namespace pimoroni {
     SECTRL = 0xE2,  // Sharpness Control
     CCCTRL = 0xE3,  // Color Calibration Control
     SKCTRL = 0xE4,  // Skin Tone Preservation Control
-    // Command2_BK1
+  };
+
+  // Command2_BK1
+  enum bk1 {
     VHRS = 0xB0,    // Vop amplitude
     VCOMS = 0xB1,   // VCOM amplitude
     VGHSS = 0xB2,   // VGH voltage
@@ -77,13 +91,24 @@ namespace pimoroni {
     PCLKS2 = 0xBC,  // Power pumping clock selection 2
     PDR1 = 0xC1,    // Source pre_drive timing set 1
     PDR2 = 0xC2,    // Source pre_drive timing set 2
-    // Command2_BK3
+  };
+
+  // Command2_BK3
+  enum bk3 {
     NVMEN = 0xC8,    // NVM enable
     NVMSET = 0xCA,   // NVM manual control
     PROMACT = 0xCC,  // NVM program active
-    // Other
-    CND2BKxSEL = 0xFF,
   };
+
+  // Disable all command banks
+  const char CN2BKxDIS[] = {0x77, 0x01, 0x00, 0x00, 0x00};
+  // Enable BK0
+  const char CN2BK0SEL[] = {0x77, 0x01, 0x00, 0x00, 0x10};
+  // Enable BK1
+  const char CN2BK1SEL[] = {0x77, 0x01, 0x00, 0x00, 0x11};
+  // Enable BK3
+  const char CN2BK3SEL[] = {0x77, 0x01, 0x00, 0x00, 0x13};
+
 
 #define DISPLAY_HEIGHT   480
 #define TIMING_V_PULSE   8
@@ -137,8 +162,8 @@ void __no_inline_not_in_flash_func(ST7701::drive_timing)()
             case 3:
                 // Display, trigger next frame at frame end
                 instr = 0x40000000u;  // HSYNC high
-                if (timing_row == TIMING_V_DISPLAY) instr |= 0xD001u;  // irq 1, to trigger queueing DMA for a new frame 
-                else if (timing_row >= TIMING_V_BACK - 1 && timing_row < TIMING_V_DISPLAY) instr |= 0xD000u;  // irq 0, to trigger queueing DMA for a new line 
+                if (timing_row == TIMING_V_DISPLAY) instr |= 0xD001u;  // irq 1, to trigger queueing DMA for a new frame
+                else if (timing_row >= TIMING_V_BACK - 1 && timing_row < TIMING_V_DISPLAY) instr |= 0xD000u;  // irq 0, to trigger queueing DMA for a new line
                 else instr |= 0xB042u;  // NOP
                 if (timing_row >= TIMING_V_PULSE) instr |= 0x80000000u;  // VSYNC high if not in VSYNC pulse
                 instr |= (TIMING_H_DISPLAY - 3) << 16;
@@ -193,7 +218,7 @@ void ST7701::start_frame_xfer()
     pio_sm_set_enabled(st_pio, parallel_sm, true);
     display_row = 0;
     next_line_addr = framebuffer;
-    dma_channel_set_read_addr(st_dma, framebuffer, true);  
+    dma_channel_set_read_addr(st_dma, framebuffer, true);
 
     waiting_for_vsync = false;
     __sev();
@@ -213,7 +238,7 @@ void ST7701::start_frame_xfer()
 
   void ST7701::init() {
       irq_handler_t current = nullptr;
-  
+
       st_pio = pio1;
       parallel_sm = pio_claim_unused_sm(st_pio, true);
 
@@ -245,7 +270,7 @@ void ST7701::start_frame_xfer()
       // low = command
       // high = data
       spi_set_format(spi, 9, SPI_CPOL_0, SPI_CPHA_0, SPI_MSB_FIRST);
-  
+
       //gpio_init(wr_sck);
       //gpio_set_dir(wr_sck, GPIO_OUT);
       //gpio_set_function(wr_sck, GPIO_FUNC_SIO);
@@ -270,7 +295,7 @@ void ST7701::start_frame_xfer()
 
       pio_sm_set_consecutive_pindirs(st_pio, parallel_sm, d0, num_data_pins, true);
       pio_sm_set_consecutive_pindirs(st_pio, parallel_sm, hsync, 4, true);
-      
+
       pio_sm_config c = palette ? st7701_parallel_18bpp_program_get_default_config(parallel_offset) :
           st7701_parallel_program_get_default_config(parallel_offset);
 
@@ -279,7 +304,7 @@ void ST7701::start_frame_xfer()
       sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
       sm_config_set_out_shift(&c, true, true, 32);
       sm_config_set_in_shift(&c, false, false, 32);
-      
+
       // Determine clock divider
       uint32_t max_pio_clk = 34 * MHZ;
       const uint32_t sys_clk_hz = clock_get_hz(clk_sys);
@@ -288,7 +313,7 @@ void ST7701::start_frame_xfer()
         // Minimum clock divisor of 8 to ensure there is time for the palette decode
         if (clk_div < 8) clk_div = 8;
       }
-      
+
       if (width == 480) {
         // Parallel output SM must run at double the rate of the timing SM for full res
         if (clk_div & 1) clk_div += 1;
@@ -311,7 +336,7 @@ void ST7701::start_frame_xfer()
       sm_config_set_fifo_join(&c, PIO_FIFO_JOIN_TX);
       sm_config_set_out_shift(&c, false, true, 32);
       sm_config_set_clkdiv(&c, clk_div);
-      
+
       pio_sm_init(st_pio, timing_sm, timing_offset, &c);
       pio_sm_set_enabled(st_pio, timing_sm, true);
 
@@ -406,41 +431,40 @@ void ST7701::start_frame_xfer()
       set_backlight(0); // Turn backlight off initially to avoid nasty surprises
     }
 
-    command(reg::SWRESET);
+    command(cmd::SWRESET);
 
     sleep_ms(150);
 
     // Commmand 2 BK0 - kinda a page select
-    command(reg::CND2BKxSEL, 5, "\x77\x01\x00\x00\x10");
+    command_bk0_enable();
 
     /*if(width == 480 && height == 480)*/ {
       // TODO: Figure out what's actually display specific
-      command(reg::MADCTL, 1, "\x00");  // Normal scan direction and RGB pixels
-      command(reg::LNESET, 2, "\x3b\x00");   // (59 + 1) * 8 = 480 lines
-      command(reg::PORCTRL, 2, "\x0d\x02");  // Display porch settings: 13 VBP, 2 VFP (these should not be changed)
-      command(reg::INVSET, 2, "\x31\x01");
-      command(reg::COLCTRL, 1, "\x08");      // LED polarity reversed
-      command(reg::PVGAMCTRL, 16, "\x00\x11\x18\x0e\x11\x06\x07\x08\x07\x22\x04\x12\x0f\xaa\x31\x18");
-      command(reg::NVGAMCTRL, 16, "\x00\x11\x19\x0e\x12\x07\x08\x08\x08\x22\x04\x11\x11\xa9\x32\x18");
-      command(reg::RGBCTRL, 3, "\x80\x2e\x0e");  // HV mode, H and V back porch + sync
+      command(bk0::LNESET, 2, "\x3b\x00");   // (59 + 1) * 8 = 480 lines
+      command(bk0::PORCTRL, 2, "\x0d\x02");  // Display porch settings: 13 VBP, 2 VFP (these should not be changed)
+      command(bk0::INVSET, 2, "\x31\x01");
+      command(bk0::COLCTRL, 1, "\x08");      // LED polarity reversed
+      command(bk0::PVGAMCTRL, 16, "\x00\x11\x18\x0e\x11\x06\x07\x08\x07\x22\x04\x12\x0f\xaa\x31\x18");
+      command(bk0::NVGAMCTRL, 16, "\x00\x11\x19\x0e\x12\x07\x08\x08\x08\x22\x04\x11\x11\xa9\x32\x18");
+      command(bk0::RGBCTRL, 3, "\x80\x2e\x0e");  // HV mode, H and V back porch + sync
     }
 
     // Command 2 BK1 - Voltages and power and stuff
-    command(reg::CND2BKxSEL, 5, "\x77\x01\x00\x00\x11");
-    command(reg::VHRS, 1, "\x60");    // 4.7375v
-    command(reg::VCOMS, 1, "\x32");   // 0.725v
-    command(reg::VGHSS, 1, "\x07");   // 15v
-    command(reg::TESTCMD, 1, "\x80"); // y tho?
-    command(reg::VGLS, 1, "\x49");    // -10.17v
-    command(reg::PWCTRL1, 1, "\x85"); // Middle/Min/Min bias
-    command(reg::PWCTRL2, 1, "\x21"); // 6.6 / -4.6
-    command(reg::PDR1, 1, "\x78");    // 1.6uS
-    command(reg::PDR2, 1, "\x78");    // 6.4uS
+    command_bk1_enable();
+    command(bk1::VHRS, 1, "\x60");    // 4.7375v
+    command(bk1::VCOMS, 1, "\x32");   // 0.725v
+    command(bk1::VGHSS, 1, "\x07");   // 15v
+    command(bk1::TESTCMD, 1, "\x80"); // y tho?
+    command(bk1::VGLS, 1, "\x49");    // -10.17v
+    command(bk1::PWCTRL1, 1, "\x85"); // Middle/Min/Min bias
+    command(bk1::PWCTRL2, 1, "\x21"); // 6.6 / -4.6
+    command(bk1::PDR1, 1, "\x78");    // 1.6uS
+    command(bk1::PDR2, 1, "\x78");    // 6.4uS
 
     // Begin Forbidden Knowledge
     // This sequence is probably specific to TL040WVS03CT15-H1263A.
     // It is not documented in the ST7701s datasheet.
-    // TODO: 👇 W H A T ! ? 👇
+    // Display does not work when removing those
     command(0xE0, 3, "\x00\x1b\x02");
     command(0xE1, 11, "\x08\xa0\x00\x00\x07\xa0\x00\x00\x00\x44\x44");
     command(0xE2, 12, "\x11\x11\x44\x44\xed\xa0\x00\x00\xec\xa0\x00\x00");
@@ -456,24 +480,24 @@ void ST7701::start_frame_xfer()
     command(0x36, 1, "\x00");
 
     // Command 2 BK3
-    command(reg::CND2BKxSEL, 5, "\x77\x01\x00\x00\x13");
+    command_bk3_enable();
     command(0xE5, 1, "\xe4");
     // End Forbidden Knowledge
 
-    command(reg::CND2BKxSEL, 5, "\x77\x01\x00\x00\x00");
-    //command(reg::COLMOD, 1, "\x77");  // 24 bits per pixel...
-    command(reg::COLMOD, 1, "\x66");    // 18 bits per pixel...
-    //command(reg::COLMOD, 1, "\x55");  // 16 bits per pixel...
-    
-    command(reg::INVON);
-    sleep_ms(1);
-    command(reg::SLPOUT);
-    sleep_ms(120);
-    command(reg::DISPON);
-    sleep_ms(50);
+    // Disable all Command 2 banks
+    command_bkx_disable();
+    //command(cmd::COLMOD, 1, "\x77");  // 24 bits per pixel...
+    command(cmd::COLMOD, 1, "\x66");    // 18 bits per pixel...
+    //command(cmd::COLMOD, 1, "\x55");  // 16 bits per pixel...
 
-    // TODO: Support rotation
-    // configure_display(rotation);
+    configure_display(rotation);
+
+    command(cmd::INVON);
+    sleep_ms(1);
+    command(cmd::SLPOUT);
+    sleep_ms(120);
+    command(cmd::DISPON);
+    sleep_ms(50);
 
     if(lcd_bl != PIN_UNUSED) {
       //update(); // Send the new buffer to the display to clear any previous content
@@ -488,7 +512,7 @@ void ST7701::start_frame_xfer()
     irq_set_enabled(pio_get_irq_num(st_pio, 0), false);
     current = irq_get_exclusive_handler(pio_get_irq_num(st_pio, 0));
     if(current) irq_remove_handler(pio_get_irq_num(st_pio, 0), current);
-  
+
     irq_set_enabled(pio_get_irq_num(st_pio, 1), false);
     current = irq_get_exclusive_handler(pio_get_irq_num(st_pio, 1));
     if(current) irq_remove_handler(pio_get_irq_num(st_pio, 1), current);
@@ -533,25 +557,34 @@ void ST7701::start_frame_xfer()
     pio_clear_instruction_memory(st_pio);
   }
 
+  //
   void ST7701::configure_display(Rotation rotate) {
-    uint8_t madctl = 0;
+    // TODO: Support colour mode RGB/BGR by either reading current MADCTL from the display or using a data member
+    char madctl = 0x00; // Mirror Y off - For now assume we never use RGB/BRG colour swap
+    char sdir = 0x00;   // Mirror X off
 
-    if(rotate == ROTATE_90 || rotate == ROTATE_270) {
-      std::swap(width, height);
+    switch (rotate) {
+      case ROTATE_180:
+        madctl = 0x10; // Mirror Y on - no RGB swap
+        sdir = 0x04;   // Mirror X on
+        // Fall through
+      case ROTATE_0:
+        command(cmd::MADCTL, 1, &madctl);
+        command_bk0_enable();
+        command(bk0::SDIR, 1, &sdir);
+        command_bkx_disable();
+        break;
+      default:
+        printf("WARNING: rotation not supported");
+        break;
     }
-
-    // 480x480 Square Display
-    /*if(width == 480 && height == 480)*/ {
-      madctl = 0;
-    }
-
-    command(reg::MADCTL, 1, (char *)&madctl);
   }
 
-  void ST7701::command(uint8_t command, size_t len, const char *data) {
+  ///
+  void ST7701::command(uint8_t command, size_t len, const char *data) const {
     static uint16_t _data[20] = {0};
     gpio_put(spi_cs, 0);
-    
+
     // Add leading byte for 9th D/CX bit
     uint16_t _command = (dcx::CMD << 8) | command;
     spi_write16_blocking(spi, &_command, 1);
@@ -568,7 +601,28 @@ void ST7701::start_frame_xfer()
 
     gpio_put(spi_cs, 1);
   }
-  
+
+  /// Disable Command Table 2 banks
+  void ST7701::command_bkx_disable() const {
+    command(cmd::CND2BKxSEL, sizeof(CN2BKxDIS), CN2BKxDIS);
+  }
+
+  /// Enable Command Table 2 BK0 commands
+  void ST7701::command_bk0_enable() const {
+    command(cmd::CND2BKxSEL, sizeof(CN2BK0SEL), CN2BK0SEL);
+  }
+
+  /// Enable Command Table 2 BK1 commands
+  void ST7701::command_bk1_enable() const {
+    command(cmd::CND2BKxSEL, sizeof(CN2BK1SEL), CN2BK1SEL);
+  }
+
+  /// Enable Command Table 2 BK3 commands
+  void ST7701::command_bk3_enable() const {
+    command(cmd::CND2BKxSEL, sizeof(CN2BK3SEL), CN2BK3SEL);
+  }
+
+  ///
   void ST7701::update(PicoGraphics *graphics) {
     if(graphics->pen_type == PicoGraphics::PEN_RGB565 && !palette) { // Display buffer is screen native
       if (graphics->frame_buffer == framebuffer) {
@@ -677,7 +731,7 @@ void ST7701::start_frame_xfer()
     if (!palette) return;
 
     // Note bit reversal is done by PIO.
-    uint32_t encoded_colour = 
+    uint32_t encoded_colour =
       ((colour << 8)  & 0xF8000000) |  // R
       ((colour << 11) & 0x07E00000) |  // G
       ((colour << 13) & 0x001F8000) |  // B
@@ -690,7 +744,7 @@ void ST7701::start_frame_xfer()
     if (!palette) return;
 
     // Note bit reversal is done by PIO.
-    uint32_t encoded_colour = 
+    uint32_t encoded_colour =
       ((colour.r << 24) & 0xF8000000) |  // R
       ((colour.g << 19) & 0x07E00000) |  // G
       ((colour.b << 13) & 0x001F8000) |  // B
