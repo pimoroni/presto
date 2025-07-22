@@ -3,6 +3,7 @@ import argparse
 import math
 import freetype
 from simplification.cutil import simplify_coords_vwp
+import shapely
 
 
 """
@@ -62,6 +63,9 @@ class Point:
         else:
             self.x = args[0]
             self.y = args[1]
+
+    def __iter__(self):
+        return iter((self.x, self.y))
 
     def set(self, other):
         self.x = other.x
@@ -234,14 +238,73 @@ def load_glyph(face, codepoint, quality=30, precision=2, target_bounds=None, off
         for i in range(distance):
             ctx[-1].append(cubic_bezier(i / distance, src, c1, c2, dst))
 
+    print("> flags:")
+    for flag, value in freetype.FT_OUTLINE_FLAGS.items():
+        if face.glyph.outline.flags & value:
+            print(f"    {flag}")
+
     face.glyph.outline.decompose(contours, move_to=move_to, line_to=line_to, conic_to=conic_to, cubic_to=cubic_to)
 
-    # Simplify, scale and round the final contours
-    for i, c in enumerate(contours):
-        contours[i] = [
-            Point(p) / Point(scale_factor, -scale_factor)
-            for p in simplify_coords_vwp(c, quality)
-        ]
+    # SHAPELY
+    use_shapely = True
+    if use_shapely:
+        polygons = shapely.polygons([shapely.LinearRing(contour) for contour in contours])
+        polygons = [poly.buffer(0) for poly in polygons]
+
+        # Collapse multipolygons
+        for i in range(len(polygons)):
+            if geoms := getattr(polygons[i], "geoms", None):
+                polygons += geoms
+                polygons[i] = None
+
+        polygons = [polygon for polygon in polygons if polygon is not None]
+
+        def merge_partial_overlaps(polygons):
+            def any_overlaps(polygons):
+                for a in polygons:
+                    for b in polygons:
+                        if shapely.overlaps(a, b):
+                            return True
+                return False
+
+            def do_merge(polygons):
+                for i_a in range(len(polygons)):
+                    for i_b in range(len(polygons)):
+                        a = polygons[i_a]
+                        b = polygons[i_b]
+                        if a and b and shapely.overlaps(a, b):
+                            polygons[i_a] = shapely.union(a, b)
+                            polygons[i_b] = None
+                return [polygon for polygon in polygons if polygon is not None]
+
+            # Merge until there are no (partially) overlapping polygons
+            while any_overlaps(polygons):
+                polygons = do_merge(polygons)
+
+            return polygons
+
+        polygons = merge_partial_overlaps(polygons)
+
+        valid = shapely.is_valid(polygons)
+        for i in range(len(polygons)):
+            if not valid[i]:
+                polygons[i] = polygons[i].buffer(0)
+
+        # Resolve the polygons into inner/outer enclosed rings
+        polygons = shapely.polygons(shapely.get_rings(polygons))
+
+        polygons = shapely.coverage_simplify(polygons, tolerance=quality // 2)
+
+        p_scale = Point(scale_factor, -scale_factor)
+        contours = [[Point(x, y) / p_scale for x, y in shapely.get_coordinates(poly)] for poly in polygons]
+
+    else:
+        # Simplify, scale and round the final contours
+        for i, c in enumerate(contours):
+            contours[i] = [
+                Point(p) / Point(scale_factor, -scale_factor)
+                for p in simplify_coords_vwp(c, quality)
+            ]
 
     # Get the scaled bounding box
     actual_bounds = Bounds(65535, 65535, -65535, -65535)
@@ -336,8 +399,11 @@ if pil_found:
     img = Image.new("RGB", (image_width + 2, image_height + 2), (0, 0, 0))
     draw = ImageDraw.Draw(img)
 
+    offset = 0
     for contour in contours:
-        i_contour = [(c.x * image_scale + (image_width // 2) + 1, c.y * image_scale + (image_height // 2) + 1) for c in contour]
-        draw.polygon(i_contour, fill=None, outline=(255, 255, 255))
+        r = int(offset / len(contours) * 255)
+        i_contour = [(c.x * image_scale + (image_width // 2) + 1 + offset, c.y * image_scale + (image_height // 2) + 1 + offset) for c in contour]
+        draw.polygon(i_contour, fill=None, outline=(r, 128, 128))
+        offset += 1
 
     img.save(f"test-{args.codepoint:04x}-{int(args.size.width)}x{int(args.size.height)}.png")
