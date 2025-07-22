@@ -188,6 +188,9 @@ static uint32_t core1_stack[stack_size] = {0};
 mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, const mp_obj_t *all_args) {
     _Presto_obj_t *self = nullptr;
 
+    // Clean up any existing instance of Presto.
+    (void)Presto___del__(mp_const_none);
+
     enum { ARG_full_res, ARG_palette };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_full_res, MP_ARG_BOOL, {.u_bool = false} },
@@ -408,9 +411,25 @@ mp_obj_t Presto_set_led_hsv(size_t n_args, const mp_obj_t *pos_args, mp_map_t *k
 }
 
 mp_obj_t Presto___del__(mp_obj_t self_in) {
-    (void)self_in;
-    //_Presto_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Presto_obj_t);
-    presto_debug("signal core1\n");
+    // Since presto_obj is singleton, relying on __del__ and the finalizer
+    // could leave us in a situation where an old Presto instance is garbage
+    // collected after we've allocated a new one- ripping out the presto_obj
+    // from underneath the new instance.
+
+    _Presto_obj_t *self = nullptr;
+
+    if(self_in != mp_const_none) {
+        self = MP_OBJ_TO_PTR2(self_in, _Presto_obj_t);
+    }
+
+    // Only allow an instance to tear down core1 if it's the current owner
+    // or if we're explicitly calling `Presto___del__(mp_const_none)` in make_new.
+    if(presto_obj == nullptr || (self != nullptr && self != presto_obj)) {
+        presto_debug("__del__ called by non-owner, skipping teardown.\n");
+        return mp_const_none;
+    }
+
+    presto_debug("stop core1\n");
     presto_obj->exit_core1 = true;
     __sev();
 
@@ -422,7 +441,7 @@ mp_obj_t Presto___del__(mp_obj_t self_in) {
         }
     } while (fifo_code != 0);
 
-    presto_debug("core1 returned\n");
+    presto_debug("core1 stopped\n");
 
     m_del_class(ST7701, presto_obj->presto);
     presto_obj->presto = nullptr;

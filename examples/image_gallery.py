@@ -1,21 +1,20 @@
-# ICON [[(-6.0, 2.0), (14.0, 2.0), (7.1, -7.0), (2.5, -1.0), (-0.6, -5.0), (-6.0, 2.0)], [(-8.0, 10.0), (-8.77, 9.93), (-10.0, 9.49), (-10.81, 8.88), (-11.53, 7.91), (-11.87, 7.04), (-12.0, 6.05), (-12.0, -18.0), (-11.72, -19.5), (-11.15, -20.47), (-10.47, -21.14), (-9.78, -21.58), (-8.86, -21.91), (-8.05, -22.0), (16.0, -22.0), (16.82, -21.92), (18.02, -21.44), (18.51, -21.07), (19.42, -20.05), (19.83, -19.17), (20.0, -18.05), (20.0, 6.0), (19.7, 7.54), (19.37, 8.16), (18.65, 8.99), (17.36, 9.77), (16.05, 10.0), (-8.0, 10.0)], [(-8.0, 6.0), (16.0, 6.0), (16.0, -18.0), (-8.0, -18.0), (-8.0, 6.0)], [(-16.0, 18.0), (-16.73, 17.94), (-17.83, 17.58), (-18.81, 16.88), (-19.26, 16.35), (-19.79, 15.31), (-20.0, 14.05), (-20.0, -14.0), (-16.0, -14.0), (-16.0, 14.0), (12.0, 14.0), (12.0, 18.0), (-16.0, 18.0)], [(-8.0, -18.0), (-8.0, -18.0)]]
+# ICON photo-library
 # NAME Photo Frame
 # DESC A touch enabled image gallery
 
-'''
+"""
 An image gallery demo to turn your Pimoroni Presto into a desktop photo frame!
 
 - Create a folder called 'gallery' on the root of your SD card and fill it with JPEGs.
 - The image will change automatically every 5 minutes
 - You can also tap the right side of the screen to skip next image and left side to go to the previous :)
 
-'''
+"""
 import os
 import time
 
 import jpegdec
 import machine
-import plasma
 import sdcard
 import uos
 from presto import Presto
@@ -46,7 +45,7 @@ touch = presto.touch
 j = jpegdec.JPEG(display)
 
 # Where our images are located
-directory = 'gallery'
+directory = "gallery"
 
 # Stores the total number of images in the user gallery
 total_image_count = 0
@@ -80,8 +79,8 @@ try:
     uos.mount(sd, "/sd")
 
     # if the gallery folder exists on the SD card we want to use the images in there!
-    if os.stat('sd/gallery'):
-        directory = 'sd/gallery'
+    if os.stat("sd/gallery"):
+        directory = "sd/gallery"
 
 except OSError:
     pass
@@ -96,7 +95,7 @@ def numberedfiles(k):
 
 
 try:
-    files = list(file for file in sorted(os.listdir(directory), key=numberedfiles) if file.endswith('.jpg'))
+    files = [file for file in sorted(os.listdir(directory), key=numberedfiles) if file.endswith(".jpg")]
 except OSError:
     display_error("Problem loading images.\n\nEnsure that your Presto or SD card contains a 'gallery' folder in the root")
 
@@ -127,7 +126,7 @@ def fizzlefade():
 
     while True:
 
-        for i in range(2000):
+        for _ in range(2000):
             x, y = return_point()
             if x > -1 and y > -1:
                 display.pixel(x, y)

@@ -1,6 +1,6 @@
-from presto import Presto, Buzzer
-from touch import Button
 from picovector import ANTIALIAS_FAST, PicoVector, Polygon, Transform
+from presto import Buzzer, Presto
+from touch import Button
 
 presto = Presto()
 display = presto.display
