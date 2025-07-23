@@ -28,9 +28,9 @@ class QwSTPad:
     CONFIGURATION_PORT1 = const(0x07)
 
     # Mappings
-    BUTTON_MAPPING = OrderedDict({'A': 0xE, 'B': 0xC, 'X': 0xF, 'Y': 0xD,
-                                  'U': 0x1, 'D': 0x4, 'L': 0x2, 'R': 0x3,
-                                  '+': 0xB, '-': 0x5
+    BUTTON_MAPPING = OrderedDict({"A": 0xE, "B": 0xC, "X": 0xF, "Y": 0xD,
+                                  "U": 0x1, "D": 0x4, "L": 0x2, "R": 0x3,
+                                  "+": 0xB, "-": 0x5
                                   })
     LED_MAPPING = (0x6, 0x7, 0x9, 0xA)
 

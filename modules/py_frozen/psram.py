@@ -1,29 +1,26 @@
-import io
-import struct
-import vfs
 import micropython
-
+import vfs
 
 PSRAM_BASE = 0x11000000
 PSRAM_SIZE = 8 * 1024 * 1024
 
 
 @micropython.viper
-def viper_memcpy(dest: ptr8, src: ptr8, num: int) -> int:
+def viper_memcpy(dest: ptr8, src: ptr8, num: int) -> int: # noqa: F821
     for i in range(num):
         dest[i] = src[i]
     return num
 
 
 @micropython.viper
-def viper_memset(dest: ptr8, value: int, num: int):
+def viper_memset(dest: ptr8, value: int, num: int): # noqa: F821
     for i in range(num):
         dest[i] = value
 
 
 @micropython.viper
 def viper_psram_flush():
-    dest: ptr8 = ptr8(0x18000000)  # XIP_MAINTENANCE_BASE
+    dest: ptr8 = ptr8(0x18000000)  # noqa: F821 XIP_MAINTENANCE_BASE
     for i in range(0, 16 * 1024, 8):
         dest[i + 1] = 0  # Clean
         dest[i + 0] = 0  # Invalidate (without this, frozen bytecode doesn't work?)
@@ -71,6 +68,7 @@ class PSRAMBlockDevice:
         if op == 6:  # Erase
             # We don't really *need* to erase blocks but should we?
             return 0
+        return None
 
 
 def mkramfs(size=1024 * 64, mount_point="/ramfs", debug=False):

@@ -1,10 +1,10 @@
 # ICON [[(-7.43, 6.46), (-4.6, 6.46), (-3.19, 2.39), (3.27, 2.39), (4.69, 6.46), (7.43, 6.46), (1.42, -9.47), (-1.42, -9.47), (-7.43, 6.46)], [(-2.39, 0.09), (-0.09, -6.55), (0.09, -6.55), (2.39, 0.09), (-2.39, 0.09)], [(-0.0, 19.38), (-5.93, 13.54), (-14.16, 13.54), (-14.16, 5.31), (-20.0, -0.62), (-14.16, -6.55), (-14.16, -14.78), (-5.93, -14.78), (-0.0, -20.62), (5.93, -14.78), (14.16, -14.78), (14.16, -6.55), (20.0, -0.62), (14.16, 5.31), (14.16, 13.54), (5.93, 13.54), (-0.0, 19.38)], [(-0.0, 14.42), (4.42, 10.0), (10.62, 10.0), (10.62, 3.81), (15.04, -0.62), (10.62, -5.04), (10.62, -11.24), (4.42, -11.24), (-0.0, -15.66), (-4.42, -11.24), (-10.62, -11.24), (-10.62, -5.04), (-15.04, -0.62), (-10.62, 3.81), (-10.62, 10.0), (-4.42, 10.0), (-0.0, 14.42)]]
 # NAME Auto Backlight Demo
 # DESC Using the Multi-Sensor Stick
-from presto import Presto
-from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
-from machine import I2C
 from breakout_ltr559 import BreakoutLTR559
+from machine import I2C
+from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
+from presto import Presto
 
 # Setup for the Presto display
 presto = Presto(ambient_light=False)
