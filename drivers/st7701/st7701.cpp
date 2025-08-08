@@ -173,7 +173,7 @@ void __no_inline_not_in_flash_func(ST7701::start_line_xfer())
     else next_line_addr = &framebuffer[width * (display_row >> row_shift)];
 }
 
-void ST7701::start_frame_xfer()
+void __no_inline_not_in_flash_func(ST7701::start_frame_xfer)()
 {
     hw_clear_bits(&st_pio->irq, 0x2);
 

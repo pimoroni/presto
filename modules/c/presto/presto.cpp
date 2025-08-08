@@ -9,6 +9,7 @@
 #include "hardware/structs/ioqspi.h"
 #include "hardware/structs/qmi.h"
 #include "hardware/structs/xip_ctrl.h"
+#include "hardware/irq.h"
 
 
 using namespace pimoroni;
@@ -161,9 +162,28 @@ static void __no_inline_not_in_flash_func(update_backlight_leds)() {
     multicore_fifo_push_blocking(1);
 }
 
+// Alternative version of the lockout handler which does not disable interrupts
+// We know that all interrupts running on core1 will not access flash or PSRAM, so this is safe.
+static void __isr __not_in_flash_func(presto_core1_lockout_handler)(void) {
+    multicore_fifo_clear_irq();
+    while (multicore_fifo_rvalid()) {
+        if (sio_hw->fifo_rd == LOCKOUT_MAGIC_START) {
+            multicore_fifo_push_blocking_inline(LOCKOUT_MAGIC_START);
+            while (multicore_fifo_pop_blocking_inline() != LOCKOUT_MAGIC_END) {
+                tight_loop_contents(); // not tight but endless potentially
+            }
+            multicore_fifo_push_blocking_inline(LOCKOUT_MAGIC_END);
+        }
+    }
+}
+
 void presto_core1_entry() {
     // The multicore lockout uses the FIFO, so we use just use sev and volatile flags to signal this core
     multicore_lockout_victim_init();
+
+    // Replace the lockout handler
+    irq_remove_handler(SIO_IRQ_FIFO, irq_get_exclusive_handler(SIO_IRQ_FIFO));
+    irq_set_exclusive_handler(SIO_IRQ_FIFO, presto_core1_lockout_handler);
 
     presto_obj->presto->init();
 
