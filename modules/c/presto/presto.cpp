@@ -58,7 +58,6 @@ typedef struct _Presto_obj_t {
     uint16_t width;
     uint16_t height;
     bool using_palette;
-    volatile bool exit_core1;
 
     // Automatic ambient backlight control
     volatile bool auto_ambient_leds;
@@ -76,6 +75,12 @@ typedef struct _ModPicoGraphics_obj_t {
 // so that core1 can access it.  Note it also needs to be in the
 // Micropython object to prevent GC freeing it.
 static _Presto_obj_t *presto_obj;
+
+static volatile bool exit_core1;
+
+// ST7701 must be allocated into SRAM (not PSRAM), so reserve a buffer
+// for it here - Presto_make_new will placement new into this buffer.
+__attribute__((section(".uninitialized_data"))) static uint32_t st7701_buffer[sizeof(ST7701) / sizeof(uint32_t)];
 
 #define NUM_LEDS 7
 
@@ -95,7 +100,7 @@ static void __no_inline_not_in_flash_func(update_backlight_leds)() {
         { 0, presto_obj->height - SAMPLE_RANGE }
     };
 
-    while (!presto_obj->exit_core1) {
+    while (!exit_core1) {
         if (presto_obj->auto_ambient_leds) {
             for (int i = 0; i < NUM_LEDS; ++i) {
                 uint32_t r = presto_obj->led_values[i].r;
@@ -133,7 +138,7 @@ static void __no_inline_not_in_flash_func(update_backlight_leds)() {
 
         presto_obj->presto->wait_for_vsync();
 
-        if (presto_obj->exit_core1) break;
+        if (exit_core1) break;
 
         // Note this section calls into code that executes from flash
         // It's important this is done during vsync to avoid artifacts,
@@ -162,28 +167,38 @@ static void __no_inline_not_in_flash_func(update_backlight_leds)() {
     multicore_fifo_push_blocking(1);
 }
 
+#define LOCKOUT_MAGIC_START 0x73a8831eu
+#define LOCKOUT_MAGIC_END (~LOCKOUT_MAGIC_START)
+
 // Alternative version of the lockout handler which does not disable interrupts
 // We know that all interrupts running on core1 will not access flash or PSRAM, so this is safe.
 static void __isr __not_in_flash_func(presto_core1_lockout_handler)(void) {
     multicore_fifo_clear_irq();
     while (multicore_fifo_rvalid()) {
         if (sio_hw->fifo_rd == LOCKOUT_MAGIC_START) {
-            multicore_fifo_push_blocking_inline(LOCKOUT_MAGIC_START);
+            sio_hw->fifo_wr = LOCKOUT_MAGIC_START;
+            __sev();
             while (multicore_fifo_pop_blocking_inline() != LOCKOUT_MAGIC_END) {
                 tight_loop_contents(); // not tight but endless potentially
             }
-            multicore_fifo_push_blocking_inline(LOCKOUT_MAGIC_END);
+            sio_hw->fifo_wr = LOCKOUT_MAGIC_END;
+            __sev();
         }
     }
 }
+
+static bool ever_inited = false;
 
 void presto_core1_entry() {
     // The multicore lockout uses the FIFO, so we use just use sev and volatile flags to signal this core
     multicore_lockout_victim_init();
 
     // Replace the lockout handler
-    irq_remove_handler(SIO_IRQ_FIFO, irq_get_exclusive_handler(SIO_IRQ_FIFO));
+    irq_handler_t sdk_handler = irq_get_exclusive_handler(SIO_IRQ_FIFO);
+    irq_remove_handler(SIO_IRQ_FIFO, sdk_handler);
     irq_set_exclusive_handler(SIO_IRQ_FIFO, presto_core1_lockout_handler);
+
+    ever_inited = true;
 
     presto_obj->presto->init();
 
@@ -191,13 +206,18 @@ void presto_core1_entry() {
 
     // Presto is now running the display using interrupts on this core.
     // We can also drive the backlight if requested.
-    while (!presto_obj->exit_core1) {
-        if (!presto_obj->exit_core1) {
+    while (!exit_core1) {
+        if (!exit_core1) {
             update_backlight_leds();
         }
     }
 
     presto_obj->presto->cleanup();
+
+    // Restore the original lockout handler and deinit.
+    irq_remove_handler(SIO_IRQ_FIFO, presto_core1_lockout_handler);
+    irq_set_exclusive_handler(SIO_IRQ_FIFO, sdk_handler);
+    multicore_lockout_victim_deinit();
 
     multicore_fifo_push_blocking(0);
 }
@@ -239,14 +259,14 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
     self->using_palette = args[ARG_palette].u_bool;
 
     presto_debug("m_new_class(ST7701...\n");
-    self->presto = m_new_class(ST7701, self->width, self->height, ROTATE_0,
+    self->presto = new (st7701_buffer) ST7701(self->width, self->height, ROTATE_0,
         SPIPins{spi1, LCD_CS, LCD_CLK, LCD_DAT, PIN_UNUSED, LCD_DC, BACKLIGHT},
         presto_buffer, self->using_palette ? presto_palette : nullptr,
         LCD_D0);
 
     presto_debug("launch core1\n");
     multicore_reset_core1();
-    self->exit_core1 = false;
+    exit_core1 = false;
     self->auto_ambient_leds = false;
 
     WS2812::RGB* buffer = m_new(WS2812::RGB, NUM_LEDS);
@@ -450,12 +470,12 @@ mp_obj_t Presto___del__(mp_obj_t self_in) {
     }
 
     presto_debug("stop core1\n");
-    presto_obj->exit_core1 = true;
+    exit_core1 = true;
     __sev();
 
-    int fifo_code;
+    uint32_t fifo_code;
     do {
-        fifo_code = multicore_fifo_pop_blocking();
+        while (!multicore_fifo_pop_timeout_us(1000, &fifo_code)) __sev();
         if (fifo_code == 1) {
             cleanup_leds();
         }
@@ -463,7 +483,7 @@ mp_obj_t Presto___del__(mp_obj_t self_in) {
 
     presto_debug("core1 stopped\n");
 
-    m_del_class(ST7701, presto_obj->presto);
+    presto_obj->presto->~ST7701();
     presto_obj->presto = nullptr;
     presto_obj = nullptr;
     
