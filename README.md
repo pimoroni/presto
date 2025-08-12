@@ -47,6 +47,6 @@ Links to community projects and other resources that you might find helpful can 
 - [PrestoMaze - maze generation and solving](https://github.com/kurosuke/PrestoMaze/)
 - [Presto Stream Deck Controller](https://forums.pimoroni.com/t/presto-stream-deck-controller/27930)
 - [Presto Solar System](https://github.com/mrglennjones/presto-solar-system)
-
-
-
+- [Presto attitude indicator for X-Plane12](https://github.com/PaulskPt/Presto_attitude_indicator_for_X-Plane12)
+- [Presto as an MQTT subscriber device](https://forums.pimoroni.com/t/presto-as-mqtt-subscriber-device/28051)
+- [Presto Flip Clock](https://forums.pimoroni.com/t/presto-flip-clock/28089)
