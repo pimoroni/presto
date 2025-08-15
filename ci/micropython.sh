@@ -1,7 +1,7 @@
 export TERM=${TERM:="xterm-256color"}
 
 MICROPYTHON_FLAVOUR="pimoroni"
-MICROPYTHON_VERSION="feature/presto-wireless-april-2025"
+MICROPYTHON_VERSION="feature/presto-wireless-august-2025"
 
 PIMORONI_PICO_FLAVOUR="pimoroni"
 PIMORONI_PICO_VERSION="main"
