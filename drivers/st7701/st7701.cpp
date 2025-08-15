@@ -98,11 +98,11 @@ namespace pimoroni {
 static ST7701* st7701_inst;
 
 // This ISR is triggered whenever the timing SM's FIFO is not full
-void __no_inline_not_in_flash_func(timing_isr)() {
+void __isr __no_inline_not_in_flash_func(timing_isr)() {
     st7701_inst->drive_timing();
 }
 
-void __no_inline_not_in_flash_func(ST7701::drive_timing)()
+void __not_in_flash_func(ST7701::drive_timing)()
 {
     while (!pio_sm_is_tx_fifo_full(st_pio, timing_sm)) {
         uint32_t instr;
@@ -153,17 +153,17 @@ void __no_inline_not_in_flash_func(ST7701::drive_timing)()
 }
 
 // This ISR is triggered at the end of each line transferred
-void __no_inline_not_in_flash_func(end_of_line_isr()) {
+void __isr __no_inline_not_in_flash_func(end_of_line_isr)() {
     st7701_inst->handle_end_of_line();
 }
 
-void __no_inline_not_in_flash_func(ST7701::handle_end_of_line())
+void __not_in_flash_func(ST7701::handle_end_of_line)()
 {
     if (st_pio->irq & 0x2) start_frame_xfer();
     else start_line_xfer();
 }
 
-void __no_inline_not_in_flash_func(ST7701::start_line_xfer())
+void __not_in_flash_func(ST7701::start_line_xfer)()
 {
     hw_clear_bits(&st_pio->irq, 0x1);
 
@@ -173,7 +173,7 @@ void __no_inline_not_in_flash_func(ST7701::start_line_xfer())
     else next_line_addr = &framebuffer[width * (display_row >> row_shift)];
 }
 
-void ST7701::start_frame_xfer()
+void __not_in_flash_func(ST7701::start_frame_xfer)()
 {
     hw_clear_bits(&st_pio->irq, 0x2);
 
@@ -385,6 +385,7 @@ void ST7701::start_frame_xfer()
       current = irq_get_exclusive_handler(pio_get_irq_num(st_pio, 1));
       if(current) irq_remove_handler(pio_get_irq_num(st_pio, 1), current);
       irq_set_exclusive_handler(pio_get_irq_num(st_pio, 1), timing_isr);
+      irq_set_priority(pio_get_irq_num(st_pio, 1), 0x40);
       irq_set_enabled(pio_get_irq_num(st_pio, 1), true);
 
       hw_set_bits(&st_pio->inte0, 0x300); // IRQ 0
@@ -392,6 +393,7 @@ void ST7701::start_frame_xfer()
       current = irq_get_exclusive_handler(pio_get_irq_num(st_pio, 0));
       if(current) irq_remove_handler(pio_get_irq_num(st_pio, 0), current);
       irq_set_exclusive_handler(pio_get_irq_num(st_pio, 0), end_of_line_isr);
+      irq_set_priority(pio_get_irq_num(st_pio, 0), 0x40);
       irq_set_enabled(pio_get_irq_num(st_pio, 0), true);
     }
 
@@ -524,7 +526,7 @@ void ST7701::start_frame_xfer()
       pio_sm_unclaim(st_pio, timing_sm);
     }
 
-    if(pio_sm_is_claimed(st_pio, palette_sm)) {
+    if(palette && pio_sm_is_claimed(st_pio, palette_sm)) {
       pio_sm_set_enabled(st_pio, palette_sm, false);
       pio_sm_clear_fifos(st_pio, palette_sm);
       pio_sm_unclaim(st_pio, palette_sm);

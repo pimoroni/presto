@@ -53,6 +53,7 @@ namespace pimoroni {
     // Parallel init
     ST7701(uint16_t width, uint16_t height, Rotation rotation, SPIPins control_pins, uint16_t* framebuffer, uint32_t* palette = nullptr,
       uint d0=1, uint hsync=19, uint vsync=20, uint lcd_de = 21, uint lcd_dot_clk = 22);
+    virtual ~ST7701() {}
 
     void init();
     void cleanup() override;
