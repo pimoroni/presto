@@ -9,6 +9,9 @@ set(PICO_BOARD_HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR})
 # Board specific version of the frozen manifest
 set(MICROPY_FROZEN_MANIFEST ${MICROPY_BOARD_DIR}/manifest.py)
 
+# We need a custom PSRAM-enabled linker script to allocate some buffers into PSRAM
+set(MICROPY_BOARD_LINKER_SCRIPT ${MICROPY_BOARD_DIR}/memmap_mp_rp2350_psram.ld)
+
 # If USER_C_MODULES or MicroPython customisations use malloc then
 # there needs to be some RAM reserved for the C heap
 set(MICROPY_C_HEAP_SIZE 4096)
