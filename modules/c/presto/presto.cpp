@@ -282,7 +282,7 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
     presto_debug("core1 returned\n");
 
     if(res != 0) {
-        mp_raise_msg(&mp_type_RuntimeError, "Presto: failed to start ST7701 on Core1.");
+        mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("Presto: failed to start ST7701 on Core1."));
     }
 
     return MP_OBJ_FROM_PTR(self);
@@ -351,7 +351,7 @@ mp_obj_t Presto_set_backlight(mp_obj_t self_in, mp_obj_t brightness) {
 
     float b = mp_obj_get_float(brightness);
 
-    if(b < 0 || b > 1.0f) mp_raise_ValueError("brightness out of range. Expected 0.0 to 1.0");
+    if(b < 0 || b > 1.0f) mp_raise_ValueError(MP_ERROR_TEXT("brightness out of range. Expected 0.0 to 1.0"));
 
     self->presto->set_backlight((uint8_t)(b * 255.0f));
 

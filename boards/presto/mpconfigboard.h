@@ -34,5 +34,8 @@ int mp_hal_is_pin_reserved(int n);
 // Alias the chip select pin specified by presto.h
 #define MICROPY_HW_PSRAM_CS_PIN                 PIMORONI_PRESTO_PSRAM_CS_PIN
 
+// Use the __PsramGcHeapStart and __PsramGcHeapEnd symbols for PSRAM
+#define MICROPY_HW_PSRAM_USE_LINKER_SYMBOLS     (1)
+
 #define MICROPY_PY_THREAD                       (0)
 #define MICROPY_GC_SPLIT_HEAP                   (0)
