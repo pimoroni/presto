@@ -93,7 +93,8 @@ my_shape.path((10, 0), (0, 10), (20, 10))
 * `path((x, y), (x2, y2), (x3, y3), ...)`
 
 A path is simply an arbitrary list of points that produce a complete closed
-shape. It's ideal for drawing complex shapes such as logos or icons.
+shape. It's ideal for drawing complex shapes such as logos or icons. The
+shape will be filled.
 
 If you have a list of points you can use Python's spread operator to pass it
 into `path`, eg:
@@ -103,6 +104,14 @@ my_points = [(10, 0), (0, 10), (20, 10)]
 my_shape = Polygon()
 my_shape.path(*my_points)
 ```
+
+### Line
+
+* `line(x1, y1, x2, y2, thickness)`
+
+Creates a single line from one point to the other, drawn at the specified
+thickness. This is useful if you want to draw a path but do not want it to
+be filled.
 
 ### Rectangle
 
