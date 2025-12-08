@@ -19,9 +19,9 @@ Pimoroni Presto.
 
 You can find the latest firmware releases at [https://github.com/pimoroni/presto/releases/latest](https://github.com/pimoroni/presto/releases/latest).
 
-There are two choices, a regular build that just updates the MicroPython firmware and a "-with-examples" build which includes everything in [examples](examples).
+There are two choices, a regular build that just updates the MicroPython firmware and a "-with-filesystem" build which includes everything in [examples](examples).
 
-:warning: If you've changed any of the code on your board then back up before flashing "-with-examples" - *your files will be erased!*
+:warning: If you've changed any of the code on your board then back up before flashing "-with-filesystem" - *your files will be erased!*
 
 ## Installation
 
