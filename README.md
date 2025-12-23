@@ -51,3 +51,4 @@ Links to community projects and other resources that you might find helpful can 
 - [Presto as an MQTT subscriber device](https://forums.pimoroni.com/t/presto-as-mqtt-subscriber-device/28051)
 - [Presto Flip Clock](https://forums.pimoroni.com/t/presto-flip-clock/28089)
 - [Presto-Cal - timezone/DST library with iCalendar parsing](https://forums.pimoroni.com/t/micropython-timezone-and-dst-library/28318)
+- [WiiM Now Playing Display](https://github.com/retired-guy/WiiM-Presto)
