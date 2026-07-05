@@ -187,13 +187,21 @@ void __not_in_flash_func(ST7701::start_frame_xfer)()
     dma_channel_wait_for_finish_blocking(st_dma);
     pio_sm_set_enabled(st_pio, parallel_sm, false);
     pio_sm_clear_fifos(st_pio, parallel_sm);
-    pio_sm_exec_wait_blocking(st_pio, parallel_sm, pio_encode_mov(pio_osr, pio_null));
-    pio_sm_exec_wait_blocking(st_pio, parallel_sm, pio_encode_out(pio_null, 32));
-    pio_sm_exec_wait_blocking(st_pio, parallel_sm, pio_encode_jmp(parallel_offset));
+    // Reset the SM for the new frame. The original code exec'd
+    //   mov osr,null / out null,32 / jmp
+    // with pio_sm_exec_wait_blocking to leave the OSR empty, but with the TX
+    // FIFO empty (DMA not yet armed, e.g. on the very first frame) the exec'd
+    // `out` latches EXEC_STALLED forever and this ISR spins, freezing the
+    // core that services the display (blank panel).
+    // pio_sm_restart() empties the OSR/ISR without any stallable exec
+    // (X/Y survive, so the width loop counter in Y is preserved), and a
+    // `jmp` can never stall so it needs no blocking wait.
+    pio_sm_restart(st_pio, parallel_sm);
+    pio_sm_exec(st_pio, parallel_sm, pio_encode_jmp(parallel_offset));
     pio_sm_set_enabled(st_pio, parallel_sm, true);
     display_row = 0;
     next_line_addr = framebuffer;
-    dma_channel_set_read_addr(st_dma, framebuffer, true);  
+    dma_channel_set_read_addr(st_dma, framebuffer, true);
 
     waiting_for_vsync = false;
     __sev();
