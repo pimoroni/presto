@@ -92,7 +92,7 @@ class Application:
         Application.count += 1
 
         self.selected = False
-        self.icon = "description"
+        self.icon = icons["description"]
 
         # Bit of filename formatting for scripts without a title in the header.
         self.name = " ".join([w[0].upper() + w[1:] for w in file[:-3].replace("_", " ").split()])
@@ -104,7 +104,10 @@ class Application:
         for line in header:
             if line.startswith("# ICON "):
                 icon = line[7:].strip()
-                self.icon = icons[icon]
+                # ignore any icon not in the approved list
+                # this includes older co-ordinate based icons, often found in sample code
+                if icon in icons:
+                    self.icon = icons[icon]
 
             if line.startswith("# NAME "):
                 self.name = line[7:]
