@@ -6,11 +6,16 @@ set(PICO_NUM_GPIOS 48)
 # Make sure we find pga2350.h (PICO_BOARD) in the current dir
 set(PICO_BOARD_HEADER_DIRS ${CMAKE_CURRENT_LIST_DIR})
 
+# Portion of onboard flash to reserve for the user filesystem.
+# Presto has 16MB flash, so reserve 2MiB for the firmware and leave 14MiB.
+set(MICROPY_HW_FLASH_STORAGE_BYTES 14680064)
+
 # Board specific version of the frozen manifest
 set(MICROPY_FROZEN_MANIFEST ${MICROPY_BOARD_DIR}/manifest.py)
 
-# We need a custom PSRAM-enabled linker script to allocate some buffers into PSRAM
-set(MICROPY_BOARD_LINKER_SCRIPT ${MICROPY_BOARD_DIR}/memmap_mp_rp2350_psram.ld)
+# 8MB PSRAM on GPIO47. Links hardware_psram and brings PSRAM up in runtime_init.
+set(MICROPY_HW_ENABLE_PSRAM 1)
+set(MICROPY_HW_PSRAM_CS_PIN 47)
 
 # If USER_C_MODULES or MicroPython customisations use malloc then
 # there needs to be some RAM reserved for the C heap

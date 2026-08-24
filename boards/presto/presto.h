@@ -19,9 +19,6 @@
 // For board detection
 #define PIMORONI_PRESTO
 
-// --- BOARD SPECIFIC ---
-#define PIMORONI_PRESTO_PSRAM_CS_PIN 47
-
 // --- UART ---
 #ifndef PICO_DEFAULT_UART
 #define PICO_DEFAULT_UART 0
