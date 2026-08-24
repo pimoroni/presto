@@ -23,10 +23,11 @@
 
 MEMORY
 {
-    FLASH(rx) : ORIGIN = 0x10000000, LENGTH = 4096k
+    FLASH(rx) : ORIGIN = 0x10000000, LENGTH = __micropy_flash_size__ - __micropy_flash_storage_bytes__ - __micropy_romfs_bytes__
     RAM(rwx) : ORIGIN =  0x20000000, LENGTH = 512k
-    SCRATCH_X(rwx) : ORIGIN = 0x20080000, LENGTH = 4k
-    SCRATCH_Y(rwx) : ORIGIN = 0x20081000, LENGTH = 4k
+    /* All of the C stack lives in a single 8k scratch region */
+    SCRATCH_X(rwx) : ORIGIN = 0x20080000, LENGTH = 0k
+    SCRATCH_Y(rwx) : ORIGIN = 0x20080000, LENGTH = 8k
     PSRAM(rw) : ORIGIN = 0x11000000, LENGTH = 8128k /* 64k reserved for RAMFS */
 }
 
@@ -275,11 +276,20 @@ SECTIONS
         PROVIDE(__flash_binary_end = .);
     } > FLASH =0xaa
 
-    /* PSRAM data section */
-    .psram_data (NOLOAD): {
+    /* PSRAM data sections, matching the Pico SDK's sections_psram.incl */
+    .psram_load : {
+        __psram_start__ = .;
+        __psram_load_start__ = .;
+        *(SORT(.psram_initialised.*))
         . = ALIGN(4);
-        *(.psram_data*)
-        PROVIDE(__psram_data_end = .);
+        __psram_load_end__ = .;
+    } > PSRAM AT> FLASH
+    __psram_load_source__ = LOADADDR(.psram_load);
+
+    .psram_noload (NOLOAD) : {
+        *(SORT(.psram_uninitialised.*))
+        . = ALIGN(4);
+        __psram_end__ = .;
     } > PSRAM
 
     /* stack limit is poorly named, but historically is maximum heap ptr */
@@ -289,8 +299,8 @@ SECTIONS
     __GcHeapStart = __StackLimit; /* after the C heap (sbrk limit) */
     __GcHeapEnd = ORIGIN(RAM) + LENGTH(RAM) - __micropy_extra_stack__;
 
-    /* Define start and end of PSRAM GC heap */
-    __PsramGcHeapStart = __psram_data_end; /* after the C heap (sbrk limit) */
+    /* Define start and end of PSRAM GC heap, stopping short of the RAMFS */
+    __PsramGcHeapStart = __psram_end__;
     __PsramGcHeapEnd = ORIGIN(PSRAM) + LENGTH(PSRAM);
 
     /* Define start and end of C stack */

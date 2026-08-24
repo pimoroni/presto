@@ -121,7 +121,7 @@
 #define CYW43_PIO_CLOCK_DIV_INT 3
 
 // Allocate LWIP buffers in PSRAM
-#define LWIP_DECLARE_MEMORY_ALIGNED(variable_name, size) __attribute__((section(".psram_data"), aligned(4))) uint8_t variable_name[LWIP_MEM_ALIGN_BUFFER(size)]
+#define LWIP_DECLARE_MEMORY_ALIGNED(variable_name, size) __attribute__((section(".psram_uninitialised.lwip"), aligned(4))) uint8_t variable_name[LWIP_MEM_ALIGN_BUFFER(size)]
 
 // Default the system clock to 200MHz for best performance
 #define SYS_CLK_HZ           200000000
