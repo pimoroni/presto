@@ -275,7 +275,7 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
 
     // Micropython uses all of both scratch memory (and more!) for core0 stack, 
     // so we must supply our own small stack for core1 here.
-    multicore_launch_core1_with_stack(presto_core1_entry, core1_stack, stack_size);
+    multicore_launch_core1_with_stack(presto_core1_entry, core1_stack, sizeof(core1_stack));
     presto_debug("launched core1\n");
 
     int res = multicore_fifo_pop_blocking();
