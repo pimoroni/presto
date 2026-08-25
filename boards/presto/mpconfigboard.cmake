@@ -19,7 +19,7 @@ set(MICROPY_HW_PSRAM_CS_PIN 47)
 
 # If USER_C_MODULES or MicroPython customisations use malloc then
 # there needs to be some RAM reserved for the C heap
-set(MICROPY_C_HEAP_SIZE 4096)
+set(MICROPY_C_HEAP_SIZE 8192)
 
 # Links micropy_lib_lwip and sets MICROPY_PY_LWIP = 1
 # Picked up and expanded upon in mpconfigboard.h
