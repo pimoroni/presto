@@ -154,6 +154,22 @@ SECTIONS
     __binary_info_end = .;
     . = ALIGN(4);
 
+    /* PSRAM data sections, matching the Pico SDK's sections_psram.incl */
+    .psram_load : {
+        __psram_start__ = .;
+        __psram_load_start__ = .;
+        *(SORT(.psram_initialised.*))
+        . = ALIGN(4);
+        __psram_load_end__ = .;
+    } > PSRAM AT> FLASH
+    __psram_load_source__ = LOADADDR(.psram_load);
+
+    .psram_noload (NOLOAD) : {
+        *(SORT(.psram_uninitialised.*))
+        . = ALIGN(4);
+        __psram_end__ = .;
+    } > PSRAM
+
     .ram_vector_table (NOLOAD): {
         *(.ram_vector_table)
     } > RAM
@@ -275,22 +291,6 @@ SECTIONS
         KEEP(*(.embedded_end_block*))
         PROVIDE(__flash_binary_end = .);
     } > FLASH =0xaa
-
-    /* PSRAM data sections, matching the Pico SDK's sections_psram.incl */
-    .psram_load : {
-        __psram_start__ = .;
-        __psram_load_start__ = .;
-        *(SORT(.psram_initialised.*))
-        . = ALIGN(4);
-        __psram_load_end__ = .;
-    } > PSRAM AT> FLASH
-    __psram_load_source__ = LOADADDR(.psram_load);
-
-    .psram_noload (NOLOAD) : {
-        *(SORT(.psram_uninitialised.*))
-        . = ALIGN(4);
-        __psram_end__ = .;
-    } > PSRAM
 
     /* stack limit is poorly named, but historically is maximum heap ptr */
     __StackLimit = __bss_end__ + __micropy_c_heap_size__;
