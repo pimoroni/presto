@@ -1,68 +1,74 @@
 # ICON travel
 # NAME Attitude Indicator
 # DESC A Demo for the Multi-Sensor Stick
+import math
+
 import machine
 from lsm6ds3 import LSM6DS3, NORMAL_MODE_104HZ
-from picovector import ANTIALIAS_FAST, PicoVector, Polygon, Transform
+from picovector import color, font, mat3, shape, vec2
 from presto import Presto
 
 # Setup for the Presto display
 presto = Presto(ambient_light=True)
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
 CX = WIDTH // 2
 CY = HEIGHT // 2
 
 # Colours
-GRAY = display.create_pen(42, 52, 57)
-BLACK = display.create_pen(0, 0, 0)
-SKY_COLOUR = display.create_pen(86, 159, 201)
-GROUND_COLOUR = display.create_pen(101, 81, 63)
-WHITE = display.create_pen(255, 255, 255)
-RED = display.create_pen(200, 0, 0)
+GRAY = color.rgb(42, 52, 57)
+BLACK = color.rgb(0, 0, 0)
+SKY_COLOUR = color.rgb(86, 159, 201)
+GROUND_COLOUR = color.rgb(101, 81, 63)
+WHITE = color.rgb(255, 255, 255)
+RED = color.rgb(200, 0, 0)
 
-# Pico Vector
-vector = PicoVector(display)
-vector.set_antialiasing(ANTIALIAS_FAST)
-t = Transform()
-normal = Transform()
-vector.set_transform(t)
 
 x, y = 0, CY
 x_prev = x
 y_prev = y
 alpha = 0.15
 
-# Setup some of our vector shapes
-background_rect = Polygon()
-background_rect.rectangle(0, 0, WIDTH, HEIGHT)
-background_rect.circle(CX, CY, 109)
+display.font = font.load("Roboto-Medium.af")
 
-instrument_outline = Polygon().circle(CX, CY, 110, stroke=8)
 
-ground = Polygon().rectangle(0, HEIGHT // 2, WIDTH, HEIGHT)
-horizon = Polygon().rectangle(0, HEIGHT // 2, WIDTH, 2)
-pitch_lines = Polygon()
+def circle_contour(cx, cy, r, steps=48):
+    return [vec2(cx + r * math.cos(math.radians(a * 360 / steps)),
+                 cy + r * math.sin(math.radians(a * 360 / steps))) for a in range(steps)]
 
+
+def rect_contour(x, y, w, h):
+    return [vec2(x, y), vec2(x + w, y), vec2(x + w, y + h), vec2(x, y + h)]
+
+
+# Setup some of our vector shapes.
+# Everything outside the instrument circle, so the corners can be masked off.
+background_rect = shape.custom(rect_contour(0, 0, WIDTH, HEIGHT), circle_contour(CX, CY, 109))
+
+instrument_outline = shape.circle(CX, CY, 110).stroke(8)
+
+ground = shape.rectangle(0, HEIGHT // 2, WIDTH, HEIGHT)
+horizon = shape.rectangle(0, HEIGHT // 2, WIDTH, 2)
+
+pitch_contours = []
 for line in range(1, 7):
-    if line % 2:
-        pitch_lines.rectangle(CX - 10, CY - line * 14, 20, 1.5)
-        pitch_lines.rectangle(CX - 10, CY + line * 14, 20, 1.5)
-    else:
-        pitch_lines.rectangle(CX - 30, CY - line * 14, 60, 1.5)
-        pitch_lines.rectangle(CX - 30, CY + line * 14, 60, 1.5)
+    width = 20 if line % 2 else 60
+    x = CX - width // 2
+    pitch_contours.append(rect_contour(x, CY - line * 14, width, 1.5))
+    pitch_contours.append(rect_contour(x, CY + line * 14, width, 1.5))
+pitch_lines = shape.custom(*pitch_contours)
 
-craft_centre = Polygon().circle(CX, CY - 1, 2)
-craft_left = Polygon().rectangle(CX - 70, CY - 1, 50, 2, (2, 2, 2, 2))
-craft_right = Polygon().rectangle(CX + 20, CY - 1, 50, 2, (2, 2, 2, 2))
-craft_arc = Polygon().arc(CX, CY, 22, -90, 90, stroke=2)
+craft_centre = shape.circle(CX, CY - 1, 2)
+craft_left = shape.rounded_rectangle(CX - 70, CY - 1, 50, 2, 2)
+craft_right = shape.rounded_rectangle(CX + 20, CY - 1, 50, 2, 2)
+craft_arc = shape.arc(CX, CY, 21, 23, -90, 90)
 
 
 def show_message(text):
-    display.set_pen(GRAY)
+    display.pen = GRAY
     display.clear()
-    display.set_pen(WHITE)
-    display.text(f"{text}", 5, 10, WIDTH, 2)
+    display.pen = WHITE
+    display.text(f"{text}", 5, 10, 16)
     presto.update()
 
 
@@ -75,7 +81,7 @@ except OSError:
 
 while True:
     # Clear screen with the SKY colour
-    display.set_pen(SKY_COLOUR)
+    display.pen = SKY_COLOUR
     display.clear()
 
     try:
@@ -93,30 +99,32 @@ while True:
     x_axis = int(alpha * ax + (1 - alpha) * x_prev)
     x_prev = x_axis
 
-    # Draw the ground
-    t.reset()
-    t.rotate(-x_axis / 180, (WIDTH // 2, HEIGHT // 2))
-    t.translate(0, y_axis / 100)
+    # Draw the ground. Later matrix calls apply first, so this reads the same
+    # way round as the Transform calls it replaces.
+    horizon_transform = (mat3()
+                         .translate(CX, CY).rotate(-x_axis / 180).translate(-CX, -CY)
+                         .translate(0, y_axis / 100))
+    ground.transform = horizon_transform
+    horizon.transform = horizon_transform
+    pitch_lines.transform = horizon_transform
 
-    vector.set_transform(t)
-    display.set_pen(GROUND_COLOUR)
-    vector.draw(ground)
-    display.set_pen(WHITE)
-    vector.draw(horizon)
-    vector.draw(pitch_lines)
-    vector.set_transform(normal)
+    display.pen = GROUND_COLOUR
+    display.shape(ground)
+    display.pen = WHITE
+    display.shape(horizon)
+    display.shape(pitch_lines)
 
     # Draw the aircraft
-    display.set_pen(RED)
-    vector.draw(craft_centre)
-    vector.draw(craft_left)
-    vector.draw(craft_right)
-    vector.draw(craft_arc)
+    display.pen = RED
+    display.shape(craft_centre)
+    display.shape(craft_left)
+    display.shape(craft_right)
+    display.shape(craft_arc)
 
-    display.set_pen(GRAY)
-    vector.draw(background_rect)
-    display.set_pen(BLACK)
-    vector.draw(instrument_outline)
+    display.pen = GRAY
+    display.shape(background_rect)
+    display.pen = BLACK
+    display.shape(instrument_outline)
 
     # Update the screen so we can see our changes
     presto.update()
