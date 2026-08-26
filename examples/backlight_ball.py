@@ -5,28 +5,27 @@ Watch the backlighting react to a ball moving on screen
 import math
 import time
 
+from picovector import color
+
 from presto import Presto
 
 presto = Presto(ambient_light=True)
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
 
 # Couple of colours for use later
-BLUE = display.create_pen(28, 181, 202)
-WHITE = display.create_pen(255, 255, 255)
-RED = display.create_pen(230, 60, 45)
-ORANGE = display.create_pen(245, 165, 4)
-GREEN = display.create_pen(9, 185, 120)
-PINK = display.create_pen(250, 125, 180)
-PURPLE = display.create_pen(118, 95, 210)
-BLACK = display.create_pen(0, 0, 0)
-
-# Set our initial pen colour
-pen = display.create_pen_hsv(1.0, 1.0, 1.0)
+BLUE = color.rgb(28, 181, 202)
+WHITE = color.rgb(255, 255, 255)
+RED = color.rgb(230, 60, 45)
+ORANGE = color.rgb(245, 165, 4)
+GREEN = color.rgb(9, 185, 120)
+PINK = color.rgb(250, 125, 180)
+PURPLE = color.rgb(118, 95, 210)
+BLACK = color.rgb(0, 0, 0)
 
 while True:
 
-    display.set_pen(BLACK)
+    display.pen = BLACK
     display.clear()
 
     # We'll use this for cycling through the rainbow
@@ -35,10 +34,7 @@ while True:
     degrees = (t * 360) / 5
     rad = math.radians(degrees)
 
-    display.reset_pen(pen)
-    pen = display.create_pen_hsv(t, 1.0, 1.0)
-    display.set_pen(pen)
-
+    display.pen = color.hsv(t * 360, 255, 255)
     display.circle(WIDTH // 2 + int(math.cos(rad) * 100), HEIGHT // 2 + int(math.sin(rad) * 100), 80)
 
     # Finally we update the screen with our changes :)
