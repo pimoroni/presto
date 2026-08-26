@@ -8,7 +8,6 @@ from time import ticks_us
 
 import machine
 import micropython
-from picographics import DISPLAY_PRESTO, PicoGraphics
 
 from presto import Presto
 
@@ -30,8 +29,11 @@ except OSError as e:
 
 # Setup for the Presto display
 presto = Presto()
-display = PicoGraphics(DISPLAY_PRESTO, buffer=memoryview(presto.presto))
-WIDTH, HEIGHT = display.get_bounds()
+display = presto.display
+WIDTH, HEIGHT = display.width, display.height
+
+# Written straight into the RGBA8888 surface, a word per pixel.
+framebuffer = memoryview(presto.presto)
 
 # Read the bad apple video file from the SD card
 video = open(f"/sd/badapple{WIDTH}x{HEIGHT}.bin", "rb")
@@ -45,21 +47,20 @@ next_tick = ticks_us()
 # This Micropython Viper function is compiled to native code
 # for maximum execution speed.
 @micropython.viper
-def render(data: ptr8, x: int, y: int, next_tick: int):  # noqa: F821
+def render(data: ptr8, fb: ptr32, x: int, y: int, next_tick: int):  # noqa: F821
     for i in range(0, 1024, 2):
         # The encoded video data is an array of span lengths and
         # greyscale colour values
         span_len = int(data[i])
         colour = int(data[i+1])
 
-        # Expand the grey colour to each colour channel
-        colour = (colour << 11) | (colour << 6) | colour
+        # 5-bit grey to opaque RGBA8888
+        grey = colour << 3
+        pixel = -16777216 | (grey << 16) | (grey << 8) | grey
 
-        # Byte swap for the display
-        colour = (colour & 0xFF) << 8 | (colour >> 8)
-
-        display.set_pen(colour)
-        display.pixel_span(x, y, span_len)
+        offset = y * 240 + x
+        for span in range(span_len):
+            fb[offset + span] = pixel
 
         x += span_len
         if x >= 240:
@@ -82,4 +83,4 @@ while True:
     data = video.read(1024)
     if len(data) < 1024:
         break
-    x, y, next_tick = render(data, x, y, next_tick)
+    x, y, next_tick = render(data, framebuffer, x, y, next_tick)
