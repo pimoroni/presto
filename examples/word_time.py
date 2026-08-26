@@ -5,33 +5,30 @@
 import time
 import ntptime
 
+from picovector import color, font, shape
 from presto import Presto
 from touch import Button
-from picovector import ANTIALIAS_BEST, PicoVector, Polygon
 
 
 class button():
-    def __init__(self, display, vector, text, bg, fg, x, y, h, w, r = 0):
+    def __init__(self, display, text, bg, fg, x, y, h, w, r = 0):
         self.display = display
-        self.vector = vector
         self.text = text
         self.bg = bg
         self.fg = fg
         self.button = Button(x, y, h, w)
-        self.polygon = Polygon()
-        self.polygon.rectangle(x, y, h, w, (r, r, r, r))
+        self.polygon = shape.rounded_rectangle(x, y, h, w, r) if r else shape.rectangle(x, y, h, w)
 
 
     def draw(self):
-        self.display.set_pen(self.bg)
-        self.vector.draw(self.polygon)
+        self.display.pen = self.bg
+        self.display.shape(self.polygon)
 
-        self.vector.set_font_size(20)
-        self.display.set_pen(self.fg)
-        x_text, y_text, w_text, h_text = self.vector.measure_text(self.text)
+        self.display.pen = self.fg
+        w_text, h_text = self.display.measure_text(self.text, 20)
         x_offset = int((self.button.bounds[2] - w_text) / 2) + self.button.bounds[0]
-        y_offset = int(((self.button.bounds[3] - h_text) / 2) + self.button.bounds[1] + h_text)
-        self.vector.text(self.text, x_offset, y_offset)
+        y_offset = int((self.button.bounds[3] - h_text) / 2) + self.button.bounds[1]
+        self.display.text(self.text, x_offset, y_offset, 20)
 
 
     def pressed(self):
@@ -39,10 +36,10 @@ class button():
 
 
 def show_message(text):
-    display.set_pen(BLACK)
+    display.pen = BLACK
     display.clear()
-    display.set_pen(WHITE)
-    display.text(f"{text}", 5, 10, WIDTH, 2)
+    display.pen = WHITE
+    display.text(f"{text}", 5, 10, 16)
     presto.update()
 
 
@@ -92,32 +89,23 @@ def update():
 
 
 def draw(time_phrase):
-    display.set_font("bitmap8")
-
-    display.set_pen(BLACK)
+    display.pen = BLACK
     display.clear()
 
     y = 40
 
     line_space = 40
 
-    display.set_pen(WHITE)
-
+    display.pen = WHITE
     header = "IT IS ABOUT"
-    vector.set_font_size(25)
-    x_text, y_text, w_text, h_text = vector.measure_text(header)
-    x_offset = int((WIDTH - w_text) / 2)
-    vector.text(header, x_offset, y)
+    w_text, h_text = display.measure_text(header, 25)
+    display.text(header, int((WIDTH - w_text) / 2), y, 25)
 
     y += line_space + 15
-    vector.set_font_size(40)
     for line in time_phrase:
         line = line.upper()
-#        x_offset = int((WIDTH - display.measure_text(line, scale = 3, spacing = 3)) / 2)
-#        display.text(line, x_offset, y, WIDTH, scale = 3, spacing = 3)
-        x_text, y_text, w_text, h_text = vector.measure_text(line)
-        x_offset = int((WIDTH - w_text) / 2)
-        vector.text(line, x_offset, y)
+        w_text, h_text = display.measure_text(line, 40)
+        display.text(line, int((WIDTH - w_text) / 2), y, 40)
         y += line_space
 
     utc_plus_button.draw()
@@ -128,19 +116,14 @@ def draw(time_phrase):
 # Setup for the Presto display
 presto = Presto()
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
-BLACK = display.create_pen(0, 0, 0)
-WHITE = display.create_pen(200, 200, 200)
+WIDTH, HEIGHT = display.width, display.height
+BLACK = color.rgb(0, 0, 0)
+WHITE = color.rgb(200, 200, 200)
 
-vector = PicoVector(display)
-vector.set_antialiasing(ANTIALIAS_BEST)
-
-vector.set_font("Roboto-Medium.af", 96)
-vector.set_font_letter_spacing(100)
-vector.set_font_word_spacing(100)
+display.font = font.load("Roboto-Medium.af")
 
 # Clear the screen before the network call is made
-display.set_pen(BLACK)
+display.pen = BLACK
 display.clear()
 presto.update()
 
@@ -163,8 +146,8 @@ except OSError:
     while True:
         show_message("Unable to get time.\n\nCheck your network try again.")
 
-utc_plus_button = button(display, vector, "UTC +", WHITE, BLACK,  WIDTH - (WIDTH // 4), HEIGHT - 30, WIDTH // 4, 30, 5)
-utc_minus_button = button(display, vector, "UTC -", WHITE, BLACK, 0, HEIGHT - 30, WIDTH // 4, 30, 5)
+utc_plus_button = button(display, "UTC +", WHITE, BLACK,  WIDTH - (WIDTH // 4), HEIGHT - 30, WIDTH // 4, 30, 5)
+utc_minus_button = button(display, "UTC -", WHITE, BLACK, 0, HEIGHT - 30, WIDTH // 4, 30, 5)
 
 # Starting offset; the UTC +/- buttons adjust from here (not persisted)
 try:
