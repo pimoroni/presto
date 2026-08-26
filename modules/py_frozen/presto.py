@@ -33,17 +33,20 @@ class Presto():
     NUM_LEDS = 7
     LED_PIN = 33
 
-    def __init__(self, full_res=False, ambient_light=False, rotate=ROTATE_0):
+    def __init__(self, ambient_light=False, rotate=ROTATE_0, full_res=None):
+        if full_res:
+            raise ValueError("Presto: full_res is not supported by the PicoVector rasteriser.")
+
         # WiFi - *must* happen before Presto bringup
         # Note: Forces WiFi details to be in secrets.py
         self.wifi = EzWiFi()
 
         # Touch Input
-        self.touch = FT6236(full_res=full_res, rotate=rotate)
+        self.touch = FT6236(rotate=rotate)
 
-        self.presto = _presto.Presto(full_res=full_res, rotate=rotate)
-        self.width = 480 if full_res else 240
-        self.height = 480 if full_res else 240
+        self.presto = _presto.Presto(rotate=rotate)
+        self.width = 240
+        self.height = 240
 
         # The C module hands out its RGBA8888 drawing surface; picovector
         # rasterises straight into it and update() converts it for scanout.

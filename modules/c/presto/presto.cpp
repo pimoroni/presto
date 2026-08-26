@@ -70,12 +70,9 @@ typedef struct _Presto_obj_t {
     bool using_palette;
 
     // RGBA8888 drawing surface, handed to picovector's image() via the buffer
-    // protocol. At half res it lives in the tail of presto_sram_pool; at full
-    // res both buffers need 1.35M and come from the GC heap, which is in PSRAM.
-    // The GC only scans its own heap and the stack, so full-res allocations are
-    // kept reachable from here.
+    // protocol. It sits in the tail of presto_sram_pool, behind the scanout
+    // buffer.
     uint32_t* back_buffer;
-    uint16_t* front_buffer;
 
     // Automatic ambient backlight control
     volatile bool auto_ambient_leds;
@@ -260,14 +257,15 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
 
     presto_debug("set fb pointers\n");
 
-    if (!args[ARG_full_res].u_bool) {
-        self->width = WIDTH / 2;
-        self->height = HEIGHT / 2;
+    // Full res would need a 460K RGB565 scanout buffer in SRAM, which no
+    // longer fits beside the rasteriser's 80K working buffer. Scanning out of
+    // PSRAM instead cannot sustain the pixel rate and renders noise.
+    if (args[ARG_full_res].u_bool) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Presto: full_res is not supported by the PicoVector rasteriser."));
     }
-    else {
-        self->width = WIDTH;
-        self->height = HEIGHT;
-    }
+
+    self->width = WIDTH / 2;
+    self->height = HEIGHT / 2;
 
     if (args[ARG_palette].u_bool) {
         mp_raise_ValueError(MP_ERROR_TEXT("Presto: palette mode is not supported by the PicoVector rasteriser."));
@@ -276,14 +274,8 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
 
     {
         const size_t pixels = (size_t)self->width * self->height;
-        if (pixels <= HALF_PIXELS) {
-            presto_buffer = (uint16_t *)presto_sram_pool;
-            self->back_buffer = (uint32_t *)(presto_sram_pool + pixels * sizeof(uint16_t));
-        } else {
-            presto_buffer = m_new(uint16_t, pixels);
-            self->back_buffer = m_new(uint32_t, pixels);
-        }
-        self->front_buffer = presto_buffer;
+        presto_buffer = (uint16_t *)presto_sram_pool;
+        self->back_buffer = (uint32_t *)(presto_sram_pool + pixels * sizeof(uint16_t));
         memset(presto_buffer, 0, pixels * sizeof(uint16_t));
         memset(self->back_buffer, 0, pixels * sizeof(uint32_t));
     }

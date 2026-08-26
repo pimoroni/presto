@@ -20,7 +20,7 @@ from picovector import color, font, image, shape, vec2
 
 i2c = PimoroniI2C(sda=40, scl=41)
 
-presto = Presto(full_res=True, ambient_light=False)
+presto = Presto(ambient_light=False)
 display = presto.display
 
 WIDTH, HEIGHT = display.width, display.height
@@ -111,7 +111,7 @@ presto.update()
 
 # display a message whilst waiting for the sensor to be ready
 display.pen = WHITE
-display.text("Waiting for sensor to be ready", 0, 40, 50)
+display.text("Waiting for sensor to be ready", 0, 40, 25)
 presto.update()
 
 scd41 = None
@@ -125,8 +125,8 @@ except RuntimeError as e:
     display.pen = BLACK
     display.clear()
     display.pen = WHITE
-    display.text("SCD41 breakout not detected :(", 0, 40, 50)
-    display.text("but you could buy one at pimoroni.com ;)", 0, HEIGHT - 120, 50)
+    display.text("SCD41 breakout not detected :(", 0, 40, 25)
+    display.text("but you could buy one at pimoroni.com ;)", 0, HEIGHT - 120, 25)
     presto.update()
 
 while True:
@@ -186,12 +186,12 @@ while True:
         display.shape(line_polygon(CO2_GRAPH_TOP, CO2_GRAPH_BOTTOM, CO2_MIN, CO2_MAX, OK_CO2_LEVEL))
         # draw the CO2 text
         display.pen = WHITE
-        display.text(f"CO2: {co2:.0f}ppm", PADDING, 25, 40)
+        display.text(f"CO2: {co2:.0f}ppm", PADDING, 25, 20)
         display.pen = BLACK
-        display.text(f"Low {lowest_co2:.0f}ppm", PADDING, round(TEMPERATURE_GRAPH_TOP) - 12, 30)
+        display.text(f"Low {lowest_co2:.0f}ppm", PADDING, round(TEMPERATURE_GRAPH_TOP) - 12, 15)
         high_text = f"High {highest_co2:.0f}ppm"
-        text_width = int(display.measure_text(high_text, 30)[0])
-        display.text(high_text, WIDTH - PADDING - text_width, round(TEMPERATURE_GRAPH_TOP) - 12, 30)
+        text_width = int(display.measure_text(high_text, 15)[0])
+        display.text(high_text, WIDTH - PADDING - text_width, round(TEMPERATURE_GRAPH_TOP) - 12, 15)
 
         # draw the humidity graph
         # here we're using the 'hue' value to affect the saturation (so light blue to dark blue)
@@ -201,8 +201,8 @@ while True:
         display.shape(humidity_graph)
         #display.pen = WHITE
         humidity_text = f"{humidity:.0f}% Humidity"
-        text_width = int(display.measure_text(humidity_text, 30)[0])
-        display.text(humidity_text, WIDTH - PADDING - text_width, int(HUMIDITY_GRAPH_BOTTOM) - 13, 30)
+        text_width = int(display.measure_text(humidity_text, 15)[0])
+        display.text(humidity_text, WIDTH - PADDING - text_width, int(HUMIDITY_GRAPH_BOTTOM) - 13, 15)
 
         # draw the temperature graph
         display.pen = color.hsv(temperature_hue, 255, 255)
@@ -210,7 +210,7 @@ while True:
         temperature_graph = graph_polygon(TEMPERATURE_GRAPH_TOP, TEMPERATURE_GRAPH_BOTTOM, TEMPERATURE_MIN, TEMPERATURE_MAX, temperature_readings, LINE_THICKNESS)
         display.shape(temperature_graph)
         #display.pen = WHITE
-        display.text(f"Temp: {temperature:.0f}°C", PADDING, int(TEMPERATURE_GRAPH_BOTTOM) - 13, 30)
+        display.text(f"Temp: {temperature:.0f}°C", PADDING, int(TEMPERATURE_GRAPH_BOTTOM) - 13, 15)
 
         # light up the rear leds the same colour as the graph
         for x in range(7):

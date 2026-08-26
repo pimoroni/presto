@@ -1,6 +1,6 @@
 # ICON schedule
 # NAME Analog Clock
-# DESC Full resolution vector clock!
+# DESC Analogue vector clock
 import presto
 
 import time
@@ -9,7 +9,7 @@ import gc
 from picovector import color, image, mat3, shape, vec2
 
 
-presto = presto.Presto(full_res=True)
+presto = presto.Presto()
 
 display = presto.display
 display.antialias = image.X4
