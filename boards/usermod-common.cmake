@@ -21,15 +21,11 @@ include(modules/c/presto/micropython)
 include(pimoroni_i2c/micropython)
 include(pimoroni_bus/micropython)
 
-# Pico Graphics Essential
-include(hershey_fonts/micropython)
-include(bitmap_fonts/micropython)
-include(picographics/micropython)
+# PicoVector & MicroPython bindings.
+# Core1 runs the ST7701 scanout, so the rasteriser stays on core0.
+set(PV_DUAL_CORE OFF)
+find_package(PICOVECTOR_MICROPYTHON CONFIG REQUIRED)
 
-# Pico Graphics Extra
-include(pngdec/micropython)
-include(jpegdec/micropython)
-include(picovector/micropython)
 include(qrcode/micropython/micropython)
 
 # Sensors & Breakouts
