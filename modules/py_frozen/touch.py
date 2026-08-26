@@ -1,4 +1,5 @@
 import math
+import time
 
 from machine import I2C, Pin
 from micropython import const
@@ -35,6 +36,11 @@ class FT6236:
     STATE_CONTACT = const(0b10)
     STATE_NONE = const(0b11)
 
+    # A wedged bus costs a 50ms I2C timeout per attempt, which would stall the
+    # frame loop, so back off instead of retrying on every poll.
+    I2C_MAX_ERRORS = const(10)
+    I2C_BACKOFF_POLLS = const(20)
+
     def __init__(self, full_res=False, enable_interrupt=False, rotate=0):
         self.debug = False
         self._scale = 1 if full_res else 2
@@ -52,6 +58,9 @@ class FT6236:
         self.distance = 0
         self.angle = 0
 
+        self._i2c_errors = 0
+        self._i2c_skip = 0
+
         self._buf = bytearray(15)
         self._data = memoryview(self._buf)
 
@@ -61,8 +70,26 @@ class FT6236:
         if self._irq:
             self._touch_int.irq(self._handle_touch, trigger=Pin.IRQ_FALLING)
 
+    def _recover_i2c(self):
+        # A controller interrupted mid-transaction can hold SDA low, wedging the
+        # bus. Clocking SCL lets it finish so it releases the line.
+        scl = Pin(self.TOUCH_SCL, Pin.OUT, value=1)
+        sda = Pin(self.TOUCH_SDA, Pin.IN, Pin.PULL_UP)
+        for _ in range(9):
+            if sda.value():
+                break
+            scl.value(0)
+            time.sleep_us(5)
+            scl.value(1)
+            time.sleep_us(5)
+        self._i2c = I2C(self.TOUCH_I2C, sda=Pin(self.TOUCH_SDA), scl=Pin(self.TOUCH_SCL))
+
     def poll(self):
         if self._irq:
+            return
+
+        if self._i2c_skip:
+            self._i2c_skip -= 1
             return
 
         if not self._touch_int.value() or self.state or self.state2:
@@ -82,8 +109,22 @@ class FT6236:
     def _handle_touch(self, pin):  # noqa ARG002
         self.state = self.state2 = False
 
-        self._i2c.writeto(self.TOUCH_ADDR, b"\x00", False)
-        self._i2c.readfrom_into(self.TOUCH_ADDR, self._buf)
+        try:
+            self._i2c.writeto(self.TOUCH_ADDR, b"\x00", False)
+            self._i2c.readfrom_into(self.TOUCH_ADDR, self._buf)
+        except OSError:
+            # The controller NACKs occasionally; drop the sample and try again
+            # next poll, but give up if it never comes back.
+            self._i2c_errors += 1
+            if self._i2c_errors >= self.I2C_MAX_ERRORS:
+                raise
+            if not self._irq:
+                self._i2c_skip = self.I2C_BACKOFF_POLLS
+                if self._i2c_errors > 1:
+                    self._recover_i2c()
+            return
+
+        self._i2c_errors = 0
 
         mode, gesture, touches = self._data[:3]
         touches &= 0x0f
