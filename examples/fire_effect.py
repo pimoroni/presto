@@ -4,6 +4,9 @@
 
 #import time
 import random
+
+from picovector import color
+
 from presto import Presto
 
 """
@@ -13,7 +16,7 @@ A fire effect based on the Pimoroni Galatic Unicorn example
 presto = Presto()
 display = presto.display
 
-display_width, display_height = display.get_bounds()
+display_width, display_height = display.width, display.height
 
 # Display is 240 x 240, calculations for flame effect swamp
 # the CPU so cut it down to something more managable by
@@ -22,13 +25,13 @@ display_width = display_width // 4
 display_height = display_height // 4
 
 # The hotter the particle the higher the colour index used
-fire_colours = [display.create_pen(0, 0, 0),		# Background
-                display.create_pen(40, 40, 40),		# Smoke
-                display.create_pen(255, 50, 0),
-                display.create_pen(255, 135, 36),
-                display.create_pen(255, 221, 73),
-                display.create_pen(255, 238, 127),
-                display.create_pen(255, 255, 180)]
+fire_colours = [color.rgb(0, 0, 0),		# Background
+                color.rgb(40, 40, 40),		# Smoke
+                color.rgb(255, 50, 0),
+                color.rgb(255, 135, 36),
+                color.rgb(255, 221, 73),
+                color.rgb(255, 238, 127),
+                color.rgb(255, 255, 180)]
 
 
 def setup():
@@ -75,19 +78,19 @@ def draw():
         for x in range(display_width):
             value = heat[x + 1][y]
             if value < 0.15:
-                display.set_pen(fire_colours[0])
+                display.pen = fire_colours[0]
             elif value < 0.25:
-                display.set_pen(fire_colours[1])
+                display.pen = fire_colours[1]
             elif value < 0.35:
-                display.set_pen(fire_colours[2])
+                display.pen = fire_colours[2]
             elif value < 0.4:
-                display.set_pen(fire_colours[3])
+                display.pen = fire_colours[3]
             elif value < 0.45:
-                display.set_pen(fire_colours[4])
+                display.pen = fire_colours[4]
             elif value < 0.60:
-                display.set_pen(fire_colours[5])
+                display.pen = fire_colours[5]
             else:
-                display.set_pen(fire_colours[6])
+                display.pen = fire_colours[6]
             # Drawing a rectangle much faster than drawing 16 individual pixels
             display.rectangle(x * 4, y * 4, 4, 4)
 

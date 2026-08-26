@@ -2,6 +2,8 @@ import math
 from collections import namedtuple
 
 from machine import I2C
+from picovector import color, font
+
 from presto import Presto
 from qwstpad import ADDRESSES, QwSTPad
 
@@ -21,22 +23,24 @@ Controls:
 # Setup for the Presto display
 presto = Presto()
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
+
+display.font = font.load("Roboto-Medium.af")
 
 # General Constants
 I2C_PINS = {"id": 0, "sda": 40, "scl": 41}    # The I2C pins the QwSTPad is connected to
 BRIGHTNESS = 1.0                              # The brightness of the LCD backlight (from 0.0 to 1.0)
 
 # Colour Constants (RGB565)
-WHITE = display.create_pen(255, 255, 255)
-BLACK = display.create_pen(0, 0, 0)
-CYAN = display.create_pen(0, 255, 255)
-MAGENTA = display.create_pen(255, 0, 255)
-YELLOW = display.create_pen(255, 255, 0)
-GREEN = display.create_pen(0, 255, 0)
-RED = display.create_pen(255, 0, 0)
-BLUE = display.create_pen(0, 0, 255)
-GREY = display.create_pen(115, 115, 115)
+WHITE = color.rgb(255, 255, 255)
+BLACK = color.rgb(0, 0, 0)
+CYAN = color.rgb(0, 255, 255)
+MAGENTA = color.rgb(255, 0, 255)
+YELLOW = color.rgb(255, 255, 0)
+GREEN = color.rgb(0, 255, 0)
+RED = color.rgb(255, 0, 0)
+BLUE = color.rgb(0, 0, 255)
+GREY = color.rgb(115, 115, 115)
 
 # Gameplay Constants
 PlayerDef = namedtuple("PlayerDef", ("x", "y", "colour"))
@@ -141,27 +145,27 @@ class Player:
 
     def draw(self, display):
         x, y = int(self.x), int(self.y)
-        display.set_pen(WHITE)
+        display.pen = WHITE
         display.circle(x, y, self.size)
-        display.set_pen(BLACK) if not self.was_hit else display.set_pen(RED)
+        display.pen = RED if self.was_hit else BLACK
         display.circle(x, y, self.size - 1)
         self.was_hit = False
         self.pad.set_leds(self.pad.address_code())
 
         # Draw the direction line in our colour
-        display.set_pen(self.colour)
+        display.pen = self.colour
         display.line(x, y,
                      int(self.x + (LINE_LENGTH * math.cos(self.direction))),
                      int(self.y + (LINE_LENGTH * math.sin(self.direction))))
 
         # Draw the projectiles in our colour
-        display.set_pen(self.colour)
+        display.pen = self.colour
         for p in self.projectiles:
             p.draw(display)
 
         # Draw our score at the bottom of the screen
-        display.set_pen(self.colour)
-        display.text(f"P{self.index + 1}: {self.score}", 15 + self.index * 60, 227, WIDTH, 1)
+        display.pen = self.colour
+        display.text(f"P{self.index + 1}: {self.score}", 15 + self.index * 60, 227, 8)
 
     def check_hits(self, players):
         for other in players:
@@ -211,11 +215,11 @@ try:
                     complete = True
 
         # Clear the screen
-        display.set_pen(BLACK)
+        display.pen = BLACK
         display.clear()
 
         # Draw a grid for the background
-        display.set_pen(GREY)
+        display.pen = GREY
         for x in range(10, WIDTH, GRID_SPACING):
             for y in range(10, HEIGHT, GRID_SPACING):
                 display.pixel(x, y)
@@ -226,20 +230,20 @@ try:
 
         if complete:
             # Draw banner shadow
-            display.set_pen(BLACK)
+            display.pen = BLACK
             display.rectangle(4, 94, WIDTH, 50)
 
             # Draw banner
-            display.set_pen(GREEN)
+            display.pen = GREEN
             display.rectangle(0, 90, WIDTH, 50)
 
             # Draw text shadow
-            display.set_pen(BLACK)
-            display.text("Game Complete!", 10 + TEXT_SHADOW, 105 + TEXT_SHADOW, WIDTH, 3)
+            display.pen = BLACK
+            display.text("Game Complete!", 10 + TEXT_SHADOW, 105 + TEXT_SHADOW, 24)
 
             # Draw text
-            display.set_pen(WHITE)
-            display.text("Game Complete!", 10, 105, WIDTH, 3)
+            display.pen = WHITE
+            display.text("Game Complete!", 10, 105, 24)
 
         # Update the screen
         presto.update()

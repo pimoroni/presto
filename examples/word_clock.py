@@ -5,19 +5,23 @@
 import time
 
 import ntptime
-import pngdec
+from picovector import color, font, image
+
 from presto import Presto
 
 # Setup for the Presto display
 presto = Presto()
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
-BLACK = display.create_pen(0, 0, 0)
-WHITE = display.create_pen(200, 200, 200)
-GRAY = display.create_pen(30, 30, 30)
+WIDTH, HEIGHT = display.width, display.height
+
+display.font = font.load("Roboto-Medium.af")
+LETTER_SIZE = 12
+BLACK = color.rgb(0, 0, 0)
+WHITE = color.rgb(200, 200, 200)
+GRAY = color.rgb(30, 30, 30)
 
 # Clear the screen before the network call is made
-display.set_pen(BLACK)
+display.pen = BLACK
 display.clear()
 presto.update()
 
@@ -35,10 +39,10 @@ words = ["it", "d", "is", "m", "about", "lv", "half", "c", "quarter", "b", "to",
 
 
 def show_message(text):
-    display.set_pen(BLACK)
+    display.pen = BLACK
     display.clear()
-    display.set_pen(WHITE)
-    display.text(f"{text}", 5, 10, WIDTH, 2)
+    display.pen = WHITE
+    display.text(f"{text}", 5, 10, 16)
     presto.update()
 
 
@@ -106,13 +110,14 @@ def update():
 
 def draw():
     global time_string
-    display.set_font("bitmap8")
 
-    display.set_layer(1)
-
-    # Clear the screen
-    display.set_pen(BLACK)
-    display.clear()
+    # The background is decoded once and blitted each frame; there are no
+    # layers to keep it on.
+    if background is None:
+        display.pen = BLACK
+        display.clear()
+    else:
+        display.blit(background, 0, 0)
 
     default_x = 25
     x = default_x
@@ -121,41 +126,30 @@ def draw():
     line_space = 20
     letter_space = 15
     margin = 25
-    scale = 1
-    spacing = 1
 
     for word in words:
 
         if word in time_string:
-            display.set_pen(WHITE)
+            display.pen = WHITE
         else:
-            display.set_pen(GRAY)
-
+            display.pen = GRAY
         for letter in word:
-            text_length = display.measure_text(letter, scale, spacing)
+            text_length = display.measure_text(letter.upper(), LETTER_SIZE)[0]
             if not x + text_length <= WIDTH - margin:
                 y += line_space
                 x = default_x
 
-            display.text(letter.upper(), x, y, WIDTH, scale=scale, spacing=spacing)
+            display.text(letter.upper(), x, y, LETTER_SIZE)
             x += letter_space
 
     presto.update()
 
 
-# Set the background in layer 0
-# This means we don't need to decode the image every frame
-
-display.set_layer(0)
-
+# Decode the background once, rather than every frame
 try:
-    p = pngdec.PNG(display)
-
-    p.open_file("wordclock_background.png")
-    p.decode(0, 0)
+    background = image.load("wordclock_background.png")
 except OSError:
-    display.set_pen(BLACK)
-    display.clear()
+    background = None
 
 
 while True:

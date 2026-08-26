@@ -6,7 +6,7 @@ import time
 
 import requests
 from machine import Pin
-from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
+from picovector import color, font, image, mat3, shape, vec2
 from presto import Presto
 
 user_button = Pin(46, Pin.IN)
@@ -110,26 +110,25 @@ INTERVAL = 60
 # Setup for the Presto display
 presto = Presto()
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
 
 touch = presto.touch
 
-# Pico Vector
-vector = PicoVector(display)
-vector.set_antialiasing(ANTIALIAS_BEST)
+display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X4
 
 # Colours for use later
-WHITE = display.create_pen(255, 255, 255)
-BLACK = display.create_pen(0, 0, 0)
-GRAY = display.create_pen(75, 75, 75)
-PINK = display.create_pen(250, 125, 180)
+WHITE = color.rgb(255, 255, 255)
+BLACK = color.rgb(0, 0, 0)
+GRAY = color.rgb(75, 75, 75)
+PINK = color.rgb(250, 125, 180)
 
 
 def show_message(text):
-    display.set_pen(PINK)
+    display.pen = PINK
     display.clear()
-    display.set_pen(WHITE)
-    display.text(f"{text}", 5, 10, WIDTH - 10, 2)
+    display.pen = WHITE
+    display.text(f"{text}", 5, 10, 16)
     presto.update()
 
 
@@ -156,46 +155,34 @@ HALF_BAR_H = BAR_H // 2
 BAR_Y_START = 160
 
 # Define our vector shapes
-bars = Polygon()
-bars.rectangle(CX - HALF_BAR_W, BAR_Y_START + 10, 60, 10, (5, 5, 5, 5))
-bars.rectangle(CX - HALF_BAR_W, BAR_Y_START + 25, 60, 10, (5, 5, 5, 5))
-bars.rectangle(CX - HALF_BAR_W, BAR_Y_START + 40, 60, 10, (5, 5, 5, 5))
-end = Polygon()
-end.arc(CX - 14, BAR_Y_START + 55, 14, 90, 270)
+bars = [shape.rounded_rectangle(CX - HALF_BAR_W, BAR_Y_START + offset, 60, 10, 5)
+        for offset in (10, 25, 40)]
+end = shape.pie(CX - 14, BAR_Y_START + 55, 14, 90, 270)
 
-bulb = Polygon()
-bulb.path(*BULB_INNER)
-bulb_outline = Polygon()
-bulb_outline.path(*BULB_OUTLINE)
+# Rotate about the pivot: later calls apply first, so this reads
+# translate(pivot) then rotate then translate(-pivot).
+PIVOT_X, PIVOT_Y = CX - 7, BAR_Y_START + 55
+end.transform = mat3().translate(PIVOT_X, PIVOT_Y).rotate(180).translate(-PIVOT_X, -PIVOT_Y)
 
-transform = Transform()
+bulb = shape.custom([vec2(x, y) for x, y in BULB_INNER])
+bulb_outline = shape.custom([vec2(x, y) for x, y in BULB_OUTLINE])
+
+bulb_transform = mat3().translate(54, 11).scale(0.5, 0.5)
+bulb.transform = bulb_transform
+bulb_outline.transform = bulb_transform
 
 
 def draw_bulb(colour):
 
-    display.set_pen(GRAY)
+    display.pen = GRAY
+    display.shape(end)
+    display.shape(bars)
 
-    transform.reset()
-    vector.set_transform(transform)
-    transform.rotate(180, (CX - 7, BAR_Y_START + 55))
-    vector.draw(end)
+    display.pen = BLACK
+    display.shape(bulb_outline)
 
-    transform.reset()
-
-    vector.draw(bars)
-
-    cl = display.create_pen(*colour)
-
-    transform.reset()
-
-    transform.translate(54, 11)
-    transform.scale(0.5, 0.5)
-
-    display.set_pen(BLACK)
-    vector.draw(bulb_outline)
-
-    display.set_pen(cl)
-    vector.draw(bulb)
+    display.pen = color.rgb(*colour)
+    display.shape(bulb)
 
 
 def get_cheerlight():
@@ -241,10 +228,9 @@ while True:
                 last_updated = time.time()
 
             if dark_mode:
-                display.set_pen(BLACK)
+                display.pen = BLACK
             else:
-                display.set_pen(WHITE)
-
+                display.pen = WHITE
             display.clear()
 
             draw_bulb(colour)
@@ -255,7 +241,7 @@ while True:
             time.sleep(0.02)
 
         else:
-            display.set_pen(BLACK)
+            display.pen = BLACK
             display.clear()
 
             for i in range(7):

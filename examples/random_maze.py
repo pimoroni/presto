@@ -8,6 +8,8 @@ import time
 from collections import namedtuple
 
 from machine import I2C
+from picovector import color, font
+
 from presto import Presto
 from qwstpad import ADDRESSES, QwSTPad
 
@@ -29,7 +31,9 @@ presto = Presto(ambient_light=True)
 display = presto.display
 
 # Get the width and height from the display
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
+
+display.font = font.load("Roboto-Medium.af")
 
 # General Constants
 I2C_PINS = {"id": 0, "sda": 40, "scl": 41}    # The I2C pins the QwSTPad is connected to
@@ -37,21 +41,21 @@ I2C_ADDRESS = ADDRESSES[0]                  # The I2C address of the connected Q
 BRIGHTNESS = 1.0                            # The brightness of the LCD backlight (from 0.0 to 1.0)
 
 # Colour Constants (RGB565)
-WHITE = display.create_pen(255, 255, 255)
-BLACK = display.create_pen(0, 0, 0)
-RED = display.create_pen(255, 0, 0)
-GREEN = display.create_pen(0, 255, 0)
-PLAYER = display.create_pen(227, 231, 110)
-WALL = display.create_pen(127, 125, 244)
-BACKGROUND = display.create_pen(60, 57, 169)
-PATH = display.create_pen((227 + 60) // 2, (231 + 57) // 2, (110 + 169) // 2)
+WHITE = color.rgb(255, 255, 255)
+BLACK = color.rgb(0, 0, 0)
+RED = color.rgb(255, 0, 0)
+GREEN = color.rgb(0, 255, 0)
+PLAYER = color.rgb(227, 231, 110)
+WALL = color.rgb(127, 125, 244)
+BACKGROUND = color.rgb(60, 57, 169)
+PATH = color.rgb((227 + 60) // 2, (231 + 57) // 2, (110 + 169) // 2)
 
 
 def show_message(text):
-    display.set_pen(BACKGROUND)
+    display.pen = BACKGROUND
     display.clear()
-    display.set_pen(WALL)
-    display.text(f"{text}", 5, 10, WIDTH, 2)
+    display.pen = WALL
+    display.text(f"{text}", 5, 10, 16)
     presto.update()
 
 
@@ -209,16 +213,16 @@ class MazeBuilder:
 
                 if self.maze[row][col] == 1:
                     # Draw a wall shadow
-                    display.set_pen(BLACK)
+                    display.pen = BLACK
                     display.rectangle(x + WALL_SHADOW, y + WALL_SHADOW, wall_size, wall_size)
 
                     # Draw a wall top
-                    display.set_pen(WALL)
+                    display.pen = WALL
                     display.rectangle(x, y, wall_size, wall_size)
 
                 if self.maze[row][col] == 2:
                     # Draw the player path
-                    display.set_pen(PATH)
+                    display.pen = PATH
                     display.rectangle(x, y, wall_size, wall_size)
 
 
@@ -256,7 +260,7 @@ class Player(object):
         maze[self.y][self.x] = 2
 
     def draw(self, display):
-        display.set_pen(self.colour)
+        display.pen = self.colour
         display.rectangle(self.x * wall_separation + offset_x,
                           self.y * wall_separation + offset_y,
                           wall_size, wall_size)
@@ -301,10 +305,10 @@ print("QwSTPad: Connected ... Starting")
 
 # Store text strings and calculate centre location
 text_1_string = "Maze Complete!"
-text_1_size = display.measure_text(text_1_string, 3)
+text_1_size = display.measure_text(text_1_string, 24)[0]
 
 text_2_string = "Press + to continue"
-text_2_size = display.measure_text(text_2_string, 2)
+text_2_size = display.measure_text(text_2_string, 16)[0]
 
 text_1_location = ((WIDTH // 2) - (text_1_size // 2), 96)
 text_2_location = ((WIDTH // 2) - (text_2_size // 2), 120)
@@ -329,20 +333,20 @@ try:
                 player.position(*start)
 
         # Clear the screen to the background colour
-        display.set_pen(BACKGROUND)
+        display.pen = BACKGROUND
         display.clear()
 
         # Draw the maze walls
         builder.draw(display)
 
         # Draw the start location square
-        display.set_pen(RED)
+        display.pen = RED
         display.rectangle(start.x * wall_separation + offset_x,
                           start.y * wall_separation + offset_y,
                           wall_size, wall_size)
 
         # Draw the goal location square
-        display.set_pen(GREEN)
+        display.pen = GREEN
         display.rectangle(goal.x * wall_separation + offset_x,
                           goal.y * wall_separation + offset_y,
                           wall_size, wall_size)
@@ -351,28 +355,28 @@ try:
         player.draw(display)
 
         # Display the level
-        display.set_pen(BLACK)
-        display.text(f"Lvl: {level}", 2 + TEXT_SHADOW, 2 + TEXT_SHADOW, WIDTH, 1)
-        display.set_pen(WHITE)
-        display.text(f"Lvl: {level}", 2, 2, WIDTH, 1)
+        display.pen = BLACK
+        display.text(f"Lvl: {level}", 2 + TEXT_SHADOW, 2 + TEXT_SHADOW, 8)
+        display.pen = WHITE
+        display.text(f"Lvl: {level}", 2, 2, 8)
 
         if complete:
             # Draw banner shadow
-            display.set_pen(BLACK)
+            display.pen = BLACK
             display.rectangle(4, 94, WIDTH, 50)
             # Draw banner
-            display.set_pen(PLAYER)
+            display.pen = PLAYER
             display.rectangle(0, 90, WIDTH, 50)
 
             # Draw text shadow
-            display.set_pen(BLACK)
-            display.text(f"{text_1_string}", text_1_location[0] + TEXT_SHADOW, text_1_location[1] + TEXT_SHADOW, WIDTH, 3)
-            display.text(f"{text_2_string}", text_2_location[0] + TEXT_SHADOW, text_2_location[1] + TEXT_SHADOW, WIDTH, 2)
+            display.pen = BLACK
+            display.text(f"{text_1_string}", text_1_location[0] + TEXT_SHADOW, text_1_location[1] + TEXT_SHADOW, 24)
+            display.text(f"{text_2_string}", text_2_location[0] + TEXT_SHADOW, text_2_location[1] + TEXT_SHADOW, 16)
 
             # Draw text
-            display.set_pen(WHITE)
-            display.text(f"{text_1_string}", text_1_location[0], text_1_location[1], WIDTH, 3)
-            display.text(f"{text_2_string}", text_2_location[0], text_2_location[1], WIDTH, 2)
+            display.pen = WHITE
+            display.text(f"{text_1_string}", text_1_location[0], text_1_location[1], 24)
+            display.text(f"{text_2_string}", text_2_location[0], text_2_location[1], 16)
 
         # Finally we update the screen with our changes :)
         presto.update()

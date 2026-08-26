@@ -1,72 +1,74 @@
 # ICON schedule
 # NAME Analog Clock
-# DESC Full resolution vector clock!
+# DESC Analogue vector clock
 import presto
 
 import time
 import gc
 
-from picovector import PicoVector, Polygon, Transform, ANTIALIAS_X16
+from picovector import color, image, mat3, shape, vec2
 
 
-presto = presto.Presto(full_res=True)
+presto = presto.Presto()
 
 display = presto.display
+display.antialias = image.X4
 
-vector = PicoVector(display)
-t = Transform()
-vector.set_transform(t)
-vector.set_antialiasing(ANTIALIAS_X16)
 
-RED = display.create_pen(200, 0, 0)
-BLACK = display.create_pen(0, 0, 0)
-DARKGREY = display.create_pen(100, 100, 100)
-GREY = display.create_pen(200, 200, 200)
-WHITE = display.create_pen(255, 255, 255)
+RED = color.rgb(200, 0, 0)
+BLACK = color.rgb(0, 0, 0)
+DARKGREY = color.rgb(100, 100, 100)
+GREY = color.rgb(200, 200, 200)
+WHITE = color.rgb(255, 255, 255)
 
 """
 # Redefine colours for a Blue clock
-RED = display.create_pen(200, 0, 0)
-BLACK = display.create_pen(135, 159, 169)
-GREY = display.create_pen(10, 40, 50)
-WHITE = display.create_pen(14, 60, 76)
+RED = color.rgb(200, 0, 0)
+BLACK = color.rgb(135, 159, 169)
+GREY = color.rgb(10, 40, 50)
+WHITE = color.rgb(14, 60, 76)
 """
 
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
 MIDDLE = (int(WIDTH / 2), int(HEIGHT / 2))
 
-hub = Polygon()
-hub.circle(int(WIDTH / 2), int(HEIGHT / 2), 5)
+MX, MY = MIDDLE
 
-face = Polygon()
-face.circle(int(WIDTH / 2), int(HEIGHT / 2), int(HEIGHT / 2))
 
-tick_mark = Polygon()
-tick_mark.rectangle(int(WIDTH / 2) - 3, 10, 6, int(HEIGHT / 48))
+def draw_at(item, angle, dx=0, dy=0):
+    # One transform per shape, so it is rebuilt for each draw. Later calls apply
+    # first, matching the order the Transform calls used to be written in.
+    item.transform = (mat3()
+                      .translate(MX, MY).rotate(angle).translate(-MX, -MY)
+                      .translate(dx, dy))
+    display.shape(item)
 
-hour_mark = Polygon()
-hour_mark.rectangle(int(WIDTH / 2) - 5, 10, 10, int(HEIGHT / 10))
+
+hub = shape.circle(int(WIDTH / 2), int(HEIGHT / 2), 5)
+face = shape.circle(int(WIDTH / 2), int(HEIGHT / 2), int(HEIGHT / 2))
+tick_mark = shape.rectangle(int(WIDTH / 2) - 3, 10, 6, int(HEIGHT / 48))
+hour_mark = shape.rectangle(int(WIDTH / 2) - 5, 10, 10, int(HEIGHT / 10))
 
 minute_hand_length = int(HEIGHT / 2) - int(HEIGHT / 24)
-minute_hand = Polygon()
-minute_hand.path((-5, -minute_hand_length), (-10, int(HEIGHT / 16)), (10, int(HEIGHT / 16)), (5, -minute_hand_length))
+minute_hand = shape.custom([vec2(-5, -minute_hand_length), vec2(-10, int(HEIGHT / 16)),
+                            vec2(10, int(HEIGHT / 16)), vec2(5, -minute_hand_length)])
 
 hour_hand_length = int(HEIGHT / 2) - int(HEIGHT / 8)
-hour_hand = Polygon()
-hour_hand.path((-5, -hour_hand_length), (-10, int(HEIGHT / 16)), (10, int(HEIGHT / 16)), (5, -hour_hand_length))
+hour_hand = shape.custom([vec2(-5, -hour_hand_length), vec2(-10, int(HEIGHT / 16)),
+                          vec2(10, int(HEIGHT / 16)), vec2(5, -hour_hand_length)])
 
 second_hand_length = int(HEIGHT / 2) - int(HEIGHT / 8)
-second_hand = Polygon()
-second_hand.path((-2, -second_hand_length), (-2, int(HEIGHT / 8)), (2, int(HEIGHT / 8)), (2, -second_hand_length))
+second_hand = shape.custom([vec2(-2, -second_hand_length), vec2(-2, int(HEIGHT / 8)),
+                            vec2(2, int(HEIGHT / 8)), vec2(2, -second_hand_length)])
 
 print(time.localtime())
 
 last_second = None
 
-display.set_pen(BLACK)
+display.pen = BLACK
 display.clear()
-display.set_pen(WHITE)
-vector.draw(face)
+display.pen = WHITE
+display.shape(face)
 
 
 while True:
@@ -79,81 +81,48 @@ while True:
 
     last_second = second
 
-    t.reset()
-
-    display.set_pen(WHITE)
+    display.pen = WHITE
     display.circle(int(WIDTH / 2), int(HEIGHT / 2), int(HEIGHT / 2) - 4)
 
-    display.set_pen(GREY)
-
+    display.pen = GREY
     for a in range(60):
-        t.rotate(360 / 60.0 * a, MIDDLE)
-        t.translate(0, 2)
-        vector.draw(tick_mark)
-        t.reset()
+        draw_at(tick_mark, 360 / 60.0 * a, 0, 2)
 
     for a in range(12):
-        t.rotate(360 / 12.0 * a, MIDDLE)
-        t.translate(0, 2)
-        vector.draw(hour_mark)
-        t.reset()
+        draw_at(hour_mark, 360 / 12.0 * a, 0, 2)
 
-    display.set_pen(GREY)
-
+    display.pen = GREY
     x, y = MIDDLE
     y += 5
 
     angle_minute = minute * 6
     angle_minute += second / 10.0
-    t.rotate(angle_minute, MIDDLE)
-    t.translate(x, y)
-    vector.draw(minute_hand)
-    t.reset()
+    draw_at(minute_hand, angle_minute, x, y)
 
     angle_hour = (hour % 12) * 30
     angle_hour += minute / 2
-    t.rotate(angle_hour, MIDDLE)
-    t.translate(x, y)
-    vector.draw(hour_hand)
-    t.reset()
+    draw_at(hour_hand, angle_hour, x, y)
 
     angle_second = second * 6
-    t.rotate(angle_second, MIDDLE)
-    t.translate(x, y)
-    vector.draw(second_hand)
-    t.reset()
+    draw_at(second_hand, angle_second, x, y)
 
-    display.set_pen(BLACK)
-
+    display.pen = BLACK
     for a in range(60):
-        t.rotate(360 / 60.0 * a, MIDDLE)
-        vector.draw(tick_mark)
-        t.reset()
+        draw_at(tick_mark, 360 / 60.0 * a)
 
     for a in range(12):
-        t.rotate(360 / 12.0 * a, MIDDLE)
-        vector.draw(hour_mark)
-        t.reset()
+        draw_at(hour_mark, 360 / 12.0 * a)
 
     x, y = MIDDLE
 
-    t.rotate(angle_minute, MIDDLE)
-    t.translate(x, y)
-    vector.draw(minute_hand)
-    t.reset()
+    draw_at(minute_hand, angle_minute, x, y)
 
-    t.rotate(angle_hour, MIDDLE)
-    t.translate(x, y)
-    vector.draw(hour_hand)
-    t.reset()
+    draw_at(hour_hand, angle_hour, x, y)
 
-    display.set_pen(RED)
-    t.rotate(angle_second, MIDDLE)
-    t.translate(x, y)
-    vector.draw(second_hand)
+    display.pen = RED
+    draw_at(second_hand, angle_second, x, y)
 
-    t.reset()
-    vector.draw(hub)
+    draw_at(hub, 0)
 
     presto.update()
     gc.collect()

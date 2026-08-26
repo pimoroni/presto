@@ -1,5 +1,4 @@
 #include "st7701.hpp"
-#include "libraries/pico_graphics/pico_graphics.hpp"
 #include "micropython/modules/util.hpp"
 #include "ws2812.hpp"
 #include <cstdio>
@@ -22,8 +21,19 @@ extern "C" {
 
 // MicroPython's GC heap will automatically resize, so we should just
 // statically allocate these in C++ to avoid fragmentation.
-__attribute__((section(".uninitialized_data"))) static uint16_t presto_buffer[WIDTH * HEIGHT];
-__attribute__((section(".uninitialized_data"), aligned(1024))) static uint32_t presto_palette[256];
+// Scanout is RGB565 and read continuously by DMA, so it has to be SRAM. The
+// RGBA8888 surface picovector draws into sits right behind it. Both fit for the
+// default half-res mode; full res needs 1.35M and comes from the GC heap.
+#define HALF_WIDTH (WIDTH / 2)
+#define HALF_HEIGHT (HEIGHT / 2)
+#define HALF_PIXELS (HALF_WIDTH * HALF_HEIGHT)
+__attribute__((section(".uninitialized_data"), aligned(4)))
+static uint8_t presto_sram_pool[HALF_PIXELS * (sizeof(uint16_t) + sizeof(uint32_t))];
+static uint16_t *presto_buffer = (uint16_t *)presto_sram_pool;
+
+typedef struct _Presto_sample_point_t {
+    int x, y;
+} _Presto_sample_point_t;
 
 void __printf_debug_flush() {
     for(auto i = 0u; i < 10; i++) {
@@ -59,17 +69,16 @@ typedef struct _Presto_obj_t {
     uint16_t height;
     bool using_palette;
 
+    // RGBA8888 drawing surface, handed to picovector's image() via the buffer
+    // protocol. It sits in the tail of presto_sram_pool, behind the scanout
+    // buffer.
+    uint32_t* back_buffer;
+
     // Automatic ambient backlight control
     volatile bool auto_ambient_leds;
     WS2812* ws2812;
     _Presto_led_values_t led_values[7];
 } _Presto_obj_t;
-
-typedef struct _ModPicoGraphics_obj_t {
-    mp_obj_base_t base;
-    PicoGraphics *graphics;
-    DisplayDriver *display;
-} ModPicoGraphics_obj_t;
 
 // There can only be one presto display, so have a global pointer
 // so that core1 can access it.  Note it also needs to be in the
@@ -90,7 +99,7 @@ __attribute__((section(".uninitialized_data"))) static uint32_t st7701_buffer[si
 
 #define SAMPLE_SHIFT (LOG2_OF_SAMPLE_RANGE_SQUARED + 2)
 static void __no_inline_not_in_flash_func(update_backlight_leds)() {
-    const Point led_sample_locations[NUM_LEDS] = {
+    const _Presto_sample_point_t led_sample_locations[NUM_LEDS] = {
         { presto_obj->width - SAMPLE_RANGE, presto_obj->height - SAMPLE_RANGE },
         { presto_obj->width - SAMPLE_RANGE, (presto_obj->height - SAMPLE_RANGE)/2 },
         { presto_obj->width - SAMPLE_RANGE, 0 },
@@ -248,16 +257,28 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
 
     presto_debug("set fb pointers\n");
 
-    if (!args[ARG_full_res].u_bool) {
-        self->width = WIDTH / 2;
-        self->height = HEIGHT / 2;
-    }
-    else {
-        self->width = WIDTH;
-        self->height = HEIGHT;
+    // Full res would need a 460K RGB565 scanout buffer in SRAM, which no
+    // longer fits beside the rasteriser's 80K working buffer. Scanning out of
+    // PSRAM instead cannot sustain the pixel rate and renders noise.
+    if (args[ARG_full_res].u_bool) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Presto: full_res is not supported by the PicoVector rasteriser."));
     }
 
-    self->using_palette = args[ARG_palette].u_bool;
+    self->width = WIDTH / 2;
+    self->height = HEIGHT / 2;
+
+    if (args[ARG_palette].u_bool) {
+        mp_raise_ValueError(MP_ERROR_TEXT("Presto: palette mode is not supported by the PicoVector rasteriser."));
+    }
+    self->using_palette = false;
+
+    {
+        const size_t pixels = (size_t)self->width * self->height;
+        presto_buffer = (uint16_t *)presto_sram_pool;
+        self->back_buffer = (uint32_t *)(presto_sram_pool + pixels * sizeof(uint16_t));
+        memset(presto_buffer, 0, pixels * sizeof(uint16_t));
+        memset(self->back_buffer, 0, pixels * sizeof(uint32_t));
+    }
 
     presto_debug("m_new_class(ST7701...\n");
     Rotation rotation = ROTATE_0;
@@ -269,7 +290,7 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
 
     self->presto = new (st7701_buffer) ST7701(self->width, self->height, rotation,
         SPIPins{spi1, LCD_CS, LCD_CLK, LCD_DAT, PIN_UNUSED, LCD_DC, BACKLIGHT},
-        presto_buffer, self->using_palette ? presto_palette : nullptr,
+        presto_buffer, nullptr,
         LCD_D0);
 
     presto_debug("launch core1\n");
@@ -299,39 +320,24 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
 mp_int_t Presto_get_framebuffer(mp_obj_t self_in, mp_buffer_info_t *bufinfo, mp_uint_t flags) {
     _Presto_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Presto_obj_t);
     (void)flags;
-    if(self->width == WIDTH / 2) {
-        // Skip the first region, since it's used as the front-buffer
-        bufinfo->buf = presto_buffer + (self->width * self->height);
-        // Return the remaining space, enough for three layers at 16bpp
-        bufinfo->len = self->width * self->height * 2 * 3;
-    } else if (self->using_palette) {
-        // Full res palette mode, there is enough space for a single layer
-        bufinfo->buf = (uint8_t*)presto_buffer + (self->width * self->height);
-        bufinfo->len = self->width * self->height;
-    } else {
-        // Just return the buffer as-is, this is not really useful for much
-        // other than doing fast writes *directly* to the front buffer
-        bufinfo->buf = presto_buffer;
-        bufinfo->len = self->width * self->height * 2;
-    }
+    bufinfo->buf = self->back_buffer;
+    bufinfo->len = (size_t)self->width * self->height * sizeof(uint32_t);
     bufinfo->typecode = 'B';
     return 0;
 }
 
-extern mp_obj_t Presto_update(mp_obj_t self_in, mp_obj_t graphics_in) {
+extern mp_obj_t Presto_update(mp_obj_t self_in) {
     _Presto_obj_t *self = MP_OBJ_TO_PTR2(self_in, _Presto_obj_t);
-    ModPicoGraphics_obj_t *picographics = MP_OBJ_TO_PTR2(graphics_in, ModPicoGraphics_obj_t);
 
-    self->presto->update(picographics->graphics);
+    self->presto->update(self->back_buffer);
 
     return mp_const_none;
 }
 
 extern mp_obj_t Presto_partial_update(size_t n_args, const mp_obj_t *pos_args, mp_map_t *kw_args) {
-    enum { ARG_self, ARG_graphics, ARG_x, ARG_y, ARG_w, ARG_h };
+    enum { ARG_self, ARG_x, ARG_y, ARG_w, ARG_h };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_, MP_ARG_REQUIRED | MP_ARG_OBJ },
-        { MP_QSTR_graphics, MP_ARG_REQUIRED | MP_ARG_OBJ },
         { MP_QSTR_x, MP_ARG_REQUIRED | MP_ARG_INT },
         { MP_QSTR_y, MP_ARG_REQUIRED | MP_ARG_INT },
         { MP_QSTR_w, MP_ARG_REQUIRED | MP_ARG_INT },
@@ -343,13 +349,12 @@ extern mp_obj_t Presto_partial_update(size_t n_args, const mp_obj_t *pos_args, m
     mp_arg_parse_all(n_args, pos_args, kw_args, MP_ARRAY_SIZE(allowed_args), allowed_args, args);
 
     _Presto_obj_t *self = MP_OBJ_TO_PTR2(args[ARG_self].u_obj, _Presto_obj_t);
-    ModPicoGraphics_obj_t *picographics = MP_OBJ_TO_PTR2(args[ARG_graphics].u_obj, ModPicoGraphics_obj_t);
     int x = args[ARG_x].u_int;
     int y = args[ARG_y].u_int;
     int w = args[ARG_w].u_int;
     int h = args[ARG_h].u_int;
 
-    self->presto->partial_update(picographics->graphics, {x, y, w, h});
+    self->presto->partial_update(self->back_buffer, x, y, w, h);
 
     return mp_const_none;
 }

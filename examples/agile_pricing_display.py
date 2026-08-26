@@ -12,7 +12,7 @@ import time
 
 import ntptime
 import requests
-from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
+from picovector import color, font, image
 from presto import Presto
 
 # Constants
@@ -30,34 +30,27 @@ DEBUG = True
 
 presto = Presto(ambient_light=True)
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
 
-# Pico Vector
-vector = PicoVector(display)
-vector.set_antialiasing(ANTIALIAS_BEST)
-
-t = Transform()
-vector.set_font("Roboto-Medium.af", 54)
-vector.set_font_letter_spacing(100)
-vector.set_font_word_spacing(100)
-vector.set_transform(t)
+display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X4
 
 # Couple of colours for use later
-ORANGE = display.create_pen(255, 99, 71)
-ORANGE_2 = display.create_pen(255, 99 + 50, 71 + 50)
-ORANGE_3 = display.create_pen(255, 99 + 20, 71 + 20)
-ORANGE_4 = display.create_pen(255, 99 + 70, 71 + 70)
-WHITE = display.create_pen(255, 255, 255)
-BLACK = display.create_pen(0, 0, 0)
+ORANGE = color.rgb(255, 99, 71)
+ORANGE_2 = color.rgb(255, 99 + 50, 71 + 50)
+ORANGE_3 = color.rgb(255, 99 + 20, 71 + 20)
+ORANGE_4 = color.rgb(255, 99 + 70, 71 + 70)
+WHITE = color.rgb(255, 255, 255)
+BLACK = color.rgb(0, 0, 0)
 
 MARGIN = 15
 
 
 def show_message(text):
-    display.set_pen(ORANGE)
+    display.pen = ORANGE
     display.clear()
-    display.set_pen(ORANGE_2)
-    display.text(f"{text}", 5, 10, WIDTH, 2)
+    display.pen = ORANGE_2
+    display.text(f"{text}", 5, 10, 16)
     presto.update()
 
 
@@ -144,14 +137,12 @@ next_price, current_price, last_price = get_prices()
 while True:
 
     # Clear the screen and use orange as the background colour
-    display.set_pen(ORANGE)
+    display.pen = ORANGE
     display.clear()
 
     # Draw a big orange circle that's lighter than the background
-    display.set_pen(ORANGE_4)
-    v = Polygon()
-    v.circle(0, HEIGHT // 2, 190)
-    vector.draw(v)
+    display.pen = ORANGE_4
+    display.circle(0, HEIGHT // 2, 190)
 
     # Check if it has been over half an hour since the last update
     # if it has, update the prices again.
@@ -159,29 +150,24 @@ while True:
         next_price, current_price, last_price = get_prices()
         last_updated = time.time()
 
-    # Draw the drop shadows and the main text for the last, current and next prices.
-    vector.set_font_size(28)
-    display.set_pen(ORANGE_2)
-    vector.text("last:", MARGIN, 50)
-    vector.text(f"{last_price}p", MARGIN, 70)
+    # Draw the drop shadows and the main text for the last, current and next
+    # prices. Text hangs from the top of the em box rather than sitting on a
+    # baseline, so each line moves up by its own size.
+    display.pen = ORANGE_2
+    display.text("last:", MARGIN, 50 - 28, 28)
+    display.text(f"{last_price}p", MARGIN, 70 - 28, 28)
 
-    vector.set_font_size(52)
+    display.pen = BLACK
+    display.text("Now:", MARGIN + 2, 120 + 2 - 52, 52)
+    display.text(f"{current_price}p", MARGIN + 2, 160 + 2 - 58, 58)
 
-    display.set_pen(BLACK)
-    vector.text("Now:", MARGIN + 2, 120 + 2)
-    vector.set_font_size(58)
-    vector.text(f"{current_price}p", MARGIN + 2, 160 + 2)
+    display.pen = WHITE
+    display.text("Now:", MARGIN, 120 - 52, 52)
+    display.text(f"{current_price}p", MARGIN, 160 - 58, 58)
 
-    display.set_pen(WHITE)
-    vector.set_font_size(52)
-    vector.text("Now:", MARGIN, 120)
-    vector.set_font_size(58)
-    vector.text(f"{current_price}p", MARGIN, 160)
-
-    vector.set_font_size(28)
-    display.set_pen(ORANGE_3)
-    vector.text("Next:", MARGIN, 195)
-    vector.text(f"{next_price}p", MARGIN, 215)
+    display.pen = ORANGE_3
+    display.text("Next:", MARGIN, 195 - 28, 28)
+    display.text(f"{next_price}p", MARGIN, 215 - 28, 28)
 
     # Finally we update the screen with our changes :)
     presto.update()

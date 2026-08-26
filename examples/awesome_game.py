@@ -8,6 +8,8 @@ https://github.com/pimoroni/pimoroni-pico/blob/main/micropython/examples/tufty20
 
 import math
 from time import sleep
+from picovector import color, font, image, rect
+
 from presto import Presto
 import random
 import time
@@ -15,19 +17,26 @@ import time
 # Setup for the Presto display
 presto = Presto()
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
+
+display.font = font.load("Roboto-Medium.af")
+
+WHITE = color.rgb(255, 255, 255)
+BLACK = color.rgb(0, 0, 0)
 
 # We'll need this for the touch element of the screen
 touch = presto.touch
 
-# Load the spreadsheets so we can flip between them
-tilemap = bytearray(32_768)
-open("s4m_ur4i-pirate-tilemap.16bpp", "rb").readinto(tilemap)
+# Load the spritesheets so we can flip between them.
+# Both are 128x128 with 8x8 cells, so a 16x16 grid.
+tilemap = image.load("s4m_ur4i-pirate-tilemap.png", rows=16, cols=16)
+character = image.load("s4m_ur4i-pirate-characters.png", rows=16, cols=16)
 
-character = bytearray(32_768)
-open("s4m_ur4i-pirate-characters.16bpp", "rb").readinto(character)
+CELL = 8
 
-display.set_spritesheet(character)
+
+def draw_sprite(sheet, sx, sy, x, y, scale):
+    display.blit(sheet.sprite(sx, sy), rect(x, y, CELL * scale, CELL * scale))
 
 class Player():
     def __init__(self):
@@ -50,8 +59,7 @@ class Player():
             self.y += y
 
     def sprite(self):
-        display.set_spritesheet(character)
-        display.sprite(1, 1 if self.moving else 0, self.x, self.y, 4, 0)
+        draw_sprite(character, 1, 1 if self.moving else 0, self.x, self.y, 4)
 
 
 class Treasure():
@@ -63,8 +71,7 @@ class Treasure():
     def sprite(self):
         if not self.enabled:
             return
-        display.set_spritesheet(tilemap)
-        display.sprite(4, 2, self.x, self.y, 3, 0)
+        draw_sprite(tilemap, 4, 2, self.x, self.y, 3)
 
     def randomize(self):
         self.enabled = True
@@ -83,8 +90,7 @@ class Block():
         self.y += self.speed
 
     def sprite(self):
-        display.set_spritesheet(character)
-        display.sprite(10, 8, self.x, self.y, 4, 0)
+        draw_sprite(character, 10, 8, self.x, self.y, 4)
 
     def randomize(self):
         self.last_update = time.time()
@@ -105,7 +111,7 @@ class Game():
         self.treasure = Treasure()
         self.last_treasure = 0
 
-        self.SKY = display.create_pen(72, 180, 224)
+        self.SKY = color.rgb(72, 180, 224)
         #FPS setup
         self.show_fps = FPS_COUNTER
         self.fps_start_time = time.time()
@@ -138,21 +144,20 @@ class Game():
             self.player.moving = 1
 
     def background(self):
-        display.set_spritesheet(tilemap)
-        display.set_pen(self.SKY)
+        display.pen = self.SKY
         display.clear()
 
-        for i in range(WIDTH / 32):
-            display.sprite(1, 2, i * 32, 210, 4, 0)
+        for i in range(WIDTH // 32):
+            draw_sprite(tilemap, 1, 2, i * 32, 210, 4)
 
     def draw(self):
         self.background()
         for block in self.block:
             block.sprite()
-        display.set_pen(0xFFFF)
-        display.text("Score: " + str(self.player.score), 10, 10, 320, 2)
+        display.pen = WHITE
+        display.text("Score: " + str(self.player.score), 10, 10, 16)
         self.treasure.sprite()
-        display.set_pen(0)
+        display.pen = BLACK
         self.player.sprite()
         if self.show_fps:
             #1 for every second
@@ -161,9 +166,9 @@ class Game():
                 self.current_fps = self.fps_counter / (time.time() - self.fps_start_time)
                 self.fps_counter = 0
                 self.fps_start_time = time.time()
-            display.set_pen(0xFFFF)
-            display.text("FPS: " + str(math.floor(self.current_fps)), 175, 10, 320, 2)
-        display.update()
+            display.pen = WHITE
+            display.text("FPS: " + str(math.floor(self.current_fps)), 175, 10, 16)
+        presto.update()
 
     def check_collision(self, a, b):
         return a.x + a.w >= b.x and a.x <= b.x + b.w and a.y + a.h >= b.y and a.y <= b.y + b.h
@@ -202,10 +207,10 @@ while True:
 
     touch.poll()
     game.background()
-    display.set_pen(0xFFFF)
-    display.text("ARGH!", 40, 35, 200, 5)
-    display.text("Touch screen to Start", 80, 150, 180, 1)
-    display.update()
+    display.pen = WHITE
+    display.text("ARGH!", 40, 35, 40)
+    display.text("Touch screen to Start", 80, 150, 8)
+    presto.update()
 
     while not touch.state:
         presto.update()
@@ -218,10 +223,10 @@ while True:
         presto.update()
 
     game.background()
-    display.set_pen(0xFFFF)
+    display.pen = WHITE
     display.text("OOPS!", 40, 35, 200, 5)
     display.text("Your score:  " + str(game.player.score), 50, 150, 180, 2)
-    display.update()
+    presto.update()
     presto.update()
     #Added a because if you are still touching the screen may breeze pass the scoring screen
     sleep(.5)

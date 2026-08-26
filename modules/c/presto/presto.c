@@ -4,8 +4,8 @@
 /***** Methods *****/
 
 MP_DEFINE_CONST_FUN_OBJ_1(Presto___del___obj, Presto___del__);
-MP_DEFINE_CONST_FUN_OBJ_2(Presto_update_obj, Presto_update);
-MP_DEFINE_CONST_FUN_OBJ_KW(Presto_partial_update_obj, 5, Presto_partial_update);
+MP_DEFINE_CONST_FUN_OBJ_1(Presto_update_obj, Presto_update);
+MP_DEFINE_CONST_FUN_OBJ_KW(Presto_partial_update_obj, 4, Presto_partial_update);
 MP_DEFINE_CONST_FUN_OBJ_2(Presto_set_backlight_obj, Presto_set_backlight);
 MP_DEFINE_CONST_FUN_OBJ_2(Presto_auto_ambient_leds_obj, Presto_auto_ambient_leds);
 

@@ -7,7 +7,9 @@ import time
 import machine
 import urequests
 from breakout_bme280 import BreakoutBME280
-from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
+import math
+
+from picovector import color, font, image, mat3, shape, vec2
 from presto import Presto
 
 # Set your latitude/longitude here (find yours by right clicking in Google Maps!)
@@ -20,33 +22,26 @@ URL = "http://api.open-meteo.com/v1/forecast?latitude=" + str(LAT) + "&longitude
 # Setup for the Presto display
 presto = Presto(ambient_light=True)
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
 CX = WIDTH // 2
 CY = HEIGHT // 2
 
 # Colours
-BLACK = display.create_pen(0, 0, 0)
-hue = 0.90
-BACKGROUND = display.create_pen_hsv(hue, 0.8, 1.0)  # We'll use this one for the background.
-FOREGROUND = display.create_pen_hsv(hue, 0.5, 1.0)  # Slightly lighter for foreground elements.
-TEXT_COLOUR = display.create_pen_hsv(hue, 0.3, 1.0)
+BLACK = color.rgb(0, 0, 0)
+hue = 0.90 * 360
+BACKGROUND = color.hsv(hue, 204, 255)  # We'll use this one for the background.
+FOREGROUND = color.hsv(hue, 128, 255)  # Slightly lighter for foreground elements.
+TEXT_COLOUR = color.hsv(hue, 76, 255)
 
-# Pico Vector
-vector = PicoVector(display)
-vector.set_antialiasing(ANTIALIAS_BEST)
-t = Transform()
-
-vector.set_font("Roboto-Medium.af", 96)
-vector.set_font_letter_spacing(100)
-vector.set_font_word_spacing(100)
-vector.set_transform(t)
+display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X4
 
 
 def show_message(text):
-    display.set_pen(BACKGROUND)
+    display.pen = BACKGROUND
     display.clear()
-    display.set_pen(FOREGROUND)
-    display.text(f"{text}", 5, 10, WIDTH, 2)
+    display.pen = FOREGROUND
+    display.text(f"{text}", 5, 10, 16)
     presto.update()
 
 
@@ -71,10 +66,27 @@ except RuntimeError:
         show_message("No Multi-Sensor stick detected!\n\nConnect and try again.")
 
 
-# We'll use a rect with rounded corners for the background.
-background_rect = Polygon()
-background_rect.rectangle(0, 0, WIDTH, HEIGHT)
-background_rect.rectangle(0, 0, WIDTH, HEIGHT, (10, 10, 10, 10))
+
+
+def rounded_contour(x, y, w, h, r, steps=6):
+    points = []
+    for cx, cy, start in ((x + w - r, y + h - r, 0), (x + r, y + h - r, 90),
+                          (x + r, y + r, 180), (x + w - r, y + r, 270)):
+        for step in range(steps + 1):
+            a = math.radians(start + 90 * step / steps)
+            points.append(vec2(cx + r * math.cos(a), cy + r * math.sin(a)))
+    return points
+
+
+# Everything outside a rounded rectangle, so the screen corners can be masked.
+background_rect = shape.custom(
+    [vec2(0, 0), vec2(WIDTH, 0), vec2(WIDTH, HEIGHT), vec2(0, HEIGHT)],
+    rounded_contour(0, 0, WIDTH, HEIGHT, 10),
+)
+
+# The diagonal band the two readings sit either side of.
+half_screen = shape.rectangle(-WIDTH // 2, -HEIGHT // 2, WIDTH * 2, HEIGHT)
+half_screen.transform = mat3().translate(CX, CY).rotate(-45).translate(-CX, -CY)
 
 
 # get the current outdoor temperature
@@ -107,7 +119,7 @@ outdoor_temp_string = f"{out}C" if out else "N/A"
 while True:
 
     # Clear screen and draw our background rectangle
-    display.set_pen(BACKGROUND)
+    display.pen = BACKGROUND
     display.clear()
 
     # Get readings and format strings
@@ -124,29 +136,21 @@ while True:
         outdoor_temp_string = f"{out}C" if out else "N/A"
         last_updated = time.time()
 
-    t.rotate(-45, (CX, CY))
+    display.pen = FOREGROUND
+    display.shape(half_screen)
 
-    display.set_pen(FOREGROUND)
-    half_screen = Polygon().rectangle(-WIDTH // 2, - HEIGHT // 2, WIDTH * 2, HEIGHT)
-    vector.draw(half_screen)
+    # Both readings used to share the band's 45 degree transform. Text takes no
+    # transform here, so they are drawn upright either side of the diagonal.
+    display.pen = BACKGROUND
+    w, h = display.measure_text(indoor_temp_string, 92)
+    display.text(indoor_temp_string, CX - w / 2, CY - h - 5, 92)
 
-    display.set_pen(BACKGROUND)
-    vector.set_font_size(92)
-    x, y, w, h = vector.measure_text(indoor_temp_string)
-    tx = int(CX - (w // 2))
-    ty = CY - 5
-    vector.text(indoor_temp_string, tx, ty)
+    display.pen = FOREGROUND
+    w, h = display.measure_text(outdoor_temp_string, 92)
+    display.text(outdoor_temp_string, CX - w / 2, CY + 5, 92)
 
-    display.set_pen(FOREGROUND)
-    x, y, w, h = vector.measure_text(outdoor_temp_string)
-    tx = int(CX - (w // 2))
-    ty = CY + int(h) + 5
-    vector.text(outdoor_temp_string, tx, ty)
-
-    t.reset()
-
-    display.set_pen(BLACK)
-    vector.draw(background_rect)
+    display.pen = BLACK
+    display.shape(background_rect)
 
     # Update the screen so we can see our changes
     presto.update()

@@ -1,27 +1,26 @@
 import time
 from random import randint
 
-from picovector import ANTIALIAS_FAST, PicoVector, Polygon
+from picovector import color, font, image, shape
 from presto import Presto
 
 # Setup for the Presto display
 presto = Presto(ambient_light=True)
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
 
-# Pico Vector
-vector = PicoVector(display)
-vector.set_antialiasing(ANTIALIAS_FAST)
+display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X2
 
 # Couple of colours for use later
-BLUE = display.create_pen(28, 181, 202)
-WHITE = display.create_pen(255, 255, 255)
-RED = display.create_pen(230, 60, 45)
-ORANGE = display.create_pen(245, 165, 4)
-GREEN = display.create_pen(9, 185, 120)
-PINK = display.create_pen(250, 125, 180)
-PURPLE = display.create_pen(118, 95, 210)
-BLACK = display.create_pen(0, 0, 0)
+BLUE = color.rgb(28, 181, 202)
+WHITE = color.rgb(255, 255, 255)
+RED = color.rgb(230, 60, 45)
+ORANGE = color.rgb(245, 165, 4)
+GREEN = color.rgb(9, 185, 120)
+PINK = color.rgb(250, 125, 180)
+PURPLE = color.rgb(118, 95, 210)
+BLACK = color.rgb(0, 0, 0)
 
 COLOURS = [BLUE, RED, ORANGE, GREEN, PINK, PURPLE]
 
@@ -61,19 +60,17 @@ while True:
         dots.append(DOT(touch.x, touch.y, round(s), COLOURS[randint(0, len(COLOURS) - 1)]))
 
     # Clear the screen
-    display.set_pen(WHITE)
+    display.pen = WHITE
     display.clear()
 
     # Draw the dots in our array
     for dot in dots:
-        v = Polygon()
-        display.set_pen(dot.colour)
-        v.circle(dot.x, dot.y, dot.size)
-        vector.draw(v)
+        display.pen = dot.colour
+        display.shape(shape.circle(dot.x, dot.y, dot.size))
 
     # Some text to let the user know what to do!
-    display.set_pen(BLACK)
-    display.text("Tap the screen!", 45, 110, WIDTH, 2)
+    display.pen = BLACK
+    display.text("Tap the screen!", 45, 110, 16)
 
     # Finally we update the screen with our changes :)
     presto.update()

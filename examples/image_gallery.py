@@ -13,10 +13,11 @@ An image gallery demo to turn your Pimoroni Presto into a desktop photo frame!
 import os
 import time
 
-import jpegdec
 import machine
 import sdcard
 import uos
+from picovector import color, font, image
+
 from presto import Presto
 
 # The total number of LEDs to set, the Presto has 7
@@ -32,17 +33,18 @@ LEDS_RIGHT = [0, 1, 2]
 # Setup for the Presto display
 presto = Presto()
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
 
-BACKGROUND = display.create_pen(1, 1, 1)
-WHITE = display.create_pen(255, 255, 255)
-BLACK = display.create_pen(0, 0, 0)
+display.font = font.load("Roboto-Medium.af")
+
+BACKGROUND = color.rgb(1, 1, 1)
+WHITE = color.rgb(255, 255, 255)
+BLACK = color.rgb(0, 0, 0)
 
 # We'll need this for the touch element of the screen
 touch = presto.touch
 
 # JPEG Dec
-j = jpegdec.JPEG(display)
 
 # Where our images are located
 directory = "gallery"
@@ -60,12 +62,10 @@ tap = 0xdc29
 # Display an error msg on screen and keep it looping
 def display_error(text):
     while 1:
-        for i in range(2):
-            display.set_layer(i)
-            display.set_pen(BACKGROUND)
-            display.clear()
-        display.set_pen(WHITE)
-        display.text(f"Error: {text}", 10, 10, WIDTH - 10, 1)
+        display.pen = BACKGROUND
+        display.clear()
+        display.pen = WHITE
+        display.text(f"Error: {text}", 10, 10, 8)
         presto.update()
         time.sleep(1)
 
@@ -127,16 +127,17 @@ def return_point():
     return -1, -1
 
 
-def fizzlefade():
-    display.set_pen(BLACK)
-    display.set_layer(1)
-
+# Layer 1 used to be dissolved away to reveal the new image on layer 0. There
+# are no layers, so the new frame is composed off-screen and copied across
+# pixel by pixel instead.
+def fizzlefade(frame):
     while True:
 
         for _ in range(2000):
             x, y = return_point()
             if x > -1 and y > -1:
-                display.pixel(x, y)
+                display.pen = frame.get(x, y)
+                display.put(x, y)
             if lfsr == 1:
                 break
 
@@ -189,14 +190,13 @@ def show_image(show_next=False, show_previous=False):
         with open(img, "rb") as f:
             jpeg_data = f.read()
 
-        print(f"read {len(jpeg_data)} bytes, opening with jpegdec")
+        print(f"read {len(jpeg_data)} bytes, decoding")
 
-        # Now open from RAM instead of file
-        j.open_RAM(jpeg_data)
+        picture = image.load(jpeg_data)
 
         print(f"opened {img}")
 
-        img_height, img_width = j.get_height(), j.get_width()
+        img_height, img_width = picture.height, picture.width
 
         img_x = 0
         img_y = 0
@@ -210,15 +210,14 @@ def show_image(show_next=False, show_previous=False):
         print(f"img_x: {img_x}")
         print(f"img_y: {img_y}")
 
-        display.set_layer(0)
-        display.set_pen(BACKGROUND)
-        display.clear()
-        j.decode(img_x, img_y, jpegdec.JPEG_SCALE_FULL, dither=True)
+        frame = image(WIDTH, HEIGHT)
+        frame.pen = BACKGROUND
+        frame.clear()
+        frame.blit(picture, img_x, img_y)
 
-        fizzlefade()
+        fizzlefade(frame)
 
-        display.set_layer(1)
-        j.decode(img_x, img_y, jpegdec.JPEG_SCALE_FULL, dither=True)
+        display.blit(frame, 0, 0)
 
     except OSError as e:
         print(f"OSError details: {e}")
@@ -228,10 +227,7 @@ def show_image(show_next=False, show_previous=False):
 
 
 def clear():
-    display.set_pen(BACKGROUND)
-    display.set_layer(0)
-    display.clear()
-    display.set_layer(1)
+    display.pen = BACKGROUND
     display.clear()
 
 # Test SD card access before showing images
@@ -248,16 +244,16 @@ try:
         test_data = f.read(1000)
         print(f"✓ Can read with open(): {len(test_data)} bytes")
 
-    # Now try with jpegdec
-    print("Testing jpegdec.open_file()...")
-    j.open_file(test_file)
-    print("✓ jpegdec opened successfully!")
-    print(f"  Image size: {j.get_width()}x{j.get_height()}")
+    # Now try decoding
+    print("Testing image.load()...")
+    test_image = image.load(test_file)
+    print("Decoded successfully!")
+    print(f"  Image size: {test_image.width}x{test_image.height}")
 
 except Exception as e:  # noqa: BLE001 - example code: report the failure rather than crash the demo
     print(f"✗ Test failed: {type(e).__name__}: {e}")
-    # The jpegdec test failed and corrupted SPI - reinitialize!
-    print("Reinitializing SD card after failed jpegdec test...")
+    # The decode test failed and corrupted SPI - reinitialize!
+    print("Reinitializing SD card after failed decode test...")
     reinit_sd()
     time.sleep(0.5)
 

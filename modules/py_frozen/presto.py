@@ -4,13 +4,7 @@ from collections import namedtuple
 import _presto
 from ezwifi import EzWiFi
 from machine import PWM, Pin
-from picographics import (
-    DISPLAY_PRESTO,
-    DISPLAY_PRESTO_FULL_RES,
-    PEN_P8,
-    PEN_RGB565,
-    PicoGraphics,
-)
+from picovector import image
 from touch import FT6236
 
 Touch = namedtuple("touch", ("x", "y", "touched"))
@@ -39,22 +33,24 @@ class Presto():
     NUM_LEDS = 7
     LED_PIN = 33
 
-    def __init__(self, full_res=False, palette=False, ambient_light=False, direct_to_fb=False, layers=None, rotate=ROTATE_0):
+    def __init__(self, ambient_light=False, rotate=ROTATE_0, full_res=None):
+        if full_res:
+            raise ValueError("Presto: full_res is not supported by the PicoVector rasteriser.")
+
         # WiFi - *must* happen before Presto bringup
         # Note: Forces WiFi details to be in secrets.py
         self.wifi = EzWiFi()
 
         # Touch Input
-        self.touch = FT6236(full_res=full_res, rotate=rotate)
+        self.touch = FT6236(rotate=rotate)
 
-        # Display Driver & PicoGraphics
-        if layers is None:
-            layers = 1 if full_res else 2
-        pen = PEN_P8 if palette else PEN_RGB565
-        self.presto = _presto.Presto(full_res=full_res, palette=palette, rotate=rotate)
-        self.buffer = None if (full_res and not palette and not direct_to_fb) else memoryview(self.presto)
-        self.display = PicoGraphics(DISPLAY_PRESTO_FULL_RES if full_res else DISPLAY_PRESTO, buffer=self.buffer, layers=layers, pen_type=pen)
-        self.width, self.height = self.display.get_bounds()
+        self.presto = _presto.Presto(rotate=rotate)
+        self.width = 240
+        self.height = 240
+
+        # The C module hands out its RGBA8888 drawing surface; picovector
+        # rasterises straight into it and update() converts it for scanout.
+        self.display = image(self.width, self.height, memoryview(self.presto))
 
         if ambient_light:
             self.presto.auto_ambient_leds(True)
@@ -93,14 +89,13 @@ class Presto():
         self.touch.poll()
 
     def update(self):
-        self.presto.update(self.display)
+        self.presto.update()
         self.touch.poll()
 
     def partial_update(self, x, y, w, h):
-        self.presto.partial_update(self.display, x, y, w, h)
+        self.presto.partial_update(x, y, w, h)
         self.touch.poll()
 
     def clear(self):
         self.display.clear()
-        self.presto.update(self.display)
-
+        self.presto.update()

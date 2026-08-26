@@ -5,53 +5,47 @@
 import datetime
 import time
 
-from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
+from picovector import color, font, image, shape
 from presto import Presto
 from touch import Button
 
 presto = Presto()
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
 
 CX = WIDTH // 2
 CY = HEIGHT // 2
 
 # Couple of colours for use later
-BLACK = display.create_pen(0, 0, 0)
-hue = 0.09
-background = display.create_pen_hsv(hue, 0.8, 1.0)
-foreground = display.create_pen_hsv(hue, 0.5, 1.0)
-text_colour = display.create_pen_hsv(hue, 0.2, 1.0)
+BLACK = color.rgb(0, 0, 0)
+hue = 0.09 * 360
+background = color.hsv(hue, 204, 255)
+foreground = color.hsv(hue, 128, 255)
+text_colour = color.hsv(hue, 51, 255)
 
 # We'll need this for the touch element of the screen
 touch = presto.touch
 
-# Pico Vector
-vector = PicoVector(display)
-vector.set_antialiasing(ANTIALIAS_BEST)
-t = Transform()
+display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X4
 
-vector.set_font("Roboto-Medium.af", 54)
-vector.set_font_letter_spacing(100)
-vector.set_font_word_spacing(100)
-vector.set_transform(t)
+
+def text_in_button(text, bounds, size):
+    # The new text anchor is the top of the em box, so buttons centre their
+    # labels rather than working from a baseline offset.
+    x, y, w, h = bounds
+    display.text(text, x + (w - display.measure_text(text, size)[0]) / 2, y + (h - size) / 2, size)
 
 # Touch buttons
 start_button = Button(3, HEIGHT - 55, CX - 5, 49)
 stop_button = Button((WIDTH - CX) + 1, HEIGHT - 55, CX - 5, 49)
 
-start = Polygon()
-start.rectangle(*start_button.bounds, (10, 10, 10, 10))
-
-stop = Polygon()
-stop.rectangle(*stop_button.bounds, (10, 10, 10, 10))
-
-outline = Polygon()
-outline.rectangle(5, 20, WIDTH - 10, HEIGHT - 100, (10, 10, 10, 10), 2)
+start = shape.rounded_rectangle(*start_button.bounds, 10)
+stop = shape.rounded_rectangle(*stop_button.bounds, 10)
+outline = shape.rounded_rectangle(5, 20, WIDTH - 10, HEIGHT - 100, 10).stroke(2)
 
 # We'll use a rect with rounded corners for the background.
-background_rect = Polygon()
-background_rect.rectangle(0, 0, WIDTH, HEIGHT, (10, 10, 10, 10))
+background_rect = shape.rounded_rectangle(0, 0, WIDTH, HEIGHT, 10)
 
 
 class StopWatch(object):
@@ -92,31 +86,30 @@ timer = StopWatch()
 
 while True:
 
-    display.set_pen(BLACK)
+    display.pen = BLACK
     display.clear()
 
-    display.set_pen(background)
-    vector.draw(background_rect)
+    display.pen = background
+    display.shape(background_rect)
 
-    display.set_pen(foreground)
-    vector.draw(start)
+    display.pen = foreground
+    display.shape(start)
 
-    display.set_pen(foreground)
-    vector.draw(stop)
+    display.pen = foreground
+    display.shape(stop)
 
-    display.set_pen(text_colour)
-    vector.draw(outline)
+    display.pen = text_colour
+    display.shape(outline)
 
-    vector.set_font_size(32)
     if timer.elapsed and timer.running is False:
-        vector.text("Resume", start_button.bounds[0] + 8, start_button.bounds[1] + 33)
+        text_in_button("Resume", start_button.bounds, 32)
     else:
-        vector.text("Start", start_button.bounds[0] + 27, start_button.bounds[1] + 33)
+        text_in_button("Start", start_button.bounds, 32)
 
     if timer.running:
-        vector.text("Stop", stop_button.bounds[0] + 30, stop_button.bounds[1] + 33)
+        text_in_button("Stop", stop_button.bounds, 32)
     else:
-        vector.text("Reset", stop_button.bounds[0] + 23, stop_button.bounds[1] + 33)
+        text_in_button("Reset", stop_button.bounds, 32)
 
     if start_button.is_pressed() and timer.running is False:
         timer.start()
@@ -130,7 +123,6 @@ while True:
             timer.reset()
 
     time_string = timer.return_string()
-    vector.set_font_size(54)
-    vector.text(f"{time_string}", 10, 110)
+    display.text(f"{time_string}", 10, 110 - 54, 54)
 
     presto.update()

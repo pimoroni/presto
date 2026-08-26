@@ -6,15 +6,23 @@ import math
 import time
 from random import randint, randrange
 
+from picovector import color, font, image
+
 from presto import Presto
 
 # Setup for the Presto display
 presto = Presto()
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
 
-BLACK = display.create_pen(0, 0, 0)
-WHITE = display.create_pen(255, 255, 255)
+display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X4
+
+TITLE = "Flying Cubes!"
+TITLE_SIZE = 20
+
+BLACK = color.rgb(0, 0, 0)
+WHITE = color.rgb(255, 255, 255)
 
 
 class Cube(object):
@@ -121,25 +129,18 @@ class Cube(object):
 cubes = [Cube(16, 4, WIDTH / 2, HEIGHT / 2, 1.0), Cube(32, 4, 100, 100, 0.9), Cube(32, 4, 100, 100, 0.5)]
 
 # Set our initial pen colour
-pen = display.create_pen_hsv(1.0, 1.0, 1.0)
 
 while 1:
 
     # We'll use this for cycling through the rainbow
     t = time.ticks_ms() / 1000
 
-    # Set the layer we're going to be drawing to.
-    display.set_layer(0)
-
     # Clear the screen and set the pen colour for the cubes
-    display.set_pen(BLACK)
+    display.pen = BLACK
     display.clear()
-    display.set_pen(WHITE)
-    display.text("Flying Cubes!", 90, 110, 320, 1)
-    display.reset_pen(pen)
-    pen = display.create_pen_hsv(t, 1.0, 1.0)
-    display.set_pen(pen)
-
+    display.pen = WHITE
+    display.text(TITLE, (WIDTH - display.measure_text(TITLE, TITLE_SIZE)[0]) / 2, 110, TITLE_SIZE)
+    display.pen = color.hsv(t * 360, 255, 255)
     # Now we go through each Cube object we have in 'cubes'
     # and increase the FOV angle so it appears closer to the screen.
     # We'll also rotate the cube during this loop too.

@@ -1,5 +1,7 @@
 from config import HA_HOST, HA_TOKEN, LIGHT_ENTITIES
 from hampws import HAMPWS
+from picovector import color, font
+
 from presto import Presto
 from touch import Button
 
@@ -7,12 +9,14 @@ from touch import Button
 presto = Presto()
 display = presto.display
 touch = presto.touch
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
+
+display.font = font.load("Roboto-Medium.af")
 
 # Define colors
-WHITE = display.create_pen(255, 255, 255)
-BLACK = display.create_pen(0, 0, 0)
-YELLOW = display.create_pen(255, 255, 0)
+WHITE = color.rgb(255, 255, 255)
+BLACK = color.rgb(0, 0, 0)
+YELLOW = color.rgb(255, 255, 0)
 
 # Create button
 button = Button(10, 35, 100, 50)
@@ -73,18 +77,18 @@ try:
         was_pressed = is_pressed
 
         # Clear display
-        display.set_pen(WHITE)
+        display.pen = WHITE
         display.clear()
 
         # Draw button with current state color
-        display.set_pen(YELLOW if light_state else BLACK)
+        display.pen = YELLOW if light_state else BLACK
         display.rectangle(*button.bounds)
 
         # Draw text
-        display.set_pen(BLACK)
-        display.text("Light Control", 10, 10, scale=2)
+        display.pen = BLACK
+        display.text("Light Control", 10, 10, 16)
         state_text = "ON" if light_state else "OFF"
-        display.text(state_text, button.x + 35, button.y + 15, scale=2)
+        display.text(state_text, button.x + 35, button.y + 15, 16)
 
         # Update display
         presto.update()
