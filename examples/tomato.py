@@ -4,13 +4,13 @@
 
 import time
 
-from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
+from picovector import color, font, shape
 from presto import Buzzer, Presto
 from touch import Button
 
 presto = Presto(ambient_light=True)
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
 
 # Centre points for the display
 CX = WIDTH // 2
@@ -19,17 +19,16 @@ CY = HEIGHT // 2
 # We'll need this for the touch element of the screen
 touch = presto.touch
 
-# Pico Vector
-vector = PicoVector(display)
-vector.set_antialiasing(ANTIALIAS_BEST)
-t = Transform()
+display.font = font.load("Roboto-Medium.af")
 
-vector.set_font("Roboto-Medium.af", 96)
-vector.set_font_letter_spacing(100)
-vector.set_font_word_spacing(100)
-vector.set_transform(t)
 
-BLACK = display.create_pen(0, 0, 0)
+def text_in_button(text, bounds, size):
+    # The new text anchor is the top of the em box, so buttons centre their
+    # labels rather than working from a baseline offset.
+    x, y, w, h = bounds
+    display.text(text, x + (w - display.measure_text(text, size)[0]) / 2, y + (h - size) / 2, size)
+
+BLACK = color.rgb(0, 0, 0)
 
 # Setup the buzzer. The Presto piezo is on pin 43.
 buzzer = Buzzer(43)
@@ -39,9 +38,9 @@ class Tomato(object):
     def __init__(self):
 
         self.hue = 0
-        self.background = display.create_pen_hsv(self.hue, 0.8, 1.0)  # We'll use this one for the background.
-        self.foreground = display.create_pen_hsv(self.hue, 0.5, 1.0)  # Slightly lighter for foreground elements.
-        self.text_colour = display.create_pen_hsv(self.hue, 0.2, 1.0)
+        self.background = color.hsv(self.hue * 360, 204, 255)  # We'll use this one for the background.
+        self.foreground = color.hsv(self.hue * 360, 128, 255)  # Slightly lighter for foreground elements.
+        self.text_colour = color.hsv(self.hue * 360, 51, 255)
 
         # Time constants.
         # Feel free to change these to ones that work better for you.
@@ -62,66 +61,57 @@ class Tomato(object):
         self.current_timer = self.TASK
 
         # We'll use a rect with rounded corners for the background.
-        self.background_rect = Polygon()
-        self.background_rect.rectangle(0, 0, WIDTH, HEIGHT, (10, 10, 10, 10))
-
-        self.foreground_rect = Polygon()
-        self.foreground_rect.rectangle(10, 10, WIDTH - 20, HEIGHT - 120, (10, 10, 10, 10))
+        self.background_rect = shape.rounded_rectangle(0, 0, WIDTH, HEIGHT, 10)
+        self.foreground_rect = shape.rounded_rectangle(10, 10, WIDTH - 20, HEIGHT - 120, 10)
 
         # Touch button
         self.start_button = Button(CX // 2, HEIGHT - 75, CX, 50)
         x, y, w, h = self.start_button.bounds
-        self.start = Polygon()
-        self.start.rectangle(x, y, w, h, (10, 10, 10, 10))
-        self.start_shadow = Polygon()
-        self.start_shadow.rectangle(x + 3, y + 3, w, h, (10, 10, 10, 10))
+        self.start = shape.rounded_rectangle(x, y, w, h, 10)
+        self.start_shadow = shape.rounded_rectangle(x + 3, y + 3, w, h, 10)
 
     # Update the pens for the background, foreground and text elements based on the given hue.
     def update_pens(self, hue):
         self.hue = hue
-        self.background = display.create_pen_hsv(self.hue, 0.8, 1.0)
-        self.foreground = display.create_pen_hsv(self.hue, 0.5, 1.0)
-        self.text_colour = display.create_pen_hsv(self.hue, 0.2, 1.0)
+        self.background = color.hsv(self.hue * 360, 204, 255)
+        self.foreground = color.hsv(self.hue * 360, 128, 255)
+        self.text_colour = color.hsv(self.hue * 360, 51, 255)
 
     def draw(self):
 
         # Clear the screen
-        display.set_pen(BLACK)
+        display.pen = BLACK
         display.clear()
 
         # Draw the background rect with rounded corners
-        display.set_pen(self.background)
-        vector.draw(self.background_rect)
+        display.pen = self.background
+        display.shape(self.background_rect)
 
         # Draw the foreground rect, this is where we will show the time remaining.
-        display.set_pen(self.foreground)
-        vector.draw(self.foreground_rect)
+        display.pen = self.foreground
+        display.shape(self.foreground_rect)
 
         # Draw the button with drop shadow
-        vector.draw(self.start_shadow)
-        display.set_pen(self.text_colour)
-        vector.draw(self.start)
+        display.shape(self.start_shadow)
+        display.pen = self.text_colour
+        display.shape(self.start)
 
         # Draw the button text, the text shown here depends on the current timer state
-        vector.set_font_size(24)
-        display.set_pen(self.foreground)
-
+        display.pen = self.foreground
         if not self.running:
             if self.is_break_time:
-                vector.text("Start Break", self.start_button.bounds[0] + 8, self.start_button.bounds[1] + 33)
+                text_in_button("Start Break", self.start_button.bounds, 24)
             else:
-                vector.text("Start Task", self.start_button.bounds[0] + 13, self.start_button.bounds[1] + 33)
+                text_in_button("Start Task", self.start_button.bounds, 24)
         elif self.running and self.paused:
-            vector.text("Resume", self.start_button.bounds[0] + 24, self.start_button.bounds[1] + 33)
+            text_in_button("Resume", self.start_button.bounds, 24)
         else:
-            vector.text("Pause", self.start_button.bounds[0] + 32, self.start_button.bounds[1] + 33)
+            text_in_button("Pause", self.start_button.bounds, 24)
 
-        display.set_pen(self.text_colour)
+        display.pen = self.text_colour
         text = self.return_string()
-        vector.set_font_size(96)
-        tx = int(CX - (205 // 2))
-        ty = int(CY - (58 // 2)) + 10
-        vector.text(text, tx, ty)
+        tw, th = display.measure_text(text, 96)
+        display.text(text, CX - tw / 2, CY - th / 2, 96)
 
     def run(self):
         self.stop_buzzer()
