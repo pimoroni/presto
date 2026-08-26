@@ -2,20 +2,19 @@
 # NAME Photo Frame
 # DESC A touch enabled image gallery
 
-'''
+"""
 An image gallery demo to turn your Pimoroni Presto into a desktop photo frame!
 
 - Create a folder called 'gallery' on the root of your SD card and fill it with JPEGs.
 - The image will change automatically every 5 minutes
 - You can also tap the right side of the screen to skip next image and left side to go to the previous :)
 
-'''
+"""
 import os
 import time
 
 import jpegdec
 import machine
-import plasma
 import sdcard
 import uos
 from presto import Presto
@@ -46,7 +45,7 @@ touch = presto.touch
 j = jpegdec.JPEG(display)
 
 # Where our images are located
-directory = 'gallery'
+directory = "gallery"
 
 # Stores the total number of images in the user gallery
 total_image_count = 0
@@ -72,12 +71,12 @@ def display_error(text):
 
 
 try:
-    print('Setting up SD card')
+    print("Setting up SD card")
     # Setup for SD Card
     sd_spi = machine.SPI(0, sck=machine.Pin(34, machine.Pin.OUT), mosi=machine.Pin(35, machine.Pin.OUT), miso=machine.Pin(36, machine.Pin.OUT))
     sd = sdcard.SDCard(sd_spi, machine.Pin(39))
 
-    print('Mounting SD Card')
+    print("Mounting SD Card")
     # Mount the SD to the directory 'sd'
     uos.mount(sd, "/sd")
 
@@ -85,14 +84,13 @@ try:
     time.sleep(1)
 
     # if the gallery folder exists on the SD card we want to use the images in there!
-    if os.stat('sd/gallery'):
-        print('Found SD Gallery')
-        directory = 'sd/gallery'
+    if os.stat("sd/gallery"):
+        print("Found SD Gallery")
+        directory = "sd/gallery"
     else:
-        print('Did not find SD Card Gallery')
+        print("Did not find SD Card Gallery")
 except OSError as error:
-    print(f'Error setting up SD Card - {repr(error)}')
-    pass
+    print(f"Error setting up SD Card - {repr(error)}")
 
 
 def numberedfiles(k):
@@ -104,12 +102,12 @@ def numberedfiles(k):
 
 
 try:
-    files = list(file for file in sorted(os.listdir(directory), key=numberedfiles) if file.endswith('.jpg') or file.endswith('.jpeg'))
+    files = list(file for file in sorted(os.listdir(directory), key=numberedfiles) if file.endswith(".jpg") or file.endswith(".jpeg"))
 except OSError:
     display_error("Problem loading images.\n\nEnsure that your Presto or SD card contains a 'gallery' folder in the root")
 
 total_image_count = len(files) - 1
-print(f'Found {total_image_count} files') 
+print(f"Found {total_image_count} files")
 
 def return_point():
     global lfsr
@@ -162,9 +160,9 @@ def reinit_sd():
 
 
 def show_image(show_next=False, show_previous=False):
-    
-    print(f'show_image called')
-    
+
+    print("show_image called")
+
     global current_image
     global total_image_count
 
@@ -180,23 +178,23 @@ def show_image(show_next=False, show_previous=False):
         else:
             current_image = total_image_count
 
-    print(f'image index {str(current_image)}/{str(total_image_count)}')
+    print(f"image index {str(current_image)}/{str(total_image_count)}")
 
     try:
         img = f"{directory}/{files[current_image]}"
-        
-        print(f'reading {img} into memory')
-        
+
+        print(f"reading {img} into memory")
+
         # Read the entire JPEG file into memory first
-        with open(img, 'rb') as f:
+        with open(img, "rb") as f:
             jpeg_data = f.read()
-        
-        print(f'read {len(jpeg_data)} bytes, opening with jpegdec')
-        
+
+        print(f"read {len(jpeg_data)} bytes, opening with jpegdec")
+
         # Now open from RAM instead of file
         j.open_RAM(jpeg_data)
-        
-        print(f'opened {img}')
+
+        print(f"opened {img}")
 
         img_height, img_width = j.get_height(), j.get_width()
 
@@ -209,9 +207,9 @@ def show_image(show_next=False, show_previous=False):
         if img_height < HEIGHT:
             img_y = (HEIGHT // 2) - (img_height // 2)
 
-        print(f'img_x: {img_x}')
-        print(f'img_y: {img_y}')        
-        
+        print(f"img_x: {img_x}")
+        print(f"img_y: {img_y}")
+
         display.set_layer(0)
         display.set_pen(BACKGROUND)
         display.clear()
@@ -239,30 +237,30 @@ def clear():
 # Test SD card access before showing images
 print("\n=== SD Card Diagnostic Test ===")
 try:
-    test_files = os.listdir('sd/gallery')
+    test_files = os.listdir("sd/gallery")
     print(f"✓ Can list directory: {len(test_files)} files")
-    
-    test_file = f'sd/gallery/{test_files[0]}'
+
+    test_file = f"sd/gallery/{test_files[0]}"
     print(f"Testing file: {test_file}")
-    
+
     # Try opening with standard Python file operations
-    with open(test_file, 'rb') as f:
+    with open(test_file, "rb") as f:
         test_data = f.read(1000)
         print(f"✓ Can read with open(): {len(test_data)} bytes")
-    
+
     # Now try with jpegdec
-    print(f"Testing jpegdec.open_file()...")
+    print("Testing jpegdec.open_file()...")
     j.open_file(test_file)
-    print(f"✓ jpegdec opened successfully!")
+    print("✓ jpegdec opened successfully!")
     print(f"  Image size: {j.get_width()}x{j.get_height()}")
-    
+
 except Exception as e:
     print(f"✗ Test failed: {type(e).__name__}: {e}")
     # The jpegdec test failed and corrupted SPI - reinitialize!
     print("Reinitializing SD card after failed jpegdec test...")
     reinit_sd()
     time.sleep(0.5)
-    
+
 print("=== End Diagnostic ===\n")
 
 # Store the last time the screen was updated

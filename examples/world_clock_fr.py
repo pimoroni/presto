@@ -1,6 +1,6 @@
 #Inspiration : https://github.com/pimoroni/presto/blob/main/examples/word_clock.py
 # World clock FR on 12h
-# Touch to swith beetween 2 mode of present time after 30min 
+# Touch to swith beetween 2 mode of present time after 30min
 import time
 
 import machine
@@ -32,7 +32,7 @@ UPDATE_INTERVAL = 1
 # Offset in hours from UTC, ie -5 for NY (UTC - 5), 1 for Paris
 UTC_OFFSET = 1
 
-# Show all minutes or use "moins" X, mois quard if minutes > 30 
+# Show all minutes or use "moins" X, mois quard if minutes > 30
 full_minutes="Yes"
 
 rtc = machine.RTC()
@@ -96,12 +96,12 @@ def adjust_to_timezone(rtc_datetime, offset_hours):
 
     # extract adjusted values
     hours, minutes = (adjusted_time[3], adjusted_time[4])
-    
+
     return hours, minutes
 
 
 
-  
+
 def approx_time_fr(hours, minutes,ampm):
 
     demie = [(7,8),(7,9),(7,10),(7,11),(7,12)]
@@ -116,7 +116,7 @@ def approx_time_fr(hours, minutes,ampm):
     if ampm == "pm" :
         coords+= [(0,14),(1,14)]
         coords_minus+= [(0,14),(1,14)]
-        
+
     heures_map = {
         0: [(0, 7), (0, 8), (0, 9), (0, 10),(0,11),(0,12)],  # "MINUIT"
         1: [(1, 0), (1, 1), (1, 2)],          # "UNE"
@@ -133,7 +133,7 @@ def approx_time_fr(hours, minutes,ampm):
         12: [(4, 3), (4, 4), (4, 5), (4, 6)]# "MIDI"
         # Ajouter les autres heures...
     }
-    
+
 
     minutes_base_maps={
         1: [(12,3),(12,4),(12,5)],
@@ -158,8 +158,8 @@ def approx_time_fr(hours, minutes,ampm):
         20:[(6,3),(6,4),(6,5),(6,6),(6,7)],
         30:[(5,7),(5,8),(5,9),(5,10),(5,11),(5,12)],
         40:[(7,0),(7,1),(7,2),(7,3),(7,4),(7,5),(7,6),(7,7)],
-        50:[(8,0),(8,1),(8,2),(8,3),(8,4),(8,5),(8,6),(8,7),(8,8),]
-        
+        50:[(8,0),(8,1),(8,2),(8,3),(8,4),(8,5),(8,6),(8,7),(8,8)]
+
         }
     minutes_composed={
         21:minutes_base_maps[20]+et1+minutes_base_maps[1],
@@ -202,8 +202,8 @@ def approx_time_fr(hours, minutes,ampm):
     #minutes_maps={**minutes_base_maps,**minutes_composed} #Merge both minutes dico
     minutes_base_maps.update(minutes_composed)
     minutes_maps=minutes_base_maps.copy()
-    
- 
+
+
     # Define hours + 1 to manage "minus X'
     new_hours=hours
     if new_hours == 12:
@@ -213,22 +213,22 @@ def approx_time_fr(hours, minutes,ampm):
     if new_hours in heures_map:
         coords_minus += heures_map[new_hours]
 
-    
+
     if hours in heures_map:
         coords += heures_map[hours]
 
-        
+
     if new_hours != 0 and new_hours != 12 :
         if new_hours == 1 :
             coords_minus += heures[:-1]
         else :
-            coords_minus += heures 
+            coords_minus += heures
     if hours != 0 and hours != 12 :
         if hours == 1 :
             coords += heures[:-1]
         else :
             coords += heures
-   
+
     if minutes > 30 and full_minutes == "No":
         if minutes == 50 :
             coords_minus+=moins+minutes_maps[10]
@@ -238,23 +238,22 @@ def approx_time_fr(hours, minutes,ampm):
             coords_minus+=moins+minutes_maps[5]
         else :
             minutes = 60 - minutes  # Transformation en "moins X"
-            coords_minus+=moins+minutes_maps[minutes]        
+            coords_minus+=moins+minutes_maps[minutes]
     else:
         if minutes == 30 :  # "et demie"
             coords+=et1+demie
         elif minutes == 15:  # "et quart"
-            coords+=et1+quart 
+            coords+=et1+quart
         elif minutes == 55 : # "moins cinq"
              coords_minus+=moins+minutes_maps[5]
         elif minutes in minutes_maps:
             coords += minutes_maps[minutes]
-        
 
-   
+
+
     if full_minutes == "No" or minutes == 55  :
         return coords_minus
-    else:
-        return coords
+    return coords
 
 
 
@@ -268,7 +267,7 @@ def update_coord():
 
     current_t = rtc.datetime()
     #time_string = approx_time(current_t[4] - 12 if current_t[4] > 12 else current_t[4], current_t[5])
-    
+
     # perform timezone adjustment here (relative to UTC)
     adjusted_hr, adjusted_min = adjust_to_timezone(current_t, UTC_OFFSET)
     time_string = approx_time_fr(adjusted_hr - 12 if adjusted_hr > 12 else adjusted_hr, adjusted_min, "pm" if adjusted_hr > 12 else "am" )
@@ -277,9 +276,9 @@ def update_coord():
 
 def draw_coord(active_coords):
     global time_string
-    
+
     display.set_font("bitmap8")
-    
+
     display.set_layer(1)
 
     # Clear the screen
@@ -306,7 +305,7 @@ def draw_coord(active_coords):
             x += letter_space
         y += line_space
         x = default_x
-    
+
     presto.update()
 
 
@@ -329,12 +328,12 @@ except OSError:
 
 
 
-last_time = time.ticks_ms() #Use to initiat timer (limitation of sleep instruction 
+last_time = time.ticks_ms() #Use to initiat timer (limitation of sleep instruction
 
 def showTime() :
     active_coords=update_coord()
     draw_coord(active_coords)
-    
+
 def Test() :
     active_coords=approx_time_fr(12,50,"pm")
     draw_coord(active_coords)
@@ -351,7 +350,7 @@ while True:
     if touch.state:
         if 0 <= touch.x <= 50 and 0 <= touch.y <= 50 : #Zone haut gauche
             full_minutes = "No" if full_minutes == "Yes" else "Yes"
-                  
-        showTime() #refesh scren after action 
-        time.sleep(0.1) #micro pause 
+
+        showTime() #refesh scren after action
+        time.sleep(0.1) #micro pause
     #time.sleep(30 * UPDATE_INTERVAL)

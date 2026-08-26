@@ -20,8 +20,8 @@ class button():
         self.button = Button(x, y, h, w)
         self.polygon = Polygon()
         self.polygon.rectangle(x, y, h, w, (r, r, r, r))
-    
-    
+
+
     def draw(self):
         self.display.set_pen(self.bg)
         self.vector.draw(self.polygon)
@@ -32,8 +32,8 @@ class button():
         x_offset = int((self.button.bounds[2] - w_text) / 2) + self.button.bounds[0]
         y_offset = int(((self.button.bounds[3] - h_text) / 2) + self.button.bounds[1] + h_text)
         self.vector.text(self.text, x_offset, y_offset)
-    
-    
+
+
     def pressed(self):
         return self.button.is_pressed()
 
@@ -56,39 +56,38 @@ def approx_time(hours, minutes):
         hours = 0
     if minutes >= 0 and minutes < 3:
         return (nums[hours], "O'Clock", "")
-    elif minutes >= 3 and minutes < 8:
+    if minutes >= 3 and minutes < 8:
         return ("five", "past", nums[hours])
-    elif minutes >= 8 and minutes < 13:
+    if minutes >= 8 and minutes < 13:
         return ("ten", "past", nums[hours])
-    elif minutes >= 13 and minutes < 18:
+    if minutes >= 13 and minutes < 18:
         return ("quarter", "past", nums[hours])
-    elif minutes >= 18 and minutes < 23:
+    if minutes >= 18 and minutes < 23:
         return ("twenty", "past", nums[hours])
-    elif minutes >= 23 and minutes < 28:
+    if minutes >= 23 and minutes < 28:
         return ("twenty five", "past", nums[hours])
-    elif minutes >= 28 and minutes < 33:
+    if minutes >= 28 and minutes < 33:
         return ("half", "past", nums[hours])
-    elif minutes >= 33 and minutes < 38:
+    if minutes >= 33 and minutes < 38:
         return ("twenty five", "to", nums[hours + 1])
-    elif minutes >= 38 and minutes < 43:
+    if minutes >= 38 and minutes < 43:
         return ("twenty", "to", nums[hours + 1])
-    elif minutes >= 43 and minutes < 48:
+    if minutes >= 43 and minutes < 48:
         return ("quarter", "to", nums[hours + 1])
-    elif minutes >= 48 and minutes < 53:
+    if minutes >= 48 and minutes < 53:
         return ("ten", "to", nums[hours + 1])
-    elif minutes >=53 and minutes < 58:
+    if minutes >=53 and minutes < 58:
         return ("five", "to", nums[hours + 1])
-    else:
-        return (nums[hours + 1], "O'Clock", "")
+    return (nums[hours + 1], "O'Clock", "")
 
 
 def update():
-    
+
     current_t = time.gmtime(time.time() + UTC_OFFSET * 3600)
     time_phrase = approx_time(current_t[3] - 12 if current_t[3] > 12 else current_t[3], current_t[4])
 
     print(current_t, time_phrase)
-    
+
     return time_phrase
 
 
@@ -109,13 +108,13 @@ def draw(time_phrase):
     spacing = 1
 
     display.set_pen(WHITE)
-    
+
     header = "IT IS ABOUT"
     vector.set_font_size(25)
     x_text, y_text, w_text, h_text = vector.measure_text(header)
     x_offset = int((WIDTH - w_text) / 2)
     vector.text(header, x_offset, y)
-    
+
     y += line_space + 15
     vector.set_font_size(40)
     for line in time_phrase:
@@ -126,7 +125,7 @@ def draw(time_phrase):
         x_offset = int((WIDTH - w_text) / 2)
         vector.text(line, x_offset, y)
         y += line_space
-    
+
     utc_plus_button.draw()
     utc_minus_button.draw()
 
@@ -170,8 +169,8 @@ except OSError:
     while True:
         show_message("Unable to get time.\n\nCheck your network try again.")
 
-utc_plus_button = button(display, vector, 'UTC +', WHITE, BLACK,  WIDTH - (WIDTH // 4), HEIGHT - 30, WIDTH // 4, 30, 5)
-utc_minus_button = button(display, vector, 'UTC -', WHITE, BLACK, 0, HEIGHT - 30, WIDTH // 4, 30, 5)
+utc_plus_button = button(display, vector, "UTC +", WHITE, BLACK,  WIDTH - (WIDTH // 4), HEIGHT - 30, WIDTH // 4, 30, 5)
+utc_minus_button = button(display, vector, "UTC -", WHITE, BLACK, 0, HEIGHT - 30, WIDTH // 4, 30, 5)
 
 # Offset of zero, no daylight saving or region
 UTC_OFFSET = 0
@@ -179,7 +178,7 @@ UTC_OFFSET = 0
 while True:
     # Get a time checkpoint for multiple uses below
     time_check = time.time()
-    
+
     # Update the RTC once a day
     if time_check - ntp_time_set > 60 * 60 * 24:
         try:

@@ -6,9 +6,9 @@
 import random
 from presto import Presto
 
-'''
+"""
 A fire effect based on the Pimoroni Galatic Unicorn example
-'''
+"""
 
 presto = Presto()
 display = presto.display
@@ -33,7 +33,7 @@ fire_colours = [display.create_pen(0, 0, 0),		# Background
 
 def setup():
     global width, height, heat, fire_spawns, damping_factor
-    
+
     width = display_width + 2
     height = display_height + 4
     heat = [[0.0 for y in range(height)] for x in range(width)]
@@ -56,7 +56,7 @@ def update():
         heat[x + 1][height - 2] += 1.0
         heat[x - 1][height - 2] += 1.0
 
-    for y in range(0, height - 2):
+    for y in range(height - 2):
         for x in range(1, width - 1):
             # update this pixel by averaging the below pixels
             average = (
@@ -90,7 +90,7 @@ def draw():
                 display.set_pen(fire_colours[6])
             # Drawing a rectangle much faster than drawing 16 individual pixels
             display.rectangle(x * 4, y * 4, 4, 4)
-            
+
     presto.update()
 
 
@@ -99,5 +99,5 @@ setup()
 while True:
 
     update()
-    
+
     draw()
