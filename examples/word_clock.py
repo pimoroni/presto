@@ -4,7 +4,6 @@
 
 import time
 
-import machine
 import ntptime
 import pngdec
 from presto import Presto
@@ -24,10 +23,12 @@ presto.update()
 
 # Length of time between updates in minutes.
 UPDATE_INTERVAL = 15
-# Offset in hours from UTC, ie -5 for NY (UTC - 5), 1 for Paris
-UTC_OFFSET = 0
+# Hours offset from UTC, set once in secrets.py
+try:
+    from secrets import UTC_OFFSET
+except ImportError:
+    UTC_OFFSET = 0
 
-rtc = machine.RTC()
 time_string = None
 words = ["it", "d", "is", "m", "about", "lv", "half", "c", "quarter", "b", "to", "past", "n", "one",
          "two", "three", "four", "five", "six", "eleven", "ten", "d", "qdh", "eight", "seven", "rm", "twelve", "nine", "p", "ncsnheypresto", "O'Clock", "agrdsp"]
@@ -58,27 +59,6 @@ try:
 except OSError:
     while True:
         show_message("Unable to get time.\n\nCheck your network try again.")
-
-
-# adjust utc time by offset hours
-def adjust_to_timezone(rtc_datetime, offset_hours):
-
-    # extract the time components from our tuple
-    year, month, day, _, hours, minutes, seconds, _ = rtc_datetime
-
-    # convert the current datetime tuple to a timestamp
-    utc_timestamp = time.mktime((year, month, day, hours, minutes, seconds, 0, 0))
-
-    # apply the timezone offset in seconds
-    adjusted_timestamp = utc_timestamp + (offset_hours * 3600)
-
-    # convert the adjusted timestamp back to a local datetime tuple
-    adjusted_time = time.localtime(adjusted_timestamp)
-
-    # extract adjusted values
-    hours, minutes = (adjusted_time[3], adjusted_time[4])
-
-    return hours, minutes
 
 
 def approx_time(hours, minutes):
@@ -113,9 +93,8 @@ def update():
     except OSError:
         print("Unable to contact NTP server")
 
-    current_t = rtc.datetime()
-    # perform timezone adjustment here (relative to UTC)
-    adjusted_hr, adjusted_min = adjust_to_timezone(current_t, UTC_OFFSET)
+    current_t = time.gmtime(time.time() + UTC_OFFSET * 3600)
+    adjusted_hr, adjusted_min = current_t[3], current_t[4]
 
     time_string = approx_time(adjusted_hr - 12 if adjusted_hr > 12 else adjusted_hr, adjusted_min)
 

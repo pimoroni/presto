@@ -3,7 +3,6 @@
 # Touch to swith beetween 2 mode of present time after 30min
 import time
 
-import machine
 import ntptime
 import pngdec
 from presto import Presto
@@ -29,13 +28,15 @@ presto.update()
 # Length of time between updates in minutes.
 UPDATE_INTERVAL = 1
 
-# Offset in hours from UTC, ie -5 for NY (UTC - 5), 1 for Paris
-UTC_OFFSET = 1
+# Hours offset from UTC, set once in secrets.py
+try:
+    from secrets import UTC_OFFSET
+except ImportError:
+    UTC_OFFSET = 0
 
 # Show all minutes or use "moins" X, mois quard if minutes > 30
 full_minutes="Yes"
 
-rtc = machine.RTC()
 time_string = None
 
 matrix_fr = [
@@ -77,29 +78,6 @@ if sync_ntp():
     print("L'heure système est maintenant synchronisée.")
 else:
     print("Utilisation de l'heure locale en secours.")
-
-
-# adjust utc time by offset hours
-def adjust_to_timezone(rtc_datetime, offset_hours):
-
-    # extract the time components from our tuple
-    year, month, day, _, hours, minutes, seconds, _ = rtc_datetime
-
-    # convert the current datetime tuple to a timestamp
-    utc_timestamp = time.mktime((year, month, day, hours, minutes, seconds, 0, 0))
-
-    # apply the timezone offset in seconds
-    adjusted_timestamp = utc_timestamp + (offset_hours * 3600)
-
-    # convert the adjusted timestamp back to a local datetime tuple
-    adjusted_time = time.localtime(adjusted_timestamp)
-
-    # extract adjusted values
-    hours, minutes = (adjusted_time[3], adjusted_time[4])
-
-    return hours, minutes
-
-
 
 
 def approx_time_fr(hours, minutes,ampm):
@@ -265,11 +243,11 @@ def update_coord():
  #   except OSError:
  #       print("Unable to contact NTP server")
 
-    current_t = rtc.datetime()
+    current_t = time.gmtime(time.time() + UTC_OFFSET * 3600)
     #time_string = approx_time(current_t[4] - 12 if current_t[4] > 12 else current_t[4], current_t[5])
 
     # perform timezone adjustment here (relative to UTC)
-    adjusted_hr, adjusted_min = adjust_to_timezone(current_t, UTC_OFFSET)
+    adjusted_hr, adjusted_min = current_t[3], current_t[4]
     time_string = approx_time_fr(adjusted_hr - 12 if adjusted_hr > 12 else adjusted_hr, adjusted_min, "pm" if adjusted_hr > 12 else "am" )
 
     return(time_string)

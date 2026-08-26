@@ -166,8 +166,11 @@ except OSError:
 utc_plus_button = button(display, vector, "UTC +", WHITE, BLACK,  WIDTH - (WIDTH // 4), HEIGHT - 30, WIDTH // 4, 30, 5)
 utc_minus_button = button(display, vector, "UTC -", WHITE, BLACK, 0, HEIGHT - 30, WIDTH // 4, 30, 5)
 
-# Offset of zero, no daylight saving or region
-UTC_OFFSET = 0
+# Starting offset; the UTC +/- buttons adjust from here (not persisted)
+try:
+    from secrets import UTC_OFFSET
+except ImportError:
+    UTC_OFFSET = 0
 
 while True:
     # Get a time checkpoint for multiple uses below
