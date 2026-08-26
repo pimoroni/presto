@@ -4,40 +4,32 @@
 
 from presto import Presto
 from breakout_bme280 import BreakoutBME280
-from picovector import ANTIALIAS_BEST, PicoVector, Polygon, Transform
+from picovector import color, font, shape
 import machine
 
 # Setup for the Presto display
 presto = Presto(ambient_light=True)
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
 
 CX = WIDTH // 2
 CY = HEIGHT // 2
 
 # Colours
-BLACK = display.create_pen(0, 0, 0)
-hue = 0.05
-BACKGROUND = display.create_pen_hsv(hue, 0.8, 1.0)  # We'll use this one for the background.
-FOREGROUND = display.create_pen_hsv(hue, 0.5, 1.0)  # Slightly lighter for foreground elements.
-TEXT_COLOUR = display.create_pen_hsv(hue, 0.2, 1.0)
+BLACK = color.rgb(0, 0, 0)
+hue = 0.05 * 360
+BACKGROUND = color.hsv(hue, 204, 255)  # We'll use this one for the background.
+FOREGROUND = color.hsv(hue, 128, 255)  # Slightly lighter for foreground elements.
+TEXT_COLOUR = color.hsv(hue, 51, 255)
 
-# Pico Vector
-vector = PicoVector(display)
-vector.set_antialiasing(ANTIALIAS_BEST)
-t = Transform()
-
-vector.set_font("Roboto-Medium.af", 96)
-vector.set_font_letter_spacing(100)
-vector.set_font_word_spacing(100)
-vector.set_transform(t)
+display.font = font.load("Roboto-Medium.af")
 
 
 def show_message(text):
-    display.set_pen(BACKGROUND)
+    display.pen = BACKGROUND
     display.clear()
-    display.set_pen(FOREGROUND)
-    display.text(f"{text}", 5, 10, WIDTH, 2)
+    display.pen = FOREGROUND
+    display.text(f"{text}", 5, 10, 16)
     presto.update()
 
 
@@ -60,29 +52,22 @@ class Widget(object):
         self.size = text_size
         self.title = None
 
-        self.widget = Polygon()
-        self.widget.rectangle(self.x, self.y, self.w, self.h, (self.r, self.r, self.r, self.r))
+        self.widget = shape.rounded_rectangle(self.x, self.y, self.w, self.h, self.r)
 
     def draw(self):
 
-        display.set_pen(FOREGROUND)
-        vector.draw(self.widget)
+        display.pen = FOREGROUND
+        display.shape(self.widget)
 
         if self.text:
-            display.set_pen(TEXT_COLOUR)
-            vector.set_font_size(self.size)
-            x, y, w, h = vector.measure_text(self.text)
-            tx = int((self.x + self.w // 2) - (w // 2))
-            ty = int((self.y + self.h // 2) + (h // 2)) + 5
-            vector.text(self.text, tx, ty)
+            display.pen = TEXT_COLOUR
+            w, h = display.measure_text(self.text, self.size)
+            display.text(self.text, self.x + (self.w - w) / 2, self.y + (self.h - h) / 2, self.size)
 
         if self.title:
-            display.set_pen(TEXT_COLOUR)
-            vector.set_font_size(14)
-            x, y, w, h = vector.measure_text(self.title)
-            tx = int((self.x + self.w // 2) - (w // 2))
-            ty = self.y + 15
-            vector.text(self.title, tx, ty)
+            display.pen = TEXT_COLOUR
+            w, h = display.measure_text(self.title, 14)
+            display.text(self.title, self.x + (self.w - w) / 2, self.y + 8, 14)
 
     def set_label(self, text):
         self.text = text
@@ -92,8 +77,7 @@ class Widget(object):
 
 
 # We'll use a rect with rounded corners for the background.
-background_rect = Polygon()
-background_rect.rectangle(0, 0, WIDTH, HEIGHT, (10, 10, 10, 10))
+background_rect = shape.rounded_rectangle(0, 0, WIDTH, HEIGHT, 10)
 
 widgets = [
     Widget(10, 7, WIDTH - 20, HEIGHT // 2 - 5, 10, 82),  # Temperature
@@ -109,10 +93,10 @@ widgets[2].set_title("Humidity")
 while True:
 
     # Clear screen and draw our background rectangle
-    display.set_pen(BLACK)
+    display.pen = BLACK
     display.clear()
-    display.set_pen(BACKGROUND)
-    vector.draw(background_rect)
+    display.pen = BACKGROUND
+    display.shape(background_rect)
 
     # Get readings and format strings
     try:
