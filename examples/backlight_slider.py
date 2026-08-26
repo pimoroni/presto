@@ -3,12 +3,13 @@
 # DESC Let there be light.
 import math
 
-from picovector import color, mat3, shape, vec2
+from picovector import color, image, mat3, shape, vec2
 from presto import Presto
 
 # Setup for the Presto display
 presto = Presto(ambient_light=False)
 display = presto.display
+display.antialias = image.X4
 WIDTH, HEIGHT = display.width, display.height
 
 CX = WIDTH // 2

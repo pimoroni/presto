@@ -5,7 +5,7 @@ import math
 
 from breakout_ltr559 import BreakoutLTR559
 from machine import I2C
-from picovector import color, font, mat3, shape, vec2
+from picovector import color, font, image, mat3, shape, vec2
 from presto import Presto
 
 # Setup for the Presto display
@@ -28,6 +28,7 @@ FOREGROUND = color.hsv(hue, 128, 255)  # Slightly lighter for foreground element
 TEXT_COLOUR = color.hsv(hue, 51, 255)
 
 display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X4
 
 
 def rounded_contour(x, y, w, h, r, steps=6):

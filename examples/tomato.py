@@ -4,7 +4,7 @@
 
 import time
 
-from picovector import color, font, shape
+from picovector import color, font, image, shape
 from presto import Buzzer, Presto
 from touch import Button
 
@@ -20,6 +20,7 @@ CY = HEIGHT // 2
 touch = presto.touch
 
 display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X4
 
 
 def text_in_button(text, bounds, size):

@@ -12,7 +12,7 @@ import time
 
 import ntptime
 import requests
-from picovector import color, font
+from picovector import color, font, image
 from presto import Presto
 
 # Constants
@@ -33,6 +33,7 @@ display = presto.display
 WIDTH, HEIGHT = display.width, display.height
 
 display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X4
 
 # Couple of colours for use later
 ORANGE = color.rgb(255, 99, 71)

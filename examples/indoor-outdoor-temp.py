@@ -9,7 +9,7 @@ import urequests
 from breakout_bme280 import BreakoutBME280
 import math
 
-from picovector import color, font, mat3, shape, vec2
+from picovector import color, font, image, mat3, shape, vec2
 from presto import Presto
 
 # Set your latitude/longitude here (find yours by right clicking in Google Maps!)
@@ -34,6 +34,7 @@ FOREGROUND = color.hsv(hue, 128, 255)  # Slightly lighter for foreground element
 TEXT_COLOUR = color.hsv(hue, 76, 255)
 
 display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X4
 
 
 def show_message(text):

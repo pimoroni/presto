@@ -6,12 +6,13 @@ import presto
 import time
 import gc
 
-from picovector import color, mat3, shape, vec2
+from picovector import color, image, mat3, shape, vec2
 
 
 presto = presto.Presto(full_res=True)
 
 display = presto.display
+display.antialias = image.X4
 
 
 RED = color.rgb(200, 0, 0)

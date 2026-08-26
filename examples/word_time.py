@@ -5,7 +5,7 @@
 import time
 import ntptime
 
-from picovector import color, font, shape
+from picovector import color, font, image, shape
 from presto import Presto
 from touch import Button
 
@@ -121,6 +121,7 @@ BLACK = color.rgb(0, 0, 0)
 WHITE = color.rgb(200, 200, 200)
 
 display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X4
 
 # Clear the screen before the network call is made
 display.pen = BLACK

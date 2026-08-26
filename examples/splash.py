@@ -1,7 +1,7 @@
 import math
 import time
 
-from picovector import color, font, mat3, shape
+from picovector import color, font, image, mat3, shape
 from presto import Presto
 
 presto = Presto(ambient_light=True)
@@ -32,6 +32,7 @@ circles = (
 circle_inner_1, circle_inner_2, circle_inner_3, circle_inner_4 = circles
 
 display.font = font.load("cherry-hq.af")
+display.antialias = image.X2
 
 angle = 0
 

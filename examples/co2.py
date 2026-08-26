@@ -16,7 +16,7 @@ import time
 from presto import Presto
 from pimoroni_i2c import PimoroniI2C
 from breakout_scd41 import BreakoutSCD41
-from picovector import color, font, shape, vec2
+from picovector import color, font, image, shape, vec2
 
 i2c = PimoroniI2C(sda=40, scl=41)
 
@@ -104,6 +104,7 @@ humidity_readings = []
 
 # set up
 display.font = font.load("osansb.af")
+display.antialias = image.X4
 display.pen = BLACK
 display.clear()
 presto.update()

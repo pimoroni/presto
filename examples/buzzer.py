@@ -1,4 +1,4 @@
-from picovector import color, font, shape
+from picovector import color, font, image, shape
 from presto import Buzzer, Presto
 from touch import Button
 
@@ -14,6 +14,7 @@ BUTTON_WIDTH = 110
 BUTTON_HEIGHT = 110
 
 display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X2
 
 # Couple of colours for use later
 WHITE = color.rgb(255, 255, 255)

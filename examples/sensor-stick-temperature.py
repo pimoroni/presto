@@ -4,7 +4,7 @@
 
 from presto import Presto
 from breakout_bme280 import BreakoutBME280
-from picovector import color, font, shape
+from picovector import color, font, image, shape
 import machine
 
 # Setup for the Presto display
@@ -23,6 +23,7 @@ FOREGROUND = color.hsv(hue, 128, 255)  # Slightly lighter for foreground element
 TEXT_COLOUR = color.hsv(hue, 51, 255)
 
 display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X4
 
 
 def show_message(text):

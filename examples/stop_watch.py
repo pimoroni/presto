@@ -5,7 +5,7 @@
 import datetime
 import time
 
-from picovector import color, font, shape
+from picovector import color, font, image, shape
 from presto import Presto
 from touch import Button
 
@@ -27,6 +27,7 @@ text_colour = color.hsv(hue, 51, 255)
 touch = presto.touch
 
 display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X4
 
 
 def text_in_button(text, bounds, size):

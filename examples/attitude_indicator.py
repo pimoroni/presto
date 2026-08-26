@@ -5,7 +5,7 @@ import math
 
 import machine
 from lsm6ds3 import LSM6DS3, NORMAL_MODE_104HZ
-from picovector import color, font, mat3, shape, vec2
+from picovector import color, font, image, mat3, shape, vec2
 from presto import Presto
 
 # Setup for the Presto display
@@ -30,6 +30,7 @@ y_prev = y
 alpha = 0.15
 
 display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X2
 
 
 def circle_contour(cx, cy, r, steps=48):

@@ -1,7 +1,7 @@
 import time
 from random import randint
 
-from picovector import color, font, shape
+from picovector import color, font, image, shape
 from presto import Presto
 
 # Setup for the Presto display
@@ -10,6 +10,7 @@ display = presto.display
 WIDTH, HEIGHT = display.width, display.height
 
 display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X2
 
 # Couple of colours for use later
 BLUE = color.rgb(28, 181, 202)

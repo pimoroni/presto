@@ -4,7 +4,7 @@ import time
 
 import machine
 import psram
-from picovector import color, font, mat3, shape, vec2
+from picovector import color, font, image, mat3, shape, vec2
 from presto import Presto
 
 psram.mkramfs()
@@ -58,6 +58,7 @@ display.clear()
 presto.update()
 
 display.font = font.load("Roboto-Medium-With-Material-Symbols.af")
+display.antialias = image.X4
 
 
 def rounded_contour(x, y, w, h, r, steps=6):
@@ -72,8 +73,16 @@ def rounded_contour(x, y, w, h, r, steps=6):
     return points
 
 
-def text_centered(text, cx, y, size):
-    display.text(text, cx - display.measure_text(text, size)[0] / 2, y, size)
+def text_centered(text, cx, baseline, size):
+    # text() hangs from the top of the em box; these were positioned by baseline.
+    display.text(text, cx - display.measure_text(text, size)[0] / 2, baseline - size, size)
+
+
+def icon_centered(glyph, cx, cy, size):
+    # The Material Symbols glyphs are drawn centred on x and render about twice
+    # the nominal size, so they need centring on their ink rather than on the
+    # advance width the way the Latin text above does.
+    display.text(glyph, cx, cy - size, size)
 
 
 # Touch tracking and menu movement
@@ -192,18 +201,19 @@ class Application:
         self.ol.transform = transform
 
     def draw(self, selected=False):
-        icon_size = 20 * self.scale
+        # The icon and its labels used to be drawn through the same matrix as
+        # the tile, so their sizes scaled along with their positions.
         display.pen = self.color_bg
         display.shape(self.bg)
         display.pen = self.color_fg
-        text_centered(self.icon, self.screen_x, self.screen_y - icon_size / 2 + 2, icon_size)
+        icon_centered(self.icon, self.screen_x, self.screen_y, 20 * self.scale)
 
         if selected:
             display.pen = BLACK
-            text_centered(self.name, self.screen_x, self.screen_y + 40 * self.scale, 10)
+            text_centered(self.name, self.screen_x, self.screen_y + 40 * self.scale, 10 * self.scale)
             display.pen = self.color_ol
             display.shape(self.ol)
-            text_centered(self.description, self.screen_x, self.screen_y + 50 * self.scale, 8)
+            text_centered(self.description, self.screen_x, self.screen_y + 50 * self.scale, 8 * self.scale)
 
         # Useful for debugging
         # display.rectangle(*self.bounds())

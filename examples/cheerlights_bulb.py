@@ -6,7 +6,7 @@ import time
 
 import requests
 from machine import Pin
-from picovector import color, font, mat3, shape, vec2
+from picovector import color, font, image, mat3, shape, vec2
 from presto import Presto
 
 user_button = Pin(46, Pin.IN)
@@ -115,6 +115,7 @@ WIDTH, HEIGHT = display.width, display.height
 touch = presto.touch
 
 display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X4
 
 # Colours for use later
 WHITE = color.rgb(255, 255, 255)
