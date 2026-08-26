@@ -16,26 +16,20 @@ import time
 from presto import Presto
 from pimoroni_i2c import PimoroniI2C
 from breakout_scd41 import BreakoutSCD41
-from picovector import Transform, Polygon, PicoVector, ANTIALIAS_X16
+from picovector import color, font, shape, vec2
 
 i2c = PimoroniI2C(sda=40, scl=41)
 
 presto = Presto(full_res=True, ambient_light=False)
 display = presto.display
-vector = PicoVector(display)
 
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
 
-t = Transform()
-vector.set_font_letter_spacing(100)
-vector.set_font_word_spacing(100)
-vector.set_font_line_height(110)
-vector.set_transform(t)
 
-BLACK = display.create_pen(0, 0, 0)
-WHITE = display.create_pen(216, 216, 200)
-RED = display.create_pen(127, 0, 0)
-GREEN = display.create_pen(0, 127, 0)
+BLACK = color.rgb(0, 0, 0)
+WHITE = color.rgb(216, 216, 200)
+RED = color.rgb(127, 0, 0)
+GREEN = color.rgb(0, 127, 0)
 
 # pick what bits of the colour wheel to use (from 0-360°)
 # https://www.cssscript.com/demo/hsv-hsl-color-wheel-picker-reinvented/
@@ -89,9 +83,7 @@ def graph_polygon(top, bottom, graph_min, graph_max, readings, y_offset=0):
             points.append((x, y))
         points.append((WIDTH - 1, round(bottom)))
         points.append((0, round(bottom)))
-    poly = Polygon()
-    poly.path(*points)
-    return poly
+    return shape.custom([vec2(x, y) for x, y in points])
 
 
 def line_polygon(top, bottom, min, max, value):
@@ -101,9 +93,7 @@ def line_polygon(top, bottom, min, max, value):
     points.append((WIDTH, round(bottom + ((value - min) * (top - bottom) / (max - min)))))
     points.append((WIDTH, round(bottom + ((value - min) * (top - bottom) / (max - min))) + LINE_THICKNESS))
     points.append((0, round(bottom + ((value - min) * (top - bottom) / (max - min))) + LINE_THICKNESS))
-    poly = Polygon()
-    poly.path(*points)
-    return poly
+    return shape.custom([vec2(x, y) for x, y in points])
 
 
 highest_co2 = 0.0
@@ -113,15 +103,14 @@ temperature_readings = []
 humidity_readings = []
 
 # set up
-vector.set_antialiasing(ANTIALIAS_X16)
-vector.set_font("osansb.af", 50)
-display.set_pen(BLACK)
+display.font = font.load("osansb.af")
+display.pen = BLACK
 display.clear()
 presto.update()
 
 # display a message whilst waiting for the sensor to be ready
-display.set_pen(WHITE)
-vector.text("Waiting for sensor to be ready", 0, 40, max_width=WIDTH)
+display.pen = WHITE
+display.text("Waiting for sensor to be ready", 0, 40, 50)
 presto.update()
 
 scd41 = None
@@ -132,11 +121,11 @@ try:
 except RuntimeError as e:
     # display a message if no breakout is found
     print(e)
-    display.set_pen(BLACK)
+    display.pen = BLACK
     display.clear()
-    display.set_pen(WHITE)
-    vector.text("SCD41 breakout not detected :(", 0, 40, max_width=WIDTH)
-    vector.text("but you could buy one at pimoroni.com ;)", 0, HEIGHT - 120, max_width=WIDTH)
+    display.pen = WHITE
+    display.text("SCD41 breakout not detected :(", 0, 40, 50)
+    display.text("but you could buy one at pimoroni.com ;)", 0, HEIGHT - 120, 50)
     presto.update()
 
 while True:
@@ -181,48 +170,46 @@ while True:
             humidity_readings.pop(0)
 
         # clear to black
-        display.set_pen(BLACK)
+        display.pen = BLACK
         display.clear()
 
         # draw the graphs and text
         # draw the CO2 graph
-        display.set_pen(display.create_pen_hsv(co2_hue / 360, 1.0, 1.0))
+        display.pen = color.hsv(co2_hue, 255, 255)
         co2_graph = graph_polygon(CO2_GRAPH_TOP, CO2_GRAPH_BOTTOM, CO2_MIN, CO2_MAX, co2_readings)
-        vector.draw(co2_graph)
+        display.shape(co2_graph)
         # draw the CO2 indicator lines
-        display.set_pen(RED)
-        vector.draw(line_polygon(CO2_GRAPH_TOP, CO2_GRAPH_BOTTOM, CO2_MIN, CO2_MAX, BAD_CO2_LEVEL))
-        display.set_pen(GREEN)
-        vector.draw(line_polygon(CO2_GRAPH_TOP, CO2_GRAPH_BOTTOM, CO2_MIN, CO2_MAX, OK_CO2_LEVEL))
+        display.pen = RED
+        display.shape(line_polygon(CO2_GRAPH_TOP, CO2_GRAPH_BOTTOM, CO2_MIN, CO2_MAX, BAD_CO2_LEVEL))
+        display.pen = GREEN
+        display.shape(line_polygon(CO2_GRAPH_TOP, CO2_GRAPH_BOTTOM, CO2_MIN, CO2_MAX, OK_CO2_LEVEL))
         # draw the CO2 text
-        vector.set_font_size(40)
-        display.set_pen(WHITE)
-        vector.text(f"CO2: {co2:.0f}ppm", PADDING, 25)
-        display.set_pen(BLACK)
-        vector.set_font_size(30)
-        vector.text(f"Low {lowest_co2:.0f}ppm", PADDING, round(TEMPERATURE_GRAPH_TOP) - 12)
+        display.pen = WHITE
+        display.text(f"CO2: {co2:.0f}ppm", PADDING, 25, 40)
+        display.pen = BLACK
+        display.text(f"Low {lowest_co2:.0f}ppm", PADDING, round(TEMPERATURE_GRAPH_TOP) - 12, 30)
         high_text = f"High {highest_co2:.0f}ppm"
-        text_width = int(vector.measure_text(high_text)[2])
-        vector.text(high_text, WIDTH - PADDING - text_width, round(TEMPERATURE_GRAPH_TOP) - 12)
+        text_width = int(display.measure_text(high_text, 30)[0])
+        display.text(high_text, WIDTH - PADDING - text_width, round(TEMPERATURE_GRAPH_TOP) - 12, 30)
 
         # draw the humidity graph
         # here we're using the 'hue' value to affect the saturation (so light blue to dark blue)
-        display.set_pen(display.create_pen_hsv(240 / 360, humidity_hue / 360, 1.0))
+        display.pen = color.hsv(240, int(humidity_hue * 255 / 360), 255)
         # draw this polygon twice, applying an offset to make a line rather than a filled shape
         humidity_graph = graph_polygon(HUMIDITY_GRAPH_TOP, HUMIDITY_GRAPH_BOTTOM, HUMIDITY_MIN, HUMIDITY_MAX, humidity_readings, LINE_THICKNESS)
-        vector.draw(humidity_graph)
-        #display.set_pen(WHITE)
+        display.shape(humidity_graph)
+        #display.pen = WHITE
         humidity_text = f"{humidity:.0f}% Humidity"
-        text_width = int(vector.measure_text(humidity_text)[2])
-        vector.text(humidity_text, WIDTH - PADDING - text_width, int(HUMIDITY_GRAPH_BOTTOM) - 13)
+        text_width = int(display.measure_text(humidity_text, 30)[0])
+        display.text(humidity_text, WIDTH - PADDING - text_width, int(HUMIDITY_GRAPH_BOTTOM) - 13, 30)
 
         # draw the temperature graph
-        display.set_pen(display.create_pen_hsv(temperature_hue / 360, 1.0, 1.0))
+        display.pen = color.hsv(temperature_hue, 255, 255)
         # draw this polygon twice, applying an offset to make a line rather than a filled shape
         temperature_graph = graph_polygon(TEMPERATURE_GRAPH_TOP, TEMPERATURE_GRAPH_BOTTOM, TEMPERATURE_MIN, TEMPERATURE_MAX, temperature_readings, LINE_THICKNESS)
-        vector.draw(temperature_graph)
-        #display.set_pen(WHITE)
-        vector.text(f"Temp: {temperature:.0f}°C", PADDING, int(TEMPERATURE_GRAPH_BOTTOM) - 13)
+        display.shape(temperature_graph)
+        #display.pen = WHITE
+        display.text(f"Temp: {temperature:.0f}°C", PADDING, int(TEMPERATURE_GRAPH_BOTTOM) - 13, 30)
 
         # light up the rear leds the same colour as the graph
         for x in range(7):
