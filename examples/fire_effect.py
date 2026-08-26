@@ -47,7 +47,7 @@ def update():
         heat[x][height - 1] = 0.0
         heat[x][height - 2] = 0.0
 
-    for c in range(fire_spawns):
+    for _ in range(fire_spawns):
         x = random.randint(0, width - 4) + 2
         heat[x + 0][height - 1] += 1.0
         heat[x + 1][height - 1] += 1.0

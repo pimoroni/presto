@@ -102,7 +102,7 @@ def numberedfiles(k):
 
 
 try:
-    files = list(file for file in sorted(os.listdir(directory), key=numberedfiles) if file.endswith(".jpg") or file.endswith(".jpeg"))
+    files = [file for file in sorted(os.listdir(directory), key=numberedfiles) if file.endswith((".jpg", ".jpeg"))]
 except OSError:
     display_error("Problem loading images.\n\nEnsure that your Presto or SD card contains a 'gallery' folder in the root")
 
@@ -133,7 +133,7 @@ def fizzlefade():
 
     while True:
 
-        for i in range(2000):
+        for _ in range(2000):
             x, y = return_point()
             if x > -1 and y > -1:
                 display.pixel(x, y)
@@ -155,7 +155,7 @@ def reinit_sd():
         sd = sdcard.SDCard(sd_spi, machine.Pin(39))
         time.sleep(0.1)
         return True
-    except:
+    except OSError:
         return False
 
 
@@ -254,7 +254,7 @@ try:
     print("✓ jpegdec opened successfully!")
     print(f"  Image size: {j.get_width()}x{j.get_height()}")
 
-except Exception as e:
+except Exception as e:  # noqa: BLE001 - example code: report the failure rather than crash the demo
     print(f"✗ Test failed: {type(e).__name__}: {e}")
     # The jpegdec test failed and corrupted SPI - reinitialize!
     print("Reinitializing SD card after failed jpegdec test...")

@@ -65,7 +65,7 @@ def sync_ntp(max_retries=5, wait_time=2):
             ntptime.settime()  # Synchronise l'heure avec NTP
             print("Heure synchronisée avec succès !")
             return True  # Succès
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - example code: report the failure rather than crash the demo
             print(f"Tentative {attempt + 1}/{max_retries} échouée: {e}")
             time.sleep(wait_time)  # Attendre avant de réessayer
 
@@ -109,7 +109,7 @@ def approx_time_fr(hours, minutes,ampm):
     et2=[(12,0),(12,1)]
     moins=[(5,2),(5,3),(5,4),(5,5),(5,6)]
     quart=[(6,8),(6,9),(6,10),(6,11),(6,12)]
-    le=[(6,1),(6,2)]
+    le=[(6,1),(6,2)]  # noqa: F841 - part of the word-coordinate set, kept for completeness
     heures = [(4,7),(4,8),(4,9),(4,10),(4,11),(4,12)]
     coords = [(0, 0), (0, 1), (0, 3), (0, 4),(0,5)]  # "IL EST"
     coords_minus= [(0, 0), (0, 1), (0, 3), (0, 4),(0,5)] #coods_minus used to said H - x minute (so hour is hour+1)
@@ -291,7 +291,6 @@ def draw_coord(active_coords):
 
     line_space = 15
     letter_space = 15
-    margin = 25
     scale = 1
     spacing = 1
 

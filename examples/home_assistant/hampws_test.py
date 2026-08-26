@@ -1,3 +1,4 @@
+# ruff: noqa: SLF001 - this test deliberately drives the internal frame API
 from config import (
     HA_HOST, HA_TOKEN,
     LIGHT_ENTITIES, SENSORS, CAMERAS
@@ -291,7 +292,7 @@ def main():
 
     except KeyboardInterrupt:
         print("\nTests stopped by user")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - example code: report the failure rather than crash the demo
         print(f"Error during tests: {e}")
 
 if __name__ == "__main__":

@@ -97,15 +97,9 @@ def draw(time_phrase):
     display.set_pen(BLACK)
     display.clear()
 
-    default_x = 25
-    x = default_x
     y = 40
 
     line_space = 40
-    letter_space = 15
-    margin = 25
-    scale = 1
-    spacing = 1
 
     display.set_pen(WHITE)
 

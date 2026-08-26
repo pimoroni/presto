@@ -103,7 +103,7 @@ try:
 
 except KeyboardInterrupt:
     print("\nProgram stopped by user")
-except Exception as e:
+except Exception as e:  # noqa: BLE001 - example code: report the failure rather than crash the demo
     print(f"Error occurred: {e}")
 finally:
     ws.close()

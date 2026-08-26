@@ -91,7 +91,7 @@ class HAMPWS:
                 return None
 
             # Parse header
-            fin = (header[0] & 0x80) == 0x80
+            fin = (header[0] & 0x80) == 0x80  # noqa: F841 - documents the frame layout; fragmentation unhandled
             opcode = header[0] & 0x0F
             masked = (header[1] & 0x80) == 0x80
             length = header[1] & 0x7F
@@ -143,7 +143,7 @@ class HAMPWS:
 
             return payload.decode("utf-8")
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - example code: report the failure rather than crash the demo
             print(f"Error receiving frame: {e}")
             self.connected = False
             return None
@@ -161,7 +161,7 @@ class HAMPWS:
                 print(f"Address info: {addr_info}")
                 addr = addr_info[0][-1]
                 print(f"Using address: {addr}")
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - example code: report the failure rather than crash the demo
                 print(f"Error getting address info: {e}")
                 return False
 
@@ -169,7 +169,7 @@ class HAMPWS:
             try:
                 self.socket.connect(addr)
                 print("Socket connected successfully")
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001 - example code: report the failure rather than crash the demo
                 print(f"Connection error: {e}")
                 return False
 
@@ -249,12 +249,12 @@ class HAMPWS:
 
             return False
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - example code: report the failure rather than crash the demo
             print(f"Connection error: {e}")
             if self.socket:
                 try:
                     self.socket.close()
-                except:
+                except OSError:
                     pass
             self.socket = None
             self.connected = False
@@ -271,20 +271,20 @@ class HAMPWS:
                 return json.loads(message)
             return None
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - example code: report the failure rather than crash the demo
             print(f"Read error: {e}")
             self.connected = False
             return None
 
     def call_service(self, domain, service, service_data=None, target=None):
         """Call a Home Assistant service
-        
+
         Args:
             domain: Service domain (e.g. 'light')
             service: Service name (e.g. 'turn_on')
             service_data: Optional service data dictionary
             target: Optional target dictionary (e.g. {"entity_id": "light.kitchen"})
-            
+
         Returns:
             bool: True if successful
         """
@@ -315,16 +315,16 @@ class HAMPWS:
 
             return False
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - example code: report the failure rather than crash the demo
             print(f"Service call error: {e}")
             return False
 
     def subscribe_events(self, event_type=None):
         """Subscribe to Home Assistant events
-        
+
         Args:
             event_type: Optional event type to filter (e.g. 'state_changed')
-            
+
         Returns:
             int: Subscription ID if successful, None if failed
         """
@@ -355,16 +355,16 @@ class HAMPWS:
 
             return None
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - example code: report the failure rather than crash the demo
             print(f"Subscribe error: {e}")
             return None
 
     def subscribe_trigger(self, trigger_config):
         """Subscribe to a Home Assistant trigger
-        
+
         Args:
             trigger_config: Trigger configuration dictionary
-            
+
         Returns:
             int: Subscription ID if successful, None if failed
         """
@@ -391,16 +391,16 @@ class HAMPWS:
 
             return None
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - example code: report the failure rather than crash the demo
             print(f"Subscribe error: {e}")
             return None
 
     def get_state(self, entity_id):
         """Get the state of a Home Assistant entity
-        
+
         Args:
             entity_id: The entity ID to get state for (e.g. 'light.kitchen')
-            
+
         Returns:
             dict: Entity state data if successful, None if failed
         """
@@ -439,7 +439,7 @@ class HAMPWS:
 
             return None
 
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001 - example code: report the failure rather than crash the demo
             print(f"Get state error: {e}")
             return None
 
@@ -449,7 +449,7 @@ class HAMPWS:
             try:
                 self._send_frame("", 0x8)  # Send close frame
                 self.socket.close()
-            except:
+            except OSError:
                 pass
         self.socket = None
         self.connected = False
