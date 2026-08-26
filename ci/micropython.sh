@@ -1,10 +1,12 @@
 export TERM=${TERM:="xterm-256color"}
 
 MICROPYTHON_FLAVOUR="pimoroni"
-MICROPYTHON_VERSION="feature/presto-wireless-august-2026"
+MICROPYTHON_VERSION="feature/presto-badgeware"
 
 PIMORONI_PICO_FLAVOUR="pimoroni"
 PIMORONI_PICO_VERSION="patch/micropython-1.29.0"
+
+PIMORONI_PICOVECTOR_VERSION="main"
 
 PY_DECL_VERSION="v0.0.3"
 DIR2UF2_VERSION="v0.0.9"
@@ -27,6 +29,15 @@ function ci_pimoroni_pico_clone {
     git clone https://github.com/$PIMORONI_PICO_FLAVOUR/pimoroni-pico "$CI_BUILD_ROOT/pimoroni-pico"
     cd "$CI_BUILD_ROOT/pimoroni-pico" || return 1
     git checkout $PIMORONI_PICO_VERSION
+    git submodule update --init
+    cd "$CI_BUILD_ROOT"
+}
+
+function ci_picovector_clone {
+    log_inform "Using Pimoroni PicoVector pimoroni/$PIMORONI_PICOVECTOR_VERSION"
+    git clone https://github.com/pimoroni/picovector-micropython "$CI_BUILD_ROOT/picovector-micropython"
+    cd "$CI_BUILD_ROOT/picovector-micropython" || return 1
+    git checkout $PIMORONI_PICOVECTOR_VERSION
     git submodule update --init
     cd "$CI_BUILD_ROOT"
 }
@@ -69,6 +80,7 @@ function ci_prepare_all {
     ci_tools_clone
     ci_micropython_clone
     ci_pimoroni_pico_clone
+    ci_picovector_clone
     ci_micropython_build_mpy_cross
 }
 
@@ -98,6 +110,7 @@ function ci_cmake_configure {
     -DPICO_NO_COPRO_DIS=1 \
     -DPICOTOOL_FETCH_FROM_GIT_PATH="$TOOLS_DIR/picotool" \
     -DPIMORONI_PICO_PATH="$CI_BUILD_ROOT/pimoroni-pico" \
+    -DPICOVECTOR_MICROPYTHON_DIR="$CI_BUILD_ROOT/picovector-micropython" \
     -DPIMORONI_TOOLS_DIR="$TOOLS_DIR" \
     -DUSER_C_MODULES="$MICROPY_BOARD_DIR/usermodules.cmake" \
     -DMICROPY_BOARD_DIR="$MICROPY_BOARD_DIR" \
