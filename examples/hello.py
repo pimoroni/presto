@@ -1,25 +1,30 @@
+from picovector import color, font
+
 from presto import Presto
 
 # Setup for the Presto display
 presto = Presto(ambient_light=True)
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
+
+# Text needs a vector font loaded before it can be drawn
+display.font = font.load("Roboto-Medium.af")
 
 # Couple of colours for use later
-BLUE = display.create_pen(28, 181, 202)
-WHITE = display.create_pen(255, 255, 255)
+BLUE = color.rgb(28, 181, 202)
+WHITE = color.rgb(255, 255, 255)
 
 
 while True:
 
     # Clear the screen and use blue as the background colour
-    display.set_pen(BLUE)
+    display.pen = BLUE
     display.clear()
     # Set the pen to a different colour otherwise we won't be able to see the text!
-    display.set_pen(WHITE)
+    display.pen = WHITE
 
     # draw the text
-    display.text("Hello!", 10, 85, WIDTH, 8)
+    display.text("Hello!", 10, 85, 48)
 
     # Finally we update the screen with our changes :)
     presto.update()

@@ -1,14 +1,13 @@
 import random
 
+from picovector import color
+
 from presto import Presto
 
 # Setup for the Presto display
 presto = Presto()
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
-
-# We're creating 170 balls with their own individual colour and 1 BG colour
-# for a total of 171 colours, which will all fit in the custom 256 entry palette!
+WIDTH, HEIGHT = display.width, display.height
 
 
 class Ball:
@@ -32,16 +31,15 @@ for _ in range(170):
             r,
             (14 - r) / 2,
             (14 - r) / 2,
-            display.create_pen(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)),
+            color.rgb(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)),
         )
     )
 
-BG = display.create_pen(40, 40, 40)
+BG = color.rgb(40, 40, 40)
 
 while True:
 
-    display.set_layer(0)
-    display.set_pen(BG)
+    display.pen = BG
     display.clear()
 
     for ball in balls:
@@ -59,7 +57,7 @@ while True:
         if ball.y < ymin or ball.y > ymax:
             ball.dy *= -1
 
-        display.set_pen(ball.pen)
+        display.pen = ball.pen
         display.circle(int(ball.x), int(ball.y), int(ball.r))
 
     # Finally we update the screen with our changes :)
