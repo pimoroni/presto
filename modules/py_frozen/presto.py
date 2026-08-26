@@ -15,6 +15,11 @@ from touch import FT6236
 
 Touch = namedtuple("touch", ("x", "y", "touched"))
 
+# The ST7701 scans the framebuffer out line by line, so only a 180 flip is
+# possible - 90/270 would need a transpose the scanout cannot do.
+ROTATE_0 = 0
+ROTATE_180 = 180
+
 
 class Buzzer:
     def __init__(self, pin):
@@ -34,19 +39,19 @@ class Presto():
     NUM_LEDS = 7
     LED_PIN = 33
 
-    def __init__(self, full_res=False, palette=False, ambient_light=False, direct_to_fb=False, layers=None):
+    def __init__(self, full_res=False, palette=False, ambient_light=False, direct_to_fb=False, layers=None, rotate=ROTATE_0):
         # WiFi - *must* happen before Presto bringup
         # Note: Forces WiFi details to be in secrets.py
         self.wifi = EzWiFi()
 
         # Touch Input
-        self.touch = FT6236(full_res=full_res)
+        self.touch = FT6236(full_res=full_res, rotate=rotate)
 
         # Display Driver & PicoGraphics
         if layers is None:
             layers = 1 if full_res else 2
         pen = PEN_P8 if palette else PEN_RGB565
-        self.presto = _presto.Presto(full_res=full_res, palette=palette)
+        self.presto = _presto.Presto(full_res=full_res, palette=palette, rotate=rotate)
         self.buffer = None if (full_res and not palette and not direct_to_fb) else memoryview(self.presto)
         self.display = PicoGraphics(DISPLAY_PRESTO_FULL_RES if full_res else DISPLAY_PRESTO, buffer=self.buffer, layers=layers, pen_type=pen)
         self.width, self.height = self.display.get_bounds()

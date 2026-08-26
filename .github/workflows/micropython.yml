@@ -29,7 +29,7 @@ jobs:
         mkdir -p /home/runner/.ccache
   
     - name: "CCache: Restore saved cache"
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: /home/runner/.ccache
         key: ccache-micropython-${{ matrix.name }}-${{ github.ref }}-${{ github.sha }}
@@ -38,15 +38,15 @@ jobs:
           ccache-micropython-${{ matrix.name }}-
 
     - name: "Checkout Project"
-      uses: actions/checkout@v4
+      uses: actions/checkout@v7
       with:
         submodules: true
         path: ${{ env.CI_PROJECT_ROOT }}
 
     - name: "Install Arm GNU Toolchain (arm-none-eabi-gcc)"
-      uses: carlosperate/arm-none-eabi-gcc-action@v1
+      uses: carlosperate/arm-none-eabi-gcc-action@v1.13.0
       with:
-        release: '13.3.Rel1'
+        release: '15.2.Rel1'
 
     - name: "Prepare tools & dependencies"
       shell: bash
@@ -70,13 +70,13 @@ jobs:
         ci_cmake_build ${{ matrix.name }}
 
     - name: "Artifacts: Upload .uf2"
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ${{ env.CI_RELEASE_FILENAME }}.uf2
         path: ${{ env.CI_BUILD_ROOT }}/${{ env.CI_RELEASE_FILENAME }}.uf2
         
     - name: "Artifacts: Upload .uf2 (With Filesystem)"
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         if-no-files-found: ignore
         name: ${{ env.CI_RELEASE_FILENAME }}-with-filesystem.uf2
@@ -84,12 +84,12 @@ jobs:
 
     - name: "Release: Upload .uf2"
       if: github.event_name == 'release'
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v3
       with:
         files: ${{ env.CI_BUILD_ROOT }}/${{ env.CI_RELEASE_FILENAME }}.uf2
 
     - name: "Release: Upload .uf2 (With Filesystem)"
       if: github.event_name == 'release'
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@v3
       with:
         files: ${{ env.CI_BUILD_ROOT }}/${{ env.CI_RELEASE_FILENAME }}-with-filesystem.uf2

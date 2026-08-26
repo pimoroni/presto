@@ -4,7 +4,6 @@
 
 import time
 
-import machine
 import ntptime
 import pngdec
 from presto import Presto
@@ -24,8 +23,12 @@ presto.update()
 
 # Length of time between updates in minutes.
 UPDATE_INTERVAL = 15
+# Hours offset from UTC, set once in secrets.py
+try:
+    from secrets import UTC_OFFSET
+except ImportError:
+    UTC_OFFSET = 0
 
-rtc = machine.RTC()
 time_string = None
 words = ["it", "d", "is", "m", "about", "lv", "half", "c", "quarter", "b", "to", "past", "n", "one",
          "two", "three", "four", "five", "six", "eleven", "ten", "d", "qdh", "eight", "seven", "rm", "twelve", "nine", "p", "ncsnheypresto", "O'Clock", "agrdsp"]
@@ -90,8 +93,10 @@ def update():
     except OSError:
         print("Unable to contact NTP server")
 
-    current_t = rtc.datetime()
-    time_string = approx_time(current_t[4] - 12 if current_t[4] > 12 else current_t[4], current_t[5])
+    current_t = time.gmtime(time.time() + UTC_OFFSET * 3600)
+    adjusted_hr, adjusted_min = current_t[3], current_t[4]
+
+    time_string = approx_time(adjusted_hr - 12 if adjusted_hr > 12 else adjusted_hr, adjusted_min)
 
     # Splits the string into an array of words for displaying later
     time_string = time_string.split()

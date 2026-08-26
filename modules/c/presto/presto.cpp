@@ -231,10 +231,11 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
     // Clean up any existing instance of Presto.
     (void)Presto___del__(mp_const_none);
 
-    enum { ARG_full_res, ARG_palette };
+    enum { ARG_full_res, ARG_palette, ARG_rotate };
     static const mp_arg_t allowed_args[] = {
         { MP_QSTR_full_res, MP_ARG_BOOL, {.u_bool = false} },
         { MP_QSTR_palette, MP_ARG_BOOL, {.u_bool = false} },
+        { MP_QSTR_rotate, MP_ARG_INT, {.u_int = 0} },
     };
 
     // Parse args.
@@ -259,7 +260,14 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
     self->using_palette = args[ARG_palette].u_bool;
 
     presto_debug("m_new_class(ST7701...\n");
-    self->presto = new (st7701_buffer) ST7701(self->width, self->height, ROTATE_0,
+    Rotation rotation = ROTATE_0;
+    switch (args[ARG_rotate].u_int) {
+        case 0: rotation = ROTATE_0; break;
+        case 180: rotation = ROTATE_180; break;
+        default: mp_raise_ValueError(MP_ERROR_TEXT("Presto: rotate must be ROTATE_0 or ROTATE_180."));
+    }
+
+    self->presto = new (st7701_buffer) ST7701(self->width, self->height, rotation,
         SPIPins{spi1, LCD_CS, LCD_CLK, LCD_DAT, PIN_UNUSED, LCD_DC, BACKLIGHT},
         presto_buffer, self->using_palette ? presto_palette : nullptr,
         LCD_D0);
@@ -275,7 +283,7 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
 
     // Micropython uses all of both scratch memory (and more!) for core0 stack, 
     // so we must supply our own small stack for core1 here.
-    multicore_launch_core1_with_stack(presto_core1_entry, core1_stack, stack_size);
+    multicore_launch_core1_with_stack(presto_core1_entry, core1_stack, sizeof(core1_stack));
     presto_debug("launched core1\n");
 
     int res = multicore_fifo_pop_blocking();
