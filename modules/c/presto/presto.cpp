@@ -27,9 +27,6 @@ extern "C" {
 #define HALF_WIDTH (WIDTH / 2)
 #define HALF_HEIGHT (HEIGHT / 2)
 #define HALF_PIXELS (HALF_WIDTH * HALF_HEIGHT)
-// Full res scans out of PSRAM through this many SRAM lines, kept ahead of the
-// beam by the line ISR.
-#define FULL_RES_CACHE_LINES 4
 __attribute__((section(".uninitialized_data"), aligned(4)))
 static uint8_t presto_sram_pool[HALF_PIXELS * (sizeof(uint16_t) + sizeof(uint32_t))];
 static uint16_t *presto_buffer = (uint16_t *)presto_sram_pool;
@@ -79,8 +76,6 @@ typedef struct _Presto_obj_t {
     // kept reachable from here.
     uint32_t* back_buffer;
     uint16_t* front_buffer;
-    uint16_t* scanout_cache;
-    uint16_t* psram_frame;
 
     // Automatic ambient backlight control
     volatile bool auto_ambient_leds;
@@ -137,9 +132,8 @@ static void __no_inline_not_in_flash_func(update_backlight_leds)() {
                     }
                 }
                 else {
-                    uint16_t* frame = presto_obj->psram_frame ? presto_obj->psram_frame : presto_buffer;
                     for (int y = 0; y < SAMPLE_RANGE; ++y) {
-                        uint16_t* ptr = &frame[(led_sample_locations[i].y + y) * presto_obj->width + led_sample_locations[i].x];
+                        uint16_t* ptr = &presto_buffer[(led_sample_locations[i].y + y) * presto_obj->width + led_sample_locations[i].x];
                         for (int x = 0; x < SAMPLE_RANGE; ++x) {
                             uint16_t sample = __builtin_bswap16(*ptr++);
                             r += (sample >> 8) & 0xF8;
@@ -283,22 +277,14 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
     {
         const size_t pixels = (size_t)self->width * self->height;
         if (pixels <= HALF_PIXELS) {
-            // Everything fits in SRAM, so the panel scans the front buffer
-            // directly and no line cache is needed.
             presto_buffer = (uint16_t *)presto_sram_pool;
             self->back_buffer = (uint32_t *)(presto_sram_pool + pixels * sizeof(uint16_t));
-            self->scanout_cache = nullptr;
-            self->psram_frame = nullptr;
         } else {
-            presto_buffer = (uint16_t *)presto_sram_pool;
-            self->scanout_cache = presto_buffer;
-            self->psram_frame = m_new(uint16_t, pixels);
+            presto_buffer = m_new(uint16_t, pixels);
             self->back_buffer = m_new(uint32_t, pixels);
-            memset(self->psram_frame, 0, pixels * sizeof(uint16_t));
         }
         self->front_buffer = presto_buffer;
-        memset(presto_buffer, 0,
-               (self->psram_frame ? (size_t)self->width * FULL_RES_CACHE_LINES : pixels) * sizeof(uint16_t));
+        memset(presto_buffer, 0, pixels * sizeof(uint16_t));
         memset(self->back_buffer, 0, pixels * sizeof(uint32_t));
     }
 
@@ -314,10 +300,6 @@ mp_obj_t Presto_make_new(const mp_obj_type_t *type, size_t n_args, size_t n_kw, 
         SPIPins{spi1, LCD_CS, LCD_CLK, LCD_DAT, PIN_UNUSED, LCD_DC, BACKLIGHT},
         presto_buffer, nullptr,
         LCD_D0);
-
-    if (self->psram_frame) {
-        self->presto->set_line_cache(self->scanout_cache, FULL_RES_CACHE_LINES, self->psram_frame);
-    }
 
     presto_debug("launch core1\n");
     multicore_reset_core1();
