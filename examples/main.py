@@ -4,7 +4,7 @@ import time
 
 import machine
 import psram
-from picovector import color, font, image, mat3, shape, vec2
+from picovector import brush, color, font, image, mat3, shape, vec2
 from presto import Presto
 
 psram.mkramfs()
@@ -151,6 +151,7 @@ class Application:
         self.color_fg = None
         self.color_bg = None
         self.color_ol = None
+        self.brush_bg = None
 
     def __lt__(self, icon):
         return self.scale < icon.scale
@@ -172,9 +173,19 @@ class Application:
         s = min(0.6, scale_factor + 0.1)
 
         self.hue = (angle_per_icon * self.index) / (2 * math.pi)
-        self.color_fg = color.hsv(self.hue * 360, int(s * 255), int(0.2 * 255))
-        self.color_ol = color.hsv(self.hue * 360, int(s * 255), 255)
-        self.color_bg = color.hsv(self.hue * 360, int(s * 255), int(0.9 * 255))
+        hue_deg = self.hue * 360
+        saturation = int(s * 255)
+        self.color_fg = color.hsv(hue_deg, saturation, int(0.2 * 255))
+        self.color_ol = color.hsv(hue_deg, saturation, 255)
+        self.color_bg = color.hsv(hue_deg, saturation, int(0.9 * 255))
+
+        # Gradient stops are in the shape's own space, so this follows the tile
+        # transform without being rebuilt for the tile's position or scale.
+        self.brush_bg = brush.gradient(
+            brush.LINEAR, 0, -self.h / 2, 0, self.h / 2,
+            [(0.0, color.hsv(hue_deg, max(0, saturation - 40), 255)),
+             (1.0, color.hsv(hue_deg, saturation, int(0.7 * 255)))],
+        )
 
         self.y = RADIUS_Y * math.cos(self.angle)
         self.x = RADIUS_X * math.sin(self.angle)
@@ -203,7 +214,7 @@ class Application:
     def draw(self, selected=False):
         # The icon and its labels used to be drawn through the same matrix as
         # the tile, so their sizes scaled along with their positions.
-        display.pen = self.color_bg
+        display.pen = self.brush_bg
         display.shape(self.bg)
         display.pen = self.color_fg
         icon_centered(self.icon, self.screen_x, self.screen_y, 20 * self.scale)
