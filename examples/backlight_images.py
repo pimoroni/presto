@@ -4,7 +4,8 @@ A demo that flips between 2 images and changes the backlighting
 
 import time
 
-import jpegdec
+from picovector import image
+
 from presto import Presto
 
 # File names for your 2 images. The reactive backlighting works best with images that match the resolution of the screen
@@ -16,23 +17,17 @@ IMAGE_2 = "image2.jpg"
 # Setup for the Presto display
 presto = Presto(ambient_light=True)
 display = presto.display
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
 
-# Setup JPEG decoder
-j = jpegdec.JPEG(display)
+# Decode both up front rather than once per frame
+images = (image.load(IMAGE_1), image.load(IMAGE_2))
 
 flip = True
 
 while True:
 
     # Select opposite image to what's currently shown
-    if flip:
-        j.open_file(IMAGE_1)
-
-    else:
-        j.open_file(IMAGE_2)
-
-    j.decode(0, 0, jpegdec.JPEG_SCALE_FULL, dither=True)
+    display.blit(images[0] if flip else images[1], 0, 0)
     flip = not flip
 
     # Finally we update the screen with our changes :)
