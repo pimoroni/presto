@@ -4,7 +4,7 @@ import time
 
 import machine
 import psram
-from picovector import ANTIALIAS_FAST, HALIGN_CENTER, PicoVector, Polygon, Transform
+from picovector import color, font, mat3, shape, vec2
 from presto import Presto
 
 psram.mkramfs()
@@ -24,7 +24,7 @@ presto = Presto(ambient_light=False)
 
 display = presto.display
 
-WIDTH, HEIGHT = display.get_bounds()
+WIDTH, HEIGHT = display.width, display.height
 
 icons = {
     "travel": "\ue6ca",
@@ -49,23 +49,32 @@ RADIUS_X = 160
 RADIUS_Y = 30
 
 # Couple of colours for use later
-BLACK = display.create_pen(0, 0, 0)
-BACKGROUND = display.create_pen(255, 250, 240)
+BLACK = color.rgb(0, 0, 0)
+BACKGROUND = color.rgb(255, 250, 240)
 
 # We do a clear and update here to stop the screen showing whatever is in the buffer.
-display.set_pen(BLACK)
+display.pen = BLACK
 display.clear()
 presto.update()
 
-# Pico Vector
-vector = PicoVector(display)
-vector.set_antialiasing(ANTIALIAS_FAST)
-
-vector.set_font("Roboto-Medium-With-Material-Symbols.af", 20)
-vector.set_font_align(HALIGN_CENTER)
+display.font = font.load("Roboto-Medium-With-Material-Symbols.af")
 
 
-t = Transform()
+def rounded_contour(x, y, w, h, r, steps=6):
+    # A rounded rectangle as a point list, so it can be the inner contour of the
+    # corner mask. shape.rounded_rectangle can't be combined with another path.
+    points = []
+    for cx, cy, start in ((x + w - r, y + h - r, 0), (x + r, y + h - r, 90),
+                          (x + r, y + r, 180), (x + w - r, y + r, 270)):
+        for step in range(steps + 1):
+            a = math.radians(start + 90 * step / steps)
+            points.append(vec2(cx + r * math.cos(a), cy + r * math.sin(a)))
+    return points
+
+
+def text_centered(text, cx, y, size):
+    display.text(text, cx - display.measure_text(text, size)[0] / 2, y, size)
+
 
 # Touch tracking and menu movement
 touch_start_x = 0
@@ -76,10 +85,11 @@ move_angle = 0
 move = 0
 friction = 0.98
 
-# Rounded corners
-rounded_corners = Polygon()
-rounded_corners.rectangle(0, 0, WIDTH, HEIGHT)
-rounded_corners.rectangle(0, 0, WIDTH, HEIGHT, (10, 10, 10, 10))
+# Rounded corners: everything outside the rounded rectangle, filled black.
+rounded_corners = shape.custom(
+    [vec2(0, 0), vec2(WIDTH, 0), vec2(WIDTH, HEIGHT), vec2(0, HEIGHT)],
+    rounded_contour(0, 0, WIDTH, HEIGHT, 10),
+)
 
 
 class Application:
@@ -119,14 +129,10 @@ class Application:
         self.h = h
         self.file = file
 
-        # Background
-        self.bg = Polygon().rectangle(0 - w / 2, 0 - h / 2, w, h, (10, 10, 10, 10))
-
-        # Outline
-        self.ol = Polygon().rectangle(0 - w / 2, 0 - h / 2, w, h, (10, 10, 10, 10), stroke=2)
-
-        # Transform
-        self.t = Transform()
+        # Background and outline, drawn around the origin so the transform can
+        # place and scale them.
+        self.bg = shape.rounded_rectangle(0 - w / 2, 0 - h / 2, w, h, 10)
+        self.ol = shape.rounded_rectangle(0 - w / 2, 0 - h / 2, w, h, 10).stroke(2)
 
         self.angle = 0
         self.scale = 0
@@ -157,9 +163,9 @@ class Application:
         s = min(0.6, scale_factor + 0.1)
 
         self.hue = (angle_per_icon * self.index) / (2 * math.pi)
-        self.color_fg = display.create_pen_hsv(self.hue, s, 0.2)
-        self.color_ol = display.create_pen_hsv(self.hue, s, 1.0)
-        self.color_bg = display.create_pen_hsv(self.hue, s, 0.9)
+        self.color_fg = color.hsv(self.hue * 360, int(s * 255), int(0.2 * 255))
+        self.color_ol = color.hsv(self.hue * 360, int(s * 255), 255)
+        self.color_bg = color.hsv(self.hue * 360, int(s * 255), int(0.9 * 255))
 
         self.y = RADIUS_Y * math.cos(self.angle)
         self.x = RADIUS_X * math.sin(self.angle)
@@ -167,41 +173,37 @@ class Application:
         # Quick and dirty way to "perspective correct" the circle
         self.x *= self.scale
 
+        # Screen position of this icon's centre.
+        self.screen_x = CENTER_X + self.x + OFFSET_X
+        self.screen_y = CENTER_Y + self.y + OFFSET_Y
+
         # Logically these things below happen in reverse order
         # but because these are matrix operations we need to apply them back to front
         # THIS IS WEIRD BUT MATHS GON' MATHS
-        self.t.reset()
+        transform = mat3()
         # Translate to our final display offset
-        self.t.translate(OFFSET_X, OFFSET_Y)
+        transform.translate(OFFSET_X, OFFSET_Y)
         # Translate back to screen space, moving origin 0, 0 to our X and Y
-        self.t.translate(CENTER_X + self.x, CENTER_Y + self.y)
+        transform.translate(CENTER_X + self.x, CENTER_Y + self.y)
         # Scale the icon around origin 0, 0
-        self.t.scale(self.scale, self.scale)
+        transform.scale(self.scale, self.scale)
+
+        self.bg.transform = transform
+        self.ol.transform = transform
 
     def draw(self, selected=False):
-        vector.set_font_size(20)
-        display.set_pen(self.color_bg)
-        vector.set_transform(self.t)
-        vector.draw(self.bg)
-        display.set_pen(self.color_fg)
-        self.t.translate(0, 2)
-        vector.text(self.icon, 0, 0)
+        icon_size = 20 * self.scale
+        display.pen = self.color_bg
+        display.shape(self.bg)
+        display.pen = self.color_fg
+        text_centered(self.icon, self.screen_x, self.screen_y - icon_size / 2 + 2, icon_size)
 
         if selected:
-            self.t.translate(0, -2)
-            display.set_pen(BLACK)
-            vector.set_font_size(10)
-            vector.text(self.name, -self.w, 40, max_width=self.w * 2)
-            display.set_pen(self.color_ol)
-            vector.draw(self.ol)
-            vector.set_font_size(8)
-            desc_length = vector.measure_text(self.description, 18)
-            vector.text(
-                self.description,
-                -int(desc_length[2]) // 2,
-                50,
-                max_width=int(desc_length[2]) + 5,
-            )
+            display.pen = BLACK
+            text_centered(self.name, self.screen_x, self.screen_y + 40 * self.scale, 10)
+            display.pen = self.color_ol
+            display.shape(self.ol)
+            text_centered(self.description, self.screen_x, self.screen_y + 50 * self.scale, 8)
 
         # Useful for debugging
         # display.rectangle(*self.bounds())
@@ -209,12 +211,10 @@ class Application:
     def bounds(self):
         w = self.w * self.scale
         h = self.h * self.scale
-        x = -w // 2
-        y = -h // 2
 
         return (
-            int(x + self.x + CENTER_X + OFFSET_X),
-            int(y + self.y + CENTER_Y + OFFSET_Y),
+            int(self.screen_x - w // 2),
+            int(self.screen_y - h // 2),
             int(w),
             int(h),
         )
@@ -224,7 +224,7 @@ class Application:
             f.write(self.file)
 
         # Clear the display buffer before launching the next app
-        display.set_pen(BLACK)
+        display.pen = BLACK
         display.clear()
         presto.update()
 
@@ -240,16 +240,13 @@ icons = [
 touch = presto.touch
 
 while True:
-    # We don't want any of the icon transforms to apply to our background
-    vector.set_transform(t)
-
     # Clear screen to our background colour
-    display.set_pen(BACKGROUND)
+    display.pen = BACKGROUND
     display.clear()
 
     # Draw rounded corners in black
-    display.set_pen(BLACK)
-    vector.draw(rounded_corners)
+    display.pen = BLACK
+    display.shape(rounded_corners)
 
     touch.poll()
 
