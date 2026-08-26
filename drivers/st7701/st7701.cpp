@@ -193,6 +193,26 @@ void __not_in_flash_func(ST7701::start_line_xfer)()
     hw_clear_bits(&st_pio->irq, 0x1);
 
     ++display_row;
+
+    if (backbuffer) {
+        // Cached mode is full res only, so there is no row doubling to apply.
+        if (display_row == DISPLAY_HEIGHT) {
+            next_line_addr = 0;
+            return;
+        }
+        next_line_addr = &framebuffer[width * (display_row % cachelines)];
+
+        // Pull the line after this one out of PSRAM while the PIO is busy with
+        // the current one.
+        const int fill_row = display_row + 1;
+        if (fill_row < DISPLAY_HEIGHT) {
+            memcpy(&framebuffer[width * (fill_row % cachelines)],
+                   &backbuffer[width * fill_row],
+                   width * sizeof(uint16_t));
+        }
+        return;
+    }
+
     if (display_row == DISPLAY_HEIGHT) next_line_addr = 0;
     else if (palette) next_line_addr = &framebuffer[(width >> 1) * (display_row >> row_shift)];
     else next_line_addr = &framebuffer[width * (display_row >> row_shift)];
@@ -225,6 +245,12 @@ void __not_in_flash_func(ST7701::start_frame_xfer)()
     pio_sm_exec(st_pio, parallel_sm, pio_encode_jmp(parallel_offset));
     pio_sm_set_enabled(st_pio, parallel_sm, true);
     display_row = 0;
+    if (backbuffer) {
+        // Prime the cache with the first lines of the new frame.
+        for (uint16_t line = 0; line < cachelines && line < DISPLAY_HEIGHT; ++line) {
+            memcpy(&framebuffer[width * line], &backbuffer[width * line], width * sizeof(uint16_t));
+        }
+    }
     next_line_addr = framebuffer;
     dma_channel_set_read_addr(st_dma, framebuffer, true);
 
@@ -639,6 +665,29 @@ void __not_in_flash_func(ST7701::start_frame_xfer)()
   // behind the line currently being scanned out, so a frame is never torn.
   void __no_inline_not_in_flash_func(ST7701::update)(const uint32_t *source) {
     const uint32_t *src_ptr = source;
+
+    if (backbuffer) {
+      // The scanout reads PSRAM a line at a time into the SRAM cache, so the
+      // row it has already consumed is what has to be stayed behind, not a
+      // pointer into the buffer being written.
+      uint16_t *dst_ptr = backbuffer;
+      uint16_t *end_ptr = backbuffer + width * height;
+      volatile int *row_ptr = (volatile int *)&display_row;
+
+      while (dst_ptr != end_ptr) {
+        uint16_t *safe_ptr = backbuffer + width * (*row_ptr);
+        if (safe_ptr <= dst_ptr) {
+          // Ahead of the scanout, race the beam.
+          safe_ptr = end_ptr;
+        }
+        while (dst_ptr < safe_ptr) {
+          const uint32_t src = *src_ptr++;
+          *dst_ptr++ = __builtin_bswap16(((src & 0xf8) << 8) | ((src & 0xfc00) >> 5) | ((src & 0xf80000) >> 19));
+        }
+      }
+      return;
+    }
+
     uint16_t *dst_ptr = framebuffer;
     uint16_t *end_ptr = dst_ptr + width * height;
     volatile uintptr_t *next_addr_ptr = (volatile uintptr_t *)&next_line_addr;
@@ -662,9 +711,10 @@ void __not_in_flash_func(ST7701::start_frame_xfer)()
   }
 
   void ST7701::partial_update(const uint32_t *source, int x, int y, int w, int h) {
+    uint16_t *target = backbuffer ? backbuffer : framebuffer;
     for (int row = y; row < y + h; ++row) {
       const uint32_t *src_ptr = source + row * width + x;
-      uint16_t *dst_ptr = &framebuffer[row * width + x];
+      uint16_t *dst_ptr = &target[row * width + x];
       for (int col = 0; col < w; ++col) {
         const uint32_t src = *src_ptr++;
         *dst_ptr++ = __builtin_bswap16(((src & 0xf8) << 8) | ((src & 0xfc00) >> 5) | ((src & 0xf80000) >> 19));

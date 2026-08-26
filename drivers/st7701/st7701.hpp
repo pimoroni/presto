@@ -85,6 +85,15 @@ namespace pimoroni {
     // It is MSB aligned, i.e. the top bit of red is in the MSB.
     uint32_t get_encoded_palette_entry(uint8_t entry) const { return palette[entry]; }
 
+    // Full res cannot keep a 460K scanout buffer in SRAM alongside the
+    // rasteriser's working buffer, so the frame lives in PSRAM and only a few
+    // lines are cached in SRAM ahead of the beam.
+    void set_line_cache(uint16_t *cache, uint16_t lines, uint16_t *psram_frame) {
+      framebuffer = cache;
+      cachelines = lines;
+      backbuffer = psram_frame;
+    }
+
     void set_framebuffer(uint16_t* next_fb) {
       next_framebuffer = next_fb;
     }
@@ -119,6 +128,8 @@ namespace pimoroni {
     uint32_t* palette = nullptr;
 
     uint16_t* next_line_addr;
+    uint16_t* backbuffer = nullptr;
+    uint16_t  cachelines = 0;
     int display_row = 0;
     int row_shift = 0;
     int fill_row = 0;
