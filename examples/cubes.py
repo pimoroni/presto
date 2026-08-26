@@ -6,7 +6,7 @@ import math
 import time
 from random import randint, randrange
 
-from picovector import color, font
+from picovector import color, font, image
 
 from presto import Presto
 
@@ -16,6 +16,10 @@ display = presto.display
 WIDTH, HEIGHT = display.width, display.height
 
 display.font = font.load("Roboto-Medium.af")
+display.antialias = image.X4
+
+TITLE = "Flying Cubes!"
+TITLE_SIZE = 20
 
 BLACK = color.rgb(0, 0, 0)
 WHITE = color.rgb(255, 255, 255)
@@ -135,7 +139,7 @@ while 1:
     display.pen = BLACK
     display.clear()
     display.pen = WHITE
-    display.text("Flying Cubes!", 90, 110, 8)
+    display.text(TITLE, (WIDTH - display.measure_text(TITLE, TITLE_SIZE)[0]) / 2, 110, TITLE_SIZE)
     display.pen = color.hsv(t * 360, 255, 255)
     # Now we go through each Cube object we have in 'cubes'
     # and increase the FOV angle so it appears closer to the screen.
