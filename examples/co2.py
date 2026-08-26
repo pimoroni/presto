@@ -15,7 +15,7 @@ import time
 
 from presto import Presto
 from pimoroni_i2c import PimoroniI2C
-import breakout_scd41
+from breakout_scd41 import BreakoutSCD41
 from picovector import Transform, Polygon, PicoVector, ANTIALIAS_X16
 
 i2c = PimoroniI2C(sda=40, scl=41)
@@ -124,9 +124,11 @@ display.set_pen(WHITE)
 vector.text("Waiting for sensor to be ready", 0, 40, max_width=WIDTH)
 presto.update()
 
+scd41 = None
+
 try:
-    breakout_scd41.init(i2c)
-    breakout_scd41.start()
+    scd41 = BreakoutSCD41(i2c)
+    scd41.start()
 except RuntimeError as e:
     # display a message if no breakout is found
     print(e)
@@ -143,9 +145,9 @@ while True:
         highest_co2 = 0.0
         lowest_co2 = 4000.0
 
-    if breakout_scd41.ready():
+    if scd41 is not None and scd41.ready():
         # read the sensor
-        co2, temperature, humidity = breakout_scd41.measure()
+        co2, temperature, humidity = scd41.measure()
 
         # if lists are empty, populate the list with the current readings
         if len(co2_readings) == 0:
