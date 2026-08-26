@@ -234,7 +234,9 @@ void __not_in_flash_func(ST7701::start_frame_xfer)()
 
   ST7701::ST7701(uint16_t width, uint16_t height, Rotation rotation, SPIPins control_pins, uint16_t* framebuffer, uint32_t* palette,
       uint d0, uint hsync, uint vsync, uint lcd_de, uint lcd_dot_clk) :
-            DisplayDriver(width, height, rotation),
+            width(width),
+            height(height),
+            rotation(rotation),
             spi(control_pins.spi),
             spi_cs(control_pins.cs), spi_sck(control_pins.sck), spi_dat(control_pins.mosi), lcd_bl(control_pins.bl),
             d0(d0), hsync(hsync), vsync(vsync), lcd_de(lcd_de), lcd_dot_clk(lcd_dot_clk),
@@ -633,97 +635,39 @@ void __not_in_flash_func(ST7701::start_frame_xfer)()
   }
 
   ///
-  void ST7701::update(PicoGraphics *graphics) {
-    if(graphics->pen_type == PicoGraphics::PEN_RGB565 && !palette) { // Display buffer is screen native
-      if (graphics->frame_buffer == framebuffer) {
-        // Nothing to do
-        return;
+  // Convert an RGBA8888 source into the RGB565 scanout buffer. The copy stays
+  // behind the line currently being scanned out, so a frame is never torn.
+  void __no_inline_not_in_flash_func(ST7701::update)(const uint32_t *source) {
+    const uint32_t *src_ptr = source;
+    uint16_t *dst_ptr = framebuffer;
+    uint16_t *end_ptr = dst_ptr + width * height;
+    volatile uintptr_t *next_addr_ptr = (volatile uintptr_t *)&next_line_addr;
+
+    while (dst_ptr != end_ptr) {
+      uint16_t *next_addr = (uint16_t *)*next_addr_ptr;
+      if (!next_addr || next_addr == framebuffer) {
+        next_addr = framebuffer + width * height;
       }
 
-      // Take care to copy while not passing the point in the frame buffer
-      // that is currently being scanned out to the screen.  This prevents tearing.
-      uint16_t* src_ptr = (uint16_t*)graphics->frame_buffer;
-      uint16_t* src_ptr2 = (uint16_t*)graphics->frame_buffer + width * height;
-      uint16_t* dst_ptr = framebuffer;
-      uint16_t* end_ptr = dst_ptr + width * height;
-      volatile uintptr_t* next_addr_ptr = (volatile uintptr_t*)&next_line_addr;
-
-      while (dst_ptr != end_ptr) {
-        uint16_t* next_addr = (uint16_t*)*next_addr_ptr;
-        if (!next_addr || next_addr == framebuffer) {
-          next_addr = framebuffer + width * height;
-        }
-
-        next_addr -= width;
-        if (next_addr < dst_ptr) {
-          // Ahead of the scanout, race the beam.
-          next_addr = end_ptr;
-        }
-        if (dst_ptr < next_addr) {
-          if (graphics->layers == 1) {
-            // Copy up to the current line being scanned out
-            int len = next_addr - dst_ptr;
-            memcpy(dst_ptr, src_ptr, len * sizeof(uint16_t));
-            dst_ptr += len;
-            src_ptr += len;
-          } else {
-            // Assume 2 layers
-            while (dst_ptr < next_addr) {
-              *dst_ptr++ = *src_ptr2 ? *src_ptr2 : *src_ptr;
-              ++src_ptr2;
-              ++src_ptr;
-            }
-          }
-        }
+      next_addr -= width;
+      if (next_addr < dst_ptr) {
+        // Ahead of the scanout, race the beam.
+        next_addr = end_ptr;
       }
-    } else if (graphics->pen_type == PicoGraphics::PEN_P8 && palette) {
-      wait_for_vsync();
-      PicoGraphics_PenP8* pen8 = static_cast<PicoGraphics_PenP8*>(graphics);
-      RGB* palette = pen8->get_palette();
-      for (int i = 0; i < 256; ++i) {
-        set_palette_colour(i, palette[i]);
+      while (dst_ptr < next_addr) {
+        const uint32_t src = *src_ptr++;
+        *dst_ptr++ = __builtin_bswap16(((src & 0xf8) << 8) | ((src & 0xfc00) >> 5) | ((src & 0xf80000) >> 19));
       }
-      if (graphics->layers == 1) {
-        memcpy(framebuffer, graphics->frame_buffer, width * height);
-      }
-      else {
-        uint8_t* dst = (uint8_t*)framebuffer;
-        const uint8_t* end = dst + width * height;
-        uint8_t* src = (uint8_t*)graphics->frame_buffer;
-        const size_t layer_offset = width * height;
-        const int top_layer_idx = graphics->layers - 1;
-
-        while (dst != end) {
-          uint8_t colour = 0;
-          for (int layer = top_layer_idx; layer >= 0; --layer) {
-            colour = *(src + layer * layer_offset);
-            if (colour) break;
-          }
-          *dst++ = colour;
-          ++src;
-        }
-      }
-    } else {
-      uint8_t* frame_ptr = (uint8_t*)framebuffer;
-      graphics->frame_convert(PicoGraphics::PEN_RGB565, [this, &frame_ptr](void *data, size_t length) {
-        if (length > 0) {
-          memcpy(frame_ptr, data, length);
-          frame_ptr += length;
-        }
-      });
     }
   }
 
-  void ST7701::partial_update(PicoGraphics *graphics, Rect region) {
-    if (graphics->pen_type == PicoGraphics::PEN_RGB565 && !palette && graphics->layers == 1) { // Display buffer is screen native
-      for (int y = region.y; y < region.y + region.h; ++y) {
-        memcpy(&framebuffer[y * width + region.x], (uint16_t*)graphics->frame_buffer + y * width + region.x, region.w * sizeof(uint16_t));
-      }
-    }
-    else if (graphics->pen_type == PicoGraphics::PEN_P8 && palette && graphics->layers == 1) {
-      uint8_t* fb8 = (uint8_t*)framebuffer;
-      for (int y = region.y; y < region.y + region.h; ++y) {
-        memcpy(&fb8[y * width + region.x], (uint8_t*)graphics->frame_buffer + y * width + region.x, region.w * sizeof(uint8_t));
+  void ST7701::partial_update(const uint32_t *source, int x, int y, int w, int h) {
+    for (int row = y; row < y + h; ++row) {
+      const uint32_t *src_ptr = source + row * width + x;
+      uint16_t *dst_ptr = &framebuffer[row * width + x];
+      for (int col = 0; col < w; ++col) {
+        const uint32_t src = *src_ptr++;
+        *dst_ptr++ = __builtin_bswap16(((src & 0xf8) << 8) | ((src & 0xfc00) >> 5) | ((src & 0xf80000) >> 19));
       }
     }
   }
@@ -737,7 +681,7 @@ void __not_in_flash_func(ST7701::start_frame_xfer)()
     pwm_set_gpio_level(lcd_bl, value);
   }
 
-  void ST7701::set_palette_colour(uint8_t entry, RGB888 colour) {
+  void ST7701::set_palette_colour(uint8_t entry, uint32_t colour) {
     if (!palette) return;
 
     // Note bit reversal is done by PIO.
@@ -746,19 +690,6 @@ void __not_in_flash_func(ST7701::start_frame_xfer)()
       ((colour << 11) & 0x07E00000) |  // G
       ((colour << 13) & 0x001F8000) |  // B
       ((colour >> 4)  & 0x00004000);   // Low bit of R
-
-    palette[entry] = encoded_colour;
-  }
-
-  void ST7701::set_palette_colour(uint8_t entry, const RGB& colour) {
-    if (!palette) return;
-
-    // Note bit reversal is done by PIO.
-    uint32_t encoded_colour =
-      ((colour.r << 24) & 0xF8000000) |  // R
-      ((colour.g << 19) & 0x07E00000) |  // G
-      ((colour.b << 13) & 0x001F8000) |  // B
-      ((colour.r << 12) & 0x00004000);   // Low bit of R
 
     palette[entry] = encoded_colour;
   }

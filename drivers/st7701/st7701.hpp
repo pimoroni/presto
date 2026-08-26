@@ -8,8 +8,8 @@
 #include "hardware/clocks.h"
 #include "common/pimoroni_common.hpp"
 #include "common/pimoroni_bus.hpp"
-#include "libraries/pico_graphics/pico_graphics.hpp"
 
+#include <cstdio>
 #include <algorithm>
 #include <cstring>
 
@@ -20,7 +20,13 @@ namespace pimoroni {
   /// https://focuslcds.com/wp-content/uploads/Drivers/ST7701S.pdf
   /// See ESPHome implementation:
   /// https://github.com/esphome/esphome/blob/dev/esphome/components/st7701s
-  class ST7701 : public DisplayDriver {
+  class ST7701 {
+  public:
+    uint16_t width;
+    uint16_t height;
+    Rotation rotation;
+
+  private:
     spi_inst_t *spi = PIMORONI_SPI_DEFAULT_INSTANCE;
 
     //--------------------------------------------------
@@ -61,16 +67,19 @@ namespace pimoroni {
     // Parallel init
     ST7701(uint16_t width, uint16_t height, Rotation rotation, SPIPins control_pins, uint16_t* framebuffer, uint32_t* palette = nullptr,
       uint d0=1, uint hsync=19, uint vsync=20, uint lcd_de = 21, uint lcd_dot_clk = 22);
-    virtual ~ST7701() {}
+    ~ST7701() {}
 
     void init();
-    void cleanup() override;
-    void update(PicoGraphics *graphics) override;
-    void partial_update(PicoGraphics *display, Rect region) override;
-    void set_backlight(uint8_t brightness) override;
+    void cleanup();
 
-    void set_palette_colour(uint8_t entry, RGB888 colour);
-    void set_palette_colour(uint8_t entry, const RGB& colour);
+    // Convert an RGBA8888 source into the RGB565 scanout buffer, staying behind
+    // the beam so a frame is never torn.
+    void update(const uint32_t *source);
+    void partial_update(const uint32_t *source, int x, int y, int w, int h);
+
+    void set_backlight(uint8_t brightness);
+
+    void set_palette_colour(uint8_t entry, uint32_t colour);
 
     // The format is an 18-bit value: RGB566, followed by the final bit of red.
     // It is MSB aligned, i.e. the top bit of red is in the MSB.
