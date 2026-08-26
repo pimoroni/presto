@@ -35,10 +35,13 @@ class FT6236:
     STATE_CONTACT = const(0b10)
     STATE_NONE = const(0b11)
 
-    def __init__(self, full_res=False, enable_interrupt=False):
+    def __init__(self, full_res=False, enable_interrupt=False, rotate=0):
         self.debug = False
         self._scale = 1 if full_res else 2
         self._irq = enable_interrupt
+        # Touch reports in panel coordinates, so it has to follow the display
+        self._rotate = rotate
+        self._max = (480 // self._scale) - 1
 
         self.y = self.x = 240 if full_res else 120
         self.state = False
@@ -69,7 +72,12 @@ class FT6236:
         e = data[0] >> 6
         x = ((data[0] & 0x0f) << 8) | data[1]
         y = ((data[2] & 0x0f) << 8) | data[3]
-        return int(x / self._scale), int(y / self._scale), e not in (self.STATE_NONE, self.STATE_UP)
+        x = int(x / self._scale)
+        y = int(y / self._scale)
+        if self._rotate == 180:
+            x = self._max - x
+            y = self._max - y
+        return x, y, e not in (self.STATE_NONE, self.STATE_UP)
 
     def _handle_touch(self, pin):  # noqa ARG002
         self.state = self.state2 = False
