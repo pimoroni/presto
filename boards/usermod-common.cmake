@@ -26,8 +26,6 @@ include(pimoroni_bus/micropython)
 set(PV_DUAL_CORE OFF)
 find_package(PICOVECTOR_MICROPYTHON CONFIG REQUIRED)
 
-include(qrcode/micropython/micropython)
-
 # Sensors & Breakouts
 include(micropython-common-breakouts)
 
