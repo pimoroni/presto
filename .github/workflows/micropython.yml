@@ -32,10 +32,10 @@ jobs:
       uses: actions/cache@v6
       with:
         path: /home/runner/.ccache
-        key: ccache-micropython-${{ matrix.name }}-${{ github.ref }}-${{ github.sha }}
+        key: ccache-v2-micropython-${{ matrix.name }}-${{ github.ref }}-${{ github.sha }}
         restore-keys: |
-          ccache-micropython-${{ matrix.name }}-${{ github.ref }}
-          ccache-micropython-${{ matrix.name }}-
+          ccache-v2-micropython-${{ matrix.name }}-${{ github.ref }}
+          ccache-v2-micropython-${{ matrix.name }}-
 
     - name: "Checkout Project"
       uses: actions/checkout@v7

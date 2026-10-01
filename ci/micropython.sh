@@ -4,7 +4,7 @@ MICROPYTHON_FLAVOUR="pimoroni"
 MICROPYTHON_VERSION="feature/presto-wireless-august-2026"
 
 PIMORONI_PICO_FLAVOUR="pimoroni"
-PIMORONI_PICO_VERSION="patch/micropython-1.29.0"
+PIMORONI_PICO_VERSION="v1.29.0"
 
 PY_DECL_VERSION="v0.0.3"
 DIR2UF2_VERSION="v0.0.9"
@@ -43,6 +43,7 @@ function ci_micropython_clone {
     git submodule update --init lib/micropython-lib
     git submodule update --init lib/tinyusb
     git submodule update --init lib/btstack
+    git -C lib/pico-sdk apply "$CI_PROJECT_ROOT/ci/pico-sdk-multicore-lockout-interrupts.patch"
     cd "$CI_BUILD_ROOT"
 }
 

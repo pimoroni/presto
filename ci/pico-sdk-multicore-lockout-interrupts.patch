@@ -1,0 +1,39 @@
+diff --git a/src/rp2_common/pico_multicore/include/pico/multicore.h b/src/rp2_common/pico_multicore/include/pico/multicore.h
+index 12b9e4d5..3437d729 100644
+--- a/src/rp2_common/pico_multicore/include/pico/multicore.h
++++ b/src/rp2_common/pico_multicore/include/pico/multicore.h
+@@ -43,6 +43,11 @@ extern "C" {
+ #define PICO_MULTICORE_LOCKOUT_BEFORE_CORE1_STARTED 1
+ #endif
+ 
++// PICO_CONFIG: PICO_MULTICORE_LOCKOUT_DISABLE_INTERRUPTS, Disable interrupts on the victim core while it is locked out. Setting this to 0 allows higher priority interrupts to continue running on the victim core, which is only safe if their handlers do not access flash or anything else the lockout is protecting, type=bool, default=1, group=pico_multicore
++#ifndef PICO_MULTICORE_LOCKOUT_DISABLE_INTERRUPTS
++#define PICO_MULTICORE_LOCKOUT_DISABLE_INTERRUPTS 1
++#endif
++
+ /**
+  * \def SIO_FIFO_IRQ_NUM(core)
+  * \ingroup pico_multicore
+diff --git a/src/rp2_common/pico_multicore/multicore.c b/src/rp2_common/pico_multicore/multicore.c
+index 759d31ea..6f89d84d 100644
+--- a/src/rp2_common/pico_multicore/multicore.c
++++ b/src/rp2_common/pico_multicore/multicore.c
+@@ -235,14 +235,18 @@ static void __isr __not_in_flash_func(multicore_lockout_handler)(void) {
+         uint32_t request_id = sio_hw->fifo_rd;
+         if (request_id == lockout_request_id) {
+             // valid lockout request received
++#if PICO_MULTICORE_LOCKOUT_DISABLE_INTERRUPTS
+             uint32_t save = save_and_disable_interrupts();
++#endif
+             multicore_fifo_push_blocking_inline(request_id);
+             // wait for the lockout to expire
+             while (request_id == lockout_request_id) {
+                 // when lockout_request_id is updated, the other CPU core calls __sev
+                 __wfe();
+             }
++#if PICO_MULTICORE_LOCKOUT_DISABLE_INTERRUPTS
+             restore_interrupts_from_disabled(save);
++#endif
+         }
+     }
+ }
