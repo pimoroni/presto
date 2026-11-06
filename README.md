@@ -53,3 +53,5 @@ Links to community projects and other resources that you might find helpful can 
 - [Presto-Cal - timezone/DST library with iCalendar parsing](https://forums.pimoroni.com/t/micropython-timezone-and-dst-library/28318)
 - [WiiM Now Playing Display](https://github.com/retired-guy/WiiM-Presto)
 - [Presto Air Quality display](https://github.com/00b/Pimoroni-Presto-AQI/) using the [AirNow](https://www.airnow.gov/) API
+- [Live UK Train Departure Board](https://github.com/robmarkcole/pimoroni-presto-train-display) using National Rail Darwin data ([video](https://youtu.be/7p9hzEM4UWU))
+- [Pimoroni Presto Arcade](https://robmarkcole.github.io/pimoroni-presto-arcade/) - nine games controlled with a Qw/ST Pad
